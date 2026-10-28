@@ -9,5 +9,7 @@ android {
         versionCode 2
         versionName '1.1'
     }
+    signingConfigs { stala { storeFile file('panel.keystore'); storePassword 'paneltv'; keyAlias 'panel'; keyPassword 'paneltv' } }
+    buildTypes { debug { signingConfig signingConfigs.stala } }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }
