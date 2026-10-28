@@ -1,0 +1,13 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'pl.superdarco.paneltv'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'pl.superdarco.paneltv'
+        minSdk 26
+        targetSdk 30
+        versionCode 1
+        versionName '1.0'
+    }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}
