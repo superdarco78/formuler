@@ -31,7 +31,7 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Panel TV v1 - usluga w tle.
+ * Panel TV v1.1 - usluga w tle. (v1.1: powiadomienia bez przejmowania pilota "focus": false, samozamkniecie "duration")
  * HTTP na porcie 7980 (tylko siec lokalna):
  *   POST /show   {"url": "...", "width": 820, "height": 480, "x": 48, "y": 48, "gravity": "top_right"}
  *   POST /close
@@ -42,7 +42,7 @@ import java.nio.charset.StandardCharsets;
  */
 public class PanelService extends Service {
     static final int PORT = 7980;
-    static final String WERSJA = "1.0";
+    static final String WERSJA = "1.1";
 
     private WindowManager wm;
     private Handler ui;
@@ -142,10 +142,15 @@ public class PanelService extends Service {
         int szer = b.optInt("width", 820), wys = b.optInt("height", 480);
         int x = b.optInt("x", 48), y = b.optInt("y", 48);
         String grav = b.optString("gravity", "top_right");
+        // v1.1: "focus": false = samo powiadomienie (pilot dalej steruje MOL/Kodi), "duration": sekundy do samozamkniecia
+        boolean fokus = b.optBoolean("focus", true);
+        int flagi = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED;
+        if (!fokus) flagi |= WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
         WindowManager.LayoutParams lp = new WindowManager.LayoutParams(szer, wys,
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
-                PixelFormat.TRANSLUCENT);
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, flagi, PixelFormat.TRANSLUCENT);
+        ui.removeCallbacks(samoZamkniecie);
+        int czas = b.optInt("duration", 0);
+        if (czas > 0) ui.postDelayed(samoZamkniecie, czas * 1000L);
         switch (grav) {
             case "top_left": lp.gravity = Gravity.TOP | Gravity.START; break;
             case "bottom_right": lp.gravity = Gravity.BOTTOM | Gravity.END; break;
@@ -176,6 +181,8 @@ public class PanelService extends Service {
         ostatniUrl = url;
         web.requestFocus();
     }
+
+    private final Runnable samoZamkniecie = this::zamknij;
 
     private void zamknij() {
         if (web != null && widoczne) {

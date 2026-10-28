@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Panel TV v1 - wlasne okienka sterowania HA nad kazda aplikacja na Formulerze (pilot: strzalki, OK, WSTECZ) -->
+<!-- Panel TV v1.1 - wlasne okienka sterowania HA nad kazda aplikacja na Formulerze (pilot: strzalki, OK, WSTECZ) -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
