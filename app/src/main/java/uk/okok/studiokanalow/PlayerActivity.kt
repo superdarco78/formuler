@@ -44,13 +44,29 @@ class PlayerActivity : AppCompatActivity() {
         } catch (e: Exception) { }
     }
     private var czuwak: kotlinx.coroutines.Job? = null
+    private var rozwiazany = ""
+    /** Diagnostyka: co naprawde odpowiada dostawca (bez adresow z haslami - tylko status, typ, hosty). */
+    private suspend fun sonda(u: String): String = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        try {
+            val t0 = System.currentTimeMillis()
+            val c = okhttp3.OkHttpClient.Builder().followRedirects(true)
+                .connectTimeout(8, java.util.concurrent.TimeUnit.SECONDS).readTimeout(8, java.util.concurrent.TimeUnit.SECONDS).build()
+            c.newCall(okhttp3.Request.Builder().url(u).header("User-Agent", "VLC/3.0.20 LibVLC/3.0.20").build()).execute().use { r ->
+                val body = r.body?.source()?.let { src -> try { src.request(4000); src.buffer.snapshot().utf8() } catch (e: Exception) { "" } } ?: ""
+                val hosty = Regex("https?://([^/\\s]+)").findAll(body).map { it.groupValues[1] }.toSet().take(3).joinToString(",")
+                val sciezek = body.lines().count { it.isNotBlank() && !it.startsWith("#") }
+                "sonda " + r.code + " " + (r.header("Content-Type") ?: "?") + " " + (System.currentTimeMillis() - t0) + "ms pocz=" + body.take(7).replace("\n", " ") + " linii=" + sciezek + " hosty=" + hosty + " finalny=" + r.request.url.host
+            }
+        } catch (e: Exception) { "sonda blad " + e.javaClass.simpleName + " " + (e.message ?: "").take(80) }
+    }
     /** Jesli po 20 s nie ma obrazu - zglos stan i przelacz zrodlo. */
     private fun czuwajNad(p: androidx.media3.exoplayer.ExoPlayer) {
         czuwak?.cancel()
         czuwak = lifecycleScope.launch {
-            kotlinx.coroutines.delay(20000)
+            kotlinx.coroutines.delay(12000)
             if (p.playbackState != androidx.media3.common.Player.STATE_READY) {
                 raport("brak obrazu po 20 s, stan=" + p.playbackState)
+                if (rozwiazany.isNotEmpty()) raport(sonda(rozwiazany))
                 awaria()
             }
         }
@@ -157,6 +173,7 @@ class PlayerActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val u2 = rozwiaz(url)
             if (u2 != url) raport("przekierowanie na " + (try { android.net.Uri.parse(u2).host } catch (e: Exception) { "?" }))
+            rozwiazany = u2
             p.setMediaItem(MediaItem.fromUri(u2))
             p.prepare()
             czuwajNad(p)
