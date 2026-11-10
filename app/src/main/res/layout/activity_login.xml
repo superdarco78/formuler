@@ -13,6 +13,7 @@
         android:padding="28dp">
 
         <ImageView
+            android:id="@+id/ivLogo"
             android:layout_width="84dp"
             android:layout_height="84dp"
             android:src="@drawable/ic_logo_okragle"

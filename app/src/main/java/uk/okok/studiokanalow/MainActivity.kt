@@ -3,6 +3,7 @@ package uk.okok.studiokanalow
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
+import coil.load
 import android.view.View
 import android.widget.Button
 import android.widget.LinearLayout
@@ -153,6 +154,25 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun dodajBaner(tekst: String) {
+        val img = Konfig.obraz(this, "baner_url")
+        if (img != null) {
+            val fl = android.widget.FrameLayout(this)
+            val iv = android.widget.ImageView(this).apply { scaleType = android.widget.ImageView.ScaleType.CENTER_CROP; load(img) }
+            fl.addView(iv, android.widget.FrameLayout.LayoutParams(-1, -1))
+            fl.addView(TextView(this).apply {
+                text = tekst; setTextColor(Color.WHITE); textSize = 20f
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+                gravity = android.view.Gravity.BOTTOM; setPadding(dp(18), dp(18), dp(18), dp(18))
+                setBackgroundResource(R.drawable.bg_baner)
+            }, android.widget.FrameLayout.LayoutParams(-1, -1))
+            fl.clipToOutline = true
+            fl.outlineProvider = object : android.view.ViewOutlineProvider() {
+                override fun getOutline(v: View, o: android.graphics.Outline) { o.setRoundRect(0, 0, v.width, v.height, dp(14).toFloat()) }
+            }
+            val lp = LinearLayout.LayoutParams(-1, dp(130)); lp.setMargins(dp(14), dp(10), dp(14), dp(4))
+            b.rowsList.addView(fl, lp)
+            return
+        }
         b.rowsList.addView(TextView(this).apply {
             text = tekst
             setTextColor(Color.WHITE); textSize = 20f
@@ -596,7 +616,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun zastosujWyglad() {
         val i = Konfig.skin(this, getSharedPreferences("wyglad", MODE_PRIVATE).getInt("skin", 0)).coerceIn(0, skiny.size - 1)
-        val (bg, panel, akcent) = Triple(skiny[i][1] as Int, skiny[i][2] as Int, skiny[i][3] as Int)
+        var (bg, panel, akcent) = Triple(skiny[i][1] as Int, skiny[i][2] as Int, skiny[i][3] as Int)
+        Konfig.kolor(this, "kolor_tlo")?.let { bg = it; panel = androidx.core.graphics.ColorUtils.blendARGB(it, Color.WHITE, 0.08f) }
+        Konfig.kolor(this, "kolor_akcent")?.let { akcent = it }
         b.root.setBackgroundColor(bg)
         b.header.setBackgroundColor(panel)
         b.bottomNav.setBackgroundColor(panel)

@@ -2,6 +2,7 @@ package uk.okok.studiokanalow
 
 import android.content.Intent
 import android.os.Bundle
+import coil.load
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -23,6 +24,8 @@ class LoginActivity : AppCompatActivity() {
 
         b = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(b.root)
+        Konfig.obraz(this, "logo_url")?.let { b.ivLogo.load(it) }
+        lifecycleScope.launch { Konfig.odswiez(this@LoginActivity); Konfig.obraz(this@LoginActivity, "logo_url")?.let { b.ivLogo.load(it) } }
 
         b.tvCode.text = Device.code(this)
         b.tvMac.text = "MAC: " + Device.mac(this)

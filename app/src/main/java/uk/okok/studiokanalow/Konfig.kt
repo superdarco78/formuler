@@ -35,4 +35,13 @@ object Konfig {
         val w = obj(ctx).optInt("skin", -1)
         return if (w >= 0 && wl(ctx, "wymus_wyglad", false)) w else lokalny
     }
+
+    /** Kolor z panelu (#RRGGBB) albo null. */
+    fun kolor(ctx: Context, klucz: String): Int? {
+        val t = tekst(ctx, klucz)
+        return if (Regex("^#[0-9A-Fa-f]{6}$").matches(t)) (0xFF000000.toInt() or t.substring(1).toLong(16).toInt()) else null
+    }
+
+    /** Adres obrazu z panelu - tylko https. */
+    fun obraz(ctx: Context, klucz: String): String? = tekst(ctx, klucz).takeIf { it.startsWith("https://") }
 }
