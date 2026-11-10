@@ -1,5 +1,6 @@
 package uk.okok.studiokanalow
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.media3.common.MediaItem
@@ -27,7 +28,7 @@ class PlayerActivity : AppCompatActivity() {
     private suspend fun rozwiaz(url: String): String = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
         try {
             if (!url.contains(Api.HOME)) return@withContext url
-            if (url.contains("/movie/") || url.contains("/series/")) return@withContext url + (if (url.contains("?")) "&" else "?") + "okp=1" /* film przez serwer */
+            if (url.contains("/movie/") || url.contains("/series/") || url.contains("/timeshift/")) return@withContext url + (if (url.contains("?")) "&" else "?") + "okp=1" /* film przez serwer */
             if (url.contains("/live/")) return@withContext url /* kanaly: strumien idzie przez serwer (dostawca blokuje adres telefonu), jak u dekodera */
             val c = okhttp3.OkHttpClient.Builder().followRedirects(false).followSslRedirects(false)
                 .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS).readTimeout(10, java.util.concurrent.TimeUnit.SECONDS).build()
@@ -125,12 +126,60 @@ class PlayerActivity : AppCompatActivity() {
                 }
             }
         }
+        run {
+            val u0 = intent.getStringExtra("url") ?: ""
+            val m = Regex("/live/[^/]+/[^/]+/(\\d+)").find(u0)
+            if (m != null && !intent.getBooleanExtra("demo", false)) {
+                val bt = android.widget.TextView(this).apply {
+                    text = "☰  Program"; setTextColor(0xFFFFFFFF.toInt()); textSize = 15f
+                    setPadding(36, 20, 36, 20); setBackgroundColor(0x99000000.toInt())
+                    setOnClickListener { pokazPrzewodnik(m.groupValues[1]) }
+                }
+                val lp = android.widget.FrameLayout.LayoutParams(-2, -2)
+                lp.gravity = android.view.Gravity.TOP or android.view.Gravity.END; lp.setMargins(0, 80, 24, 0)
+                b.playerView.overlayFrameLayout?.addView(bt, lp)
+                b.tvEpg.setOnClickListener { pokazPrzewodnik(m.groupValues[1]) }
+            }
+        }
         b.playerView.setFullscreenButtonClickListener { pelny ->
             requestedOrientation = if (pelny) android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
         }
         // Odtwarzacz otwiera sie od razu na pelnym ekranie (poziomo), jak w popularnych aplikacjach IPTV.
         requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         uloz(resources.configuration.orientation)
+    }
+
+    private fun pokazPrzewodnik(id: String) {
+        lifecycleScope.launch {
+            val srv = Session.server(this@PlayerActivity); val usr = Session.user(this@PlayerActivity); val pw = Session.pass(this@PlayerActivity)
+            val lista = try { Api.przewodnik(srv, usr, pw, id) } catch (e: Exception) { raport("przewodnik blad " + e.javaClass.simpleName + " " + (e.message ?: "").take(60)); emptyList() }
+            if (lista.isEmpty()) { android.widget.Toast.makeText(this@PlayerActivity, "Brak programu dla tego kanału", android.widget.Toast.LENGTH_LONG).show(); return@launch }
+            raport("przewodnik " + lista.size + " pozycji, archiwum " + lista.count { it.archiwum })
+            val teraz = System.currentTimeMillis() / 1000
+            val fmt = java.text.SimpleDateFormat("EEE dd.MM HH:mm", java.util.Locale("pl"))
+            val bs = com.google.android.material.bottomsheet.BottomSheetDialog(this@PlayerActivity)
+            val sv = android.widget.ScrollView(this@PlayerActivity)
+            val col = android.widget.LinearLayout(this@PlayerActivity).apply { orientation = android.widget.LinearLayout.VERTICAL; setBackgroundColor(0xFF1C1C1C.toInt()); setPadding(40, 32, 40, 32) }
+            col.addView(android.widget.TextView(this@PlayerActivity).apply { text = "Program i archiwum"; setTextColor(0xFFFFFFFF.toInt()); textSize = 20f; setPadding(0, 0, 0, 20) })
+            var teraz1 = -1
+            lista.forEachIndexed { i, w ->
+                val trwa = w.start <= teraz && (w.koniec == 0L || w.koniec > teraz)
+                val przeszla = w.koniec in 1..teraz
+                if (trwa) teraz1 = i
+                col.addView(android.widget.TextView(this@PlayerActivity).apply {
+                    text = (if (trwa) "● TERAZ  " else fmt.format(java.util.Date(w.start * 1000)) + "  ") + w.tytul + (if (przeszla && w.archiwum) "   ▶" else "")
+                    textSize = 16f; setPadding(0, 18, 0, 18)
+                    setTextColor(if (trwa) 0xFF4F7BFF.toInt() else if (przeszla && !w.archiwum) 0xFF777777.toInt() else 0xFFE0E0E0.toInt())
+                    if (przeszla && w.archiwum) setOnClickListener {
+                        bs.dismiss()
+                        val i2 = Intent(this@PlayerActivity, PlayerActivity::class.java)
+                        i2.putExtra("url", Api.archiwumUrl(srv, usr, pw, id, w)); i2.putExtra("name", w.tytul); i2.putExtra("demo", false)
+                        startActivity(i2)
+                    }
+                })
+            }
+            sv.addView(col); bs.setContentView(sv); bs.show()
+        }
     }
 
     private fun pokazProgram(l: List<Api.Audycja>) {

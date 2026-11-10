@@ -297,6 +297,30 @@ object Api {
             } catch (e: Exception) { null }
         }
 
+    /** Wpis przewodnika programu: archiwum = mozna odtworzyc z cofniecia. */
+    data class Wpis(val tytul: String, val start: Long, val koniec: Long, val startTxt: String, val archiwum: Boolean)
+
+    suspend fun przewodnik(server: String, user: String, pass: String, streamId: String): List<Wpis> =
+        withContext(Dispatchers.IO) {
+            val url = "${baseUrl(server)}/player_api.php?username=$user&password=$pass&action=get_simple_data_table&stream_id=$streamId&okp=1"
+            val arr = JSONObject(get(url)).optJSONArray("epg_listings") ?: return@withContext emptyList()
+            fun dek(x: String) = try { String(android.util.Base64.decode(x, android.util.Base64.DEFAULT), Charsets.UTF_8) } catch (e: Exception) { x }
+            val out = ArrayList<Wpis>()
+            for (i in 0 until arr.length()) {
+                val o = arr.getJSONObject(i)
+                out.add(Wpis(dek(o.optString("title")), o.optString("start_timestamp").toLongOrNull() ?: 0L,
+                    o.optString("stop_timestamp").toLongOrNull() ?: 0L, o.optString("start"), o.optString("has_archive") == "1"))
+            }
+            out.sortedBy { it.start }
+        }
+
+    /** Adres odtwarzania z archiwum (timeshift) dla wpisu przewodnika. */
+    fun archiwumUrl(server: String, user: String, pass: String, streamId: String, w: Wpis): String {
+        val min = (((w.koniec - w.start) / 60).toInt()).coerceAtLeast(1)
+        val t = w.startTxt.replace(' ', ':').take(16).let { x -> if (x.length == 16) x.substring(0, 13) + "-" + x.substring(14) else x }
+        return "${baseUrl(server)}/timeshift/$user/$pass/$min/$t/$streamId.ts"
+    }
+
     /** Pozycja programu TV: tytul, poczatek i koniec (sekundy). */
     data class Audycja(val tytul: String, val start: Long, val koniec: Long)
 
