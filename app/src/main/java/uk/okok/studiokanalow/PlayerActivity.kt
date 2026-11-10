@@ -129,7 +129,12 @@ class PlayerActivity : AppCompatActivity() {
         try { probowane.add(Session.server(this) + "|" + Session.user(this)) } catch (e: Exception) { }
         p.addListener(object : androidx.media3.common.Player.Listener {
             override fun onPlayerError(error: androidx.media3.common.PlaybackException) { raport("blad " + error.errorCodeName + " " + (error.cause?.message ?: "").take(120)); ostatniBlad = error.errorCodeName + " " + (error.cause?.javaClass?.simpleName ?: "") + " " + (error.cause?.message ?: "").take(80); awaria() }
-            override fun onPlaybackStateChanged(state: Int) { if (state == androidx.media3.common.Player.STATE_READY) { proby = 0; czuwak?.cancel() } }
+            override fun onPlaybackStateChanged(state: Int) { raport("stan=" + state + " gra=" + p.isPlaying); if (state == androidx.media3.common.Player.STATE_READY) { proby = 0; czuwak?.cancel() } }
+            override fun onVideoSizeChanged(v: androidx.media3.common.VideoSize) { raport("obraz " + v.width + "x" + v.height) }
+            override fun onTracksChanged(t: androidx.media3.common.Tracks) {
+                val o = t.groups.joinToString(",") { g -> g.mediaTrackGroup.getFormat(0).sampleMimeType.toString() + (if (g.isSelected) "+" else "-") + (if (g.isSupported) "ok" else "NIEOBSLUG") }
+                raport("sciezki " + o)
+            }
         })
         p.setMediaItem(MediaItem.fromUri(url))
         p.prepare()
