@@ -572,10 +572,10 @@ class Ekrany(
             val arr = zrodla()
             for (i in 0 until arr.length()) {
                 val o = arr.getJSONObject(i)
-                wiersz(l, o.optString("name"), "Brak pobranych danych EPG") {
+                wiersz(l, o.optString("name"), "Program TV pobierany z serwera na bieżąco") {
                     arkusz(o.optString("name"), listOf(
-                        "Zaktualizuj EPG" to { toast("Program TV pojawi się w następnej wersji") },
-                        "Wyczyść EPG" to { toast("Brak pobranych danych EPG") }))
+                        "Zaktualizuj EPG" to { toast("Program TV odświeża się sam przy każdym otwarciu kanału") },
+                        "Wyczyść EPG" to { toast("Brak zapisanych danych EPG w telefonie") }))
                 }
             }
             if (arr.length() == 0) l.addView(TextView(a).apply { text = "Brak źródeł."; setTextColor(szary); setPadding(dp(8), dp(20), 0, 0) })

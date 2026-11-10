@@ -91,7 +91,7 @@ class MainActivity : AppCompatActivity() {
 
         demo = intent.getBooleanExtra("demo", false)
 
-        channelAdapter = ChannelAdapter({ ch -> openPlayer(ch) }, { ch -> przelaczUlubiony("live", ch) })
+        channelAdapter = ChannelAdapter({ ch -> openPlayer(ch) }, { ch -> przelaczUlubiony("live", ch) }, !demo)
         b.recycler.layoutManager = LinearLayoutManager(this)
         b.recycler.adapter = channelAdapter
 

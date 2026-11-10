@@ -296,9 +296,9 @@ object Api {
     data class Audycja(val tytul: String, val start: Long, val koniec: Long)
 
     /** Program TV: teraz i nastepne (serwer pobiera od dostawcy, okp=1). */
-    suspend fun programTv(server: String, user: String, pass: String, streamId: String): List<Audycja> =
+    suspend fun programTv(server: String, user: String, pass: String, streamId: String, ile: Int = 6): List<Audycja> =
         withContext(Dispatchers.IO) {
-            val url = "${baseUrl(server)}/player_api.php?username=$user&password=$pass&action=get_short_epg&stream_id=$streamId&limit=6&okp=1"
+            val url = "${baseUrl(server)}/player_api.php?username=$user&password=$pass&action=get_short_epg&stream_id=$streamId&limit=$ile&okp=1"
             val arr = JSONObject(get(url)).optJSONArray("epg_listings") ?: return@withContext emptyList()
             fun dek(x: String) = try { String(android.util.Base64.decode(x, android.util.Base64.DEFAULT), Charsets.UTF_8) } catch (e: Exception) { x }
             val teraz = System.currentTimeMillis() / 1000
