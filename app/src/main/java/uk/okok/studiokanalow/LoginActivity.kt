@@ -33,6 +33,9 @@ class LoginActivity : AppCompatActivity() {
             i.putExtra("demo", true)
             startActivity(i)
         }
+
+        // Sprawdz, czy jest nowsza wersja aplikacji (auto-aktualizacja).
+        lifecycleScope.launch { Updater.check(this@LoginActivity) }
     }
 
     private fun doLogin() {

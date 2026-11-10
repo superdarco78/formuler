@@ -27,10 +27,14 @@ jobs:
       - name: Zbuduj APK (debug)
         run: ./gradlew assembleDebug --no-daemon --stacktrace
 
-      - name: Przygotuj plik
+      - name: Przygotuj pliki
         run: |
           mkdir -p dist
           cp app/build/outputs/apk/debug/app-debug.apk dist/studio-kanalow-tv.apk
+          VC=$(grep -m1 'versionCode' app/build.gradle | grep -o '[0-9]\+')
+          VN=$(grep -m1 'versionName' app/build.gradle | sed 's/.*"\(.*\)".*/\1/')
+          echo "{\"versionCode\": $VC, \"versionName\": \"$VN\", \"url\": \"https://github.com/superdarco78/formuler/releases/download/apk-latest/studio-kanalow-tv.apk\"}" > dist/wersja.json
+          cat dist/wersja.json
 
       - name: Wyslij jako artefakt
         uses: actions/upload-artifact@v4
@@ -43,4 +47,6 @@ jobs:
         with:
           tag_name: apk-latest
           name: Studio Kanalow TV - najnowszy APK
-          files: dist/studio-kanalow-tv.apk
+          files: |
+            dist/studio-kanalow-tv.apk
+            dist/wersja.json
