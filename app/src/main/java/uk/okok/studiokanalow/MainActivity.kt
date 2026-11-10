@@ -4,6 +4,8 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -33,6 +35,8 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, LoginActivity::class.java))
             finish()
         }
+
+        b.btnLanguage.setOnClickListener { pokazWyborJezyka() }
 
         b.bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
@@ -136,6 +140,17 @@ class MainActivity : AppCompatActivity() {
     private fun info(text: String) {
         b.tvInfo.text = text
         b.tvInfo.visibility = View.VISIBLE
+    }
+
+    private fun pokazWyborJezyka() {
+        val nazwy = arrayOf("Polski", "English", "Deutsch", "Українська")
+        val kody = arrayOf("pl", "en", "de", "uk")
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(R.string.lang_title)
+            .setItems(nazwy) { _, i ->
+                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(kody[i]))
+            }
+            .show()
     }
 
     private fun openPlayer(ch: Channel) {

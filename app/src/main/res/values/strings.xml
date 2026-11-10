@@ -20,4 +20,6 @@
     <string name="tab_ustawienia">Ustawienia</string>
     <string name="sett_version">Wersja</string>
     <string name="empty_demo">W trybie testowym brak tej sekcji</string>
+    <string name="lang_button">Język</string>
+    <string name="lang_title">Wybierz język</string>
 </resources>

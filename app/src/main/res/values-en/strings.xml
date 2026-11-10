@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Studio Kanałów TV</string>
+    <string name="login_title">Studio Kanałów TV</string>
+    <string name="login_subtitle">Sign in to watch</string>
+    <string name="hint_server">Server address (e.g. tv.ok-ok.uk)</string>
+    <string name="hint_user">Login</string>
+    <string name="hint_pass">Password</string>
+    <string name="btn_login">Sign in</string>
+    <string name="logging_in">Signing in…</string>
+    <string name="err_fill">Enter server, login and password</string>
+    <string name="err_login">Wrong login or password</string>
+    <string name="err_net">No connection to the server</string>
+    <string name="loading">Loading…</string>
+    <string name="channels_title">Channels</string>
+    <string name="btn_logout">Log out</string>
+    <string name="btn_demo">Enter demo mode</string>
+    <string name="tab_kanaly">Channels</string>
+    <string name="tab_filmy">Movies</string>
+    <string name="tab_ustawienia">Settings</string>
+    <string name="sett_version">Version</string>
+    <string name="empty_demo">This section is not available in demo mode</string>
+    <string name="lang_button">Language</string>
+    <string name="lang_title">Choose language</string>
+</resources>

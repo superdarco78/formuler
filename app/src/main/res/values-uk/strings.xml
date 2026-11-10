@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Studio Kanałów TV</string>
+    <string name="login_title">Studio Kanałów TV</string>
+    <string name="login_subtitle">Увійдіть, щоб дивитися</string>
+    <string name="hint_server">Адреса сервера (напр. tv.ok-ok.uk)</string>
+    <string name="hint_user">Логін</string>
+    <string name="hint_pass">Пароль</string>
+    <string name="btn_login">Увійти</string>
+    <string name="logging_in">Вхід…</string>
+    <string name="err_fill">Введіть сервер, логін і пароль</string>
+    <string name="err_login">Невірний логін або пароль</string>
+    <string name="err_net">Немає зв\'язку з сервером</string>
+    <string name="loading">Завантаження…</string>
+    <string name="channels_title">Канали</string>
+    <string name="btn_logout">Вийти</string>
+    <string name="btn_demo">Демо-режим</string>
+    <string name="tab_kanaly">Канали</string>
+    <string name="tab_filmy">Фільми</string>
+    <string name="tab_ustawienia">Налаштування</string>
+    <string name="sett_version">Версія</string>
+    <string name="empty_demo">Цей розділ недоступний у демо-режимі</string>
+    <string name="lang_button">Мова</string>
+    <string name="lang_title">Виберіть мову</string>
+</resources>
