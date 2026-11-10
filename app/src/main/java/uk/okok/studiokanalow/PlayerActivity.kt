@@ -126,8 +126,10 @@ class PlayerActivity : AppCompatActivity() {
             }
         }
         b.playerView.setFullscreenButtonClickListener { pelny ->
-            requestedOrientation = if (pelny) android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            requestedOrientation = if (pelny) android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
         }
+        // Odtwarzacz otwiera sie od razu na pelnym ekranie (poziomo), jak w popularnych aplikacjach IPTV.
+        requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         uloz(resources.configuration.orientation)
     }
 
