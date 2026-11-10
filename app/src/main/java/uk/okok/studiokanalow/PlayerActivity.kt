@@ -124,6 +124,9 @@ class PlayerActivity : AppCompatActivity() {
                 }
             }
         }
+        b.playerView.setFullscreenButtonClickListener { pelny ->
+            requestedOrientation = if (pelny) android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        }
         uloz(resources.configuration.orientation)
     }
 
