@@ -270,17 +270,28 @@ class MainActivity : AppCompatActivity() {
         bar.removeAllViews()
         if (cats.isEmpty()) { b.groupBar.visibility = View.GONE; return }
         b.groupBar.visibility = View.VISIBLE
-        cats.forEachIndexed { i, c ->
-            bar.addView(Button(this).apply {
-                text = c.name
-                isAllCaps = false
-                setTextColor(Color.WHITE)
-                backgroundTintList = android.content.res.ColorStateList.valueOf(
-                    if (i == liveGroup) 0xFF4F7CFF.toInt() else 0xFF1F1F23.toInt())
-                setOnClickListener { liveGroup = i; budujGrupy(cats); wczytajGrupe() }
-            }, LinearLayout.LayoutParams(-2, -2).also { it.marginEnd = dp(6) })
+        val akt = cats.getOrNull(liveGroup)?.name ?: ""
+        val w = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL; gravity = android.view.Gravity.CENTER_VERTICAL
+            val tlo = android.graphics.drawable.GradientDrawable(); tlo.setColor(0xFF262626.toInt()); tlo.cornerRadius = dp(10).toFloat()
+            background = tlo
+            setPadding(dp(18), dp(16), dp(18), dp(16))
+            setOnClickListener {
+                androidx.appcompat.app.AlertDialog.Builder(this@MainActivity).setTitle("Grupa")
+                    .setItems(cats.map { it.name }.toTypedArray()) { _, k -> liveGroup = k; budujGrupy(cats); wczytajGrupe() }.show()
+            }
         }
+        w.addView(TextView(this).apply { text = "‹"; setTextColor(Color.WHITE); textSize = 26f; setPadding(0, 0, dp(14), 0) })
+        w.addView(TextView(this).apply { text = akt; setTextColor(Color.WHITE); textSize = 18f })
+        w.addView(TextView(this).apply { id = View.generateViewId(); tag = "licznik"; text = ""; setTextColor(Color.WHITE); textSize = 13f
+            val t = android.graphics.drawable.GradientDrawable(); t.setColor(0xFF444444.toInt()); t.cornerRadius = dp(12).toFloat()
+            background = t; setPadding(dp(10), dp(2), dp(10), dp(2)) },
+            LinearLayout.LayoutParams(-2, -2).also { it.marginStart = dp(12) })
+        bar.addView(w, LinearLayout.LayoutParams(dp(340), -2).also { it.marginEnd = dp(6) })
+        licznikKanalow = w.findViewWithTag("licznik")
     }
+
+    private var licznikKanalow: TextView? = null
 
     private fun wczytajGrupe() {
         val id = liveFiltr.getOrNull(liveGroup)?.id
@@ -292,7 +303,8 @@ class MainActivity : AppCompatActivity() {
                 hideBusy()
                 if (wersja != wersjaEkranu) return@launch
                 channelAdapter.submit(list)
-                b.tvCount.text = "${list.size}"
+                b.tvCount.text = ""
+                licznikKanalow?.text = "${list.size}"
                 if (list.isEmpty()) info("Pusto")
             } catch (e: Exception) {
                 hideBusy(); info(getString(R.string.err_net))

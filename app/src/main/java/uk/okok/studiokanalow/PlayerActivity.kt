@@ -16,6 +16,28 @@ class PlayerActivity : AppCompatActivity() {
         b = ActivityPlayerBinding.inflate(layoutInflater)
         setContentView(b.root)
         b.tvName.text = intent.getStringExtra("name") ?: ""
+        uloz(resources.configuration.orientation)
+    }
+
+    override fun onConfigurationChanged(c: android.content.res.Configuration) {
+        super.onConfigurationChanged(c)
+        uloz(c.orientation)
+    }
+
+    /** Pionowo: podglad 16:9 u gory i panel kanalu pod spodem; poziomo: pelny ekran. */
+    private fun uloz(o: Int) {
+        val poziomo = o == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+        b.panel.visibility = if (poziomo) android.view.View.GONE else android.view.View.VISIBLE
+        val lp = b.playerView.layoutParams
+        if (poziomo) {
+            lp.height = android.view.ViewGroup.LayoutParams.MATCH_PARENT
+        } else {
+            lp.height = resources.displayMetrics.widthPixels * 9 / 16
+        }
+        b.playerView.layoutParams = lp
+        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, !poziomo)
+        val c = androidx.core.view.WindowInsetsControllerCompat(window, window.decorView)
+        if (poziomo) c.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars()) else c.show(androidx.core.view.WindowInsetsCompat.Type.systemBars())
     }
 
     override fun onStart() {
