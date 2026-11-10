@@ -27,6 +27,7 @@ class PlayerActivity : AppCompatActivity() {
     private suspend fun rozwiaz(url: String): String = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
         try {
             if (!url.contains(Api.HOME)) return@withContext url
+            if (url.contains("/live/")) return@withContext url /* kanaly: strumien idzie przez serwer (dostawca blokuje adres telefonu), jak u dekodera */
             val c = okhttp3.OkHttpClient.Builder().followRedirects(false).followSslRedirects(false)
                 .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS).readTimeout(10, java.util.concurrent.TimeUnit.SECONDS).build()
             c.newCall(okhttp3.Request.Builder().url(url).header("User-Agent", "OKPlayer/resolver").build()).execute().use { r ->
