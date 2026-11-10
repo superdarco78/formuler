@@ -496,6 +496,71 @@ class Ekrany(
         rysujZakladki(); wczytaj()
     }
 
+
+    // ---------- wybor (jezyk, wyglad, dzwiek) i odtwarzacz ----------
+
+    private fun wybor(tytul: String, opcje: List<String>, biezacy: Int, zmiana: (Int) -> Unit, dodatki: ((LinearLayout) -> Unit)? = null) {
+        ekran(tytul, { l, d ->
+            val znaczniki = ArrayList<TextView>()
+            opcje.forEachIndexed { i, n ->
+                val w = LinearLayout(a).apply {
+                    orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+                    background = zaokr(karta, 12); setPadding(dp(18), dp(18), dp(16), dp(18))
+                    layoutParams = LinearLayout.LayoutParams(-1, -2).also { it.bottomMargin = dp(2) }
+                }
+                w.addView(TextView(a).apply { text = n; setTextColor(tekst); textSize = 16f }, LinearLayout.LayoutParams(0, -2, 1f))
+                val z = TextView(a).apply { text = if (i == biezacy) "●" else "○"; setTextColor(if (i == biezacy) akcent else szary); textSize = 20f }
+                znaczniki.add(z); w.addView(z)
+                w.setOnClickListener {
+                    znaczniki.forEachIndexed { k, t -> t.text = if (k == i) "●" else "○"; t.setTextColor(if (k == i) akcent else szary) }
+                    zmiana(i)
+                }
+                l.addView(w)
+            }
+            dodatki?.invoke(l)
+        })
+    }
+
+    fun jezyk(ustaw: (String) -> Unit) {
+        val kody = listOf("pl", "en", "de", "uk")
+        val akt = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales().toLanguageTags().take(2)
+        wybor("Język aplikacji", listOf("Polski", "English", "Deutsch", "Українська"), kody.indexOf(akt).coerceAtLeast(0), { ustaw(kody[it]) })
+    }
+
+    fun wyglad(nazwy: List<String>, biezacy: Int, ustaw: (Int) -> Unit) = wybor("Wygląd", nazwy, biezacy, ustaw)
+
+    fun dzwiek(po: () -> Unit) {
+        val kody = listOf("", "pl", "en", "de")
+        wybor("Dźwięk i napisy", listOf("Język dźwięku: automatycznie", "Język dźwięku: polski", "Język dźwięku: English", "Język dźwięku: Deutsch"),
+            kody.indexOf(Session.opt(a, "audio_lang")).coerceAtLeast(0), { Session.setOpt(a, "audio_lang", kody[it]); po() }) { l ->
+            l.addView(View(a), LinearLayout.LayoutParams(-1, dp(16)))
+            przelacznik(l, "Napisy włączone (w tym samym języku)", Session.opt(a, "subs") == "1") { Session.setOpt(a, "subs", if (it) "1" else "0"); po() }
+        }
+    }
+
+    fun odtwarzacz(po: () -> Unit) {
+        ekran("Opcje odtwarzacza", { l, _ ->
+            przelacznik(l, "Uruchamiaj ostatni kanał przy starcie", Session.autostart(a)) { Session.setAutostart(a, it); po() }
+            przelacznik(l, "Wznawiaj oglądanie", Session.resume(a)) { Session.setResume(a, it); po() }
+            przelacznik(l, "Powiększenie obrazu (bez czarnych pasów)", Session.opt(a, "zoom") == "1") { Session.setOpt(a, "zoom", if (it) "1" else "0"); po() }
+        })
+    }
+
+    fun epg() {
+        ekran("Dane EPG", { l, _ ->
+            val arr = zrodla()
+            for (i in 0 until arr.length()) {
+                val o = arr.getJSONObject(i)
+                wiersz(l, o.optString("name"), "Brak pobranych danych EPG") {
+                    arkusz(o.optString("name"), listOf(
+                        "Zaktualizuj EPG" to { toast("Program TV pojawi się w następnej wersji") },
+                        "Wyczyść EPG" to { toast("Brak pobranych danych EPG") }))
+                }
+            }
+            if (arr.length() == 0) l.addView(TextView(a).apply { text = "Brak źródeł."; setTextColor(szary); setPadding(dp(8), dp(20), 0, 0) })
+        })
+    }
+
     // ---------- Opcje rodzicielskie ----------
 
     fun rodzicielskie(onPin: () -> Unit) {

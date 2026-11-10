@@ -87,6 +87,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun pokaz(id: Int) {
         wersjaEkranu++
+        zastosujWyglad()
         when (id) {
             R.id.tab_start -> showStart()
             R.id.tab_kanaly -> showKanaly()
@@ -363,7 +364,15 @@ class MainActivity : AppCompatActivity() {
             return
         }
         b.settingsPanel.visibility = View.VISIBLE
+        ustawieniaWyglad()
         budujUstawienia()
+    }
+
+    private fun ustawieniaWyglad() {
+        b.root.setBackgroundColor(0xFF000000.toInt())
+        b.header.setBackgroundColor(0xFF000000.toInt())
+        b.bottomNav.setBackgroundColor(0xFF000000.toInt())
+        b.tvTitle.setTextColor(Color.WHITE)
     }
 
     private fun tak(v: Boolean) = getString(if (v) R.string.yes else R.string.no)
@@ -393,15 +402,19 @@ class MainActivity : AppCompatActivity() {
         odstep()
         wiersz("Źródła treści", null, R.drawable.ic_tv) { ekrany.zrodlaEkran() }
         wiersz("Zarządzaj grupami", null, R.drawable.ic_movie) { ekrany.grupy() }
-        wiersz("Dane EPG", null, R.drawable.ic_series) { dialog("Dane EPG", "Program telewizyjny pojawi się w jednej z następnych wersji.") }
+        wiersz("Dane EPG", null, R.drawable.ic_series) { ekrany.epg() }
         wiersz("Wyczyść historię", null, R.drawable.ic_star) { Session.clearHistory(this); dialog("Historia", "Wyczyszczono.") }
         odstep()
-        wiersz(getString(R.string.lang_button), null, R.drawable.ic_home) { pokazWyborJezyka() }
-        wiersz(getString(R.string.skin_button), null, R.drawable.ic_settings) { pokazWyborWygladu() }
+        wiersz(getString(R.string.lang_button), null, R.drawable.ic_home) { ekrany.jezyk { k -> AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(k)) } }
+        wiersz(getString(R.string.skin_button), null, R.drawable.ic_settings) {
+            ekrany.wyglad(skiny.map { it[0] as String }, getSharedPreferences("wyglad", MODE_PRIVATE).getInt("skin", 0)) { i ->
+                getSharedPreferences("wyglad", MODE_PRIVATE).edit().putInt("skin", i).apply(); zastosujWyglad(); ustawieniaWyglad()
+            }
+        }
         wiersz("Dźwięk i napisy", "Język: " + Session.opt(this, "audio_lang").ifEmpty { "auto" } +
-            ", napisy: " + tak(Session.opt(this, "subs") == "1"), R.drawable.ic_radio) { pokazDzwiek() }
+            ", napisy: " + tak(Session.opt(this, "subs") == "1"), R.drawable.ic_radio) { ekrany.dzwiek { budujUstawienia() } }
         wiersz("Opcje odtwarzacza", "Start: " + tak(Session.autostart(this)) + ", wznawianie: " + tak(Session.resume(this)) +
-            ", powiększenie: " + tak(Session.opt(this, "zoom") == "1"), R.drawable.ic_tv) { pokazOpcjeOdtwarzacza() }
+            ", powiększenie: " + tak(Session.opt(this, "zoom") == "1"), R.drawable.ic_tv) { ekrany.odtwarzacz { budujUstawienia() } }
         wiersz("Opcje rodzicielskie", null, R.drawable.ic_pin) { ekrany.rodzicielskie { pinOk = true } }
         odstep()
         wiersz("Backup & Przywróć", null, R.drawable.ic_movie) { ekrany.backup() }
