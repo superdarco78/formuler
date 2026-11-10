@@ -24,7 +24,8 @@ class LoginActivity : AppCompatActivity() {
         b = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(b.root)
 
-        b.etServer.setText("tv.ok-ok.uk")
+        b.tvCode.text = Device.code(this)
+        b.tvMac.text = "MAC: " + Device.mac(this)
 
         b.btnLogin.setOnClickListener { doLogin() }
 
@@ -39,7 +40,7 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun doLogin() {
-        val server = b.etServer.text.toString().trim()
+        val server = Api.HOME
         val user = b.etUser.text.toString().trim()
         val pass = b.etPass.text.toString().trim()
 

@@ -26,4 +26,5 @@
     <string name="tab_radio">Radio</string>
     <string name="skin_button">Appearance</string>
     <string name="skin_title">Choose appearance</string>
+    <string name="pair_title">Your code in the panel:</string>
 </resources>

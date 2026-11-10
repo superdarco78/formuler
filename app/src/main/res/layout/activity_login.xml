@@ -15,7 +15,7 @@
         <ImageView
             android:layout_width="84dp"
             android:layout_height="84dp"
-            android:src="@mipmap/ic_launcher"
+            android:src="@drawable/ic_logo_okragle"
             android:layout_marginBottom="18dp" />
 
         <TextView
@@ -33,17 +33,27 @@
             android:textColor="@color/muted"
             android:layout_marginBottom="24dp" />
 
-        <EditText
-            android:id="@+id/etServer"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:hint="@string/hint_server"
-            android:textColorHint="@color/muted"
-            android:textColor="@color/tx"
-            android:background="@drawable/bg_input"
-            android:paddingHorizontal="14dp"
-            android:inputType="textUri"
-            android:layout_marginBottom="12dp" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/pair_title"
+            android:textColor="@color/muted" />
+
+        <TextView
+            android:id="@+id/tvCode"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/accent2"
+            android:textSize="34sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.15" />
+
+        <TextView
+            android:id="@+id/tvMac"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/muted"
+            android:layout_marginBottom="24dp" />
 
         <EditText
             android:id="@+id/etUser"

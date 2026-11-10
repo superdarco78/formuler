@@ -26,4 +26,5 @@
     <string name="tab_radio">Радіо</string>
     <string name="skin_button">Вигляд</string>
     <string name="skin_title">Оберіть вигляд</string>
+    <string name="pair_title">Ваш код у панелі:</string>
 </resources>
