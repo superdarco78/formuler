@@ -91,6 +91,30 @@ object Api {
         return "${baseUrl(server)}/live/$user/$pass/$streamId.m3u8"
     }
 
+    /** Stały serwer aplikacji (wbudowany, klient go nie wpisuje). */
+    const val HOME = "tv.ok-ok.uk"
+
+    /**
+     * Logowanie kodem/MAC. Pyta serwer, czy ten kod/MAC jest przypisany do konta.
+     * Zwraca (serwer, login, haslo) gdy dowiazane, albo null gdy jeszcze nie.
+     */
+    suspend fun pair(code: String, mac: String): Triple<String, String, String>? =
+        withContext(Dispatchers.IO) {
+            try {
+                val url = "https://$HOME/parowanie.php?kod=$code&mac=$mac"
+                val o = JSONObject(get(url))
+                if (o.optInt("ok", 0) == 1) {
+                    Triple(
+                        o.optString("server", HOME),
+                        o.optString("user"),
+                        o.optString("pass")
+                    )
+                } else null
+            } catch (e: Exception) {
+                null
+            }
+        }
+
     /** Lista filmow (VOD). Kazdy film ma gotowy adres do odtwarzania w directUrl. */
     suspend fun vodStreams(server: String, user: String, pass: String, categoryId: String?): List<Channel> =
         withContext(Dispatchers.IO) {
