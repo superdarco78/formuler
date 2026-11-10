@@ -160,7 +160,45 @@ class MainActivity : AppCompatActivity() {
 
     // ----- zakladki -----
 
+    private fun kafel(tekst: String, ikona: Int, k1: Int, k2: Int, wys: Int, akcja: () -> Unit): LinearLayout =
+        LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL; gravity = android.view.Gravity.CENTER
+            background = android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.TL_BR, intArrayOf(k1, k2))
+                .also { it.cornerRadius = dp(10).toFloat() }
+            if (ikona != 0) addView(android.widget.ImageView(this@MainActivity).apply { setImageResource(ikona); setColorFilter(Color.WHITE) },
+                LinearLayout.LayoutParams(dp(if (wys > 100) 52 else 22), dp(if (wys > 100) 52 else 22)))
+            addView(TextView(this@MainActivity).apply { text = tekst; setTextColor(Color.WHITE); textSize = if (wys > 100) 14f else 11f
+                setTypeface(typeface, android.graphics.Typeface.BOLD); gravity = android.view.Gravity.CENTER; setPadding(dp(4), dp(6), dp(4), 0) })
+            val lp = LinearLayout.LayoutParams(0, dp(wys), 1f); lp.setMargins(dp(5), dp(5), dp(5), dp(5)); layoutParams = lp
+            setOnClickListener { akcja() }
+        }
+
+    private fun showStartSmarters() {
+        tryb(getString(R.string.app_name), true, false)
+        val teraz = java.text.SimpleDateFormat("HH:mm   dd.MM.yyyy", java.util.Locale.getDefault()).format(java.util.Date())
+        b.rowsList.addView(TextView(this).apply { text = teraz; setTextColor(0xFFCFD8FF.toInt()); textSize = 15f; setPadding(dp(18), dp(14), dp(18), dp(6)) })
+        val r1 = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(dp(9), dp(4), dp(9), 0) }
+        r1.addView(kafel("TV NA ŻYWO", R.drawable.nav_tv, 0xFF1DB98A.toInt(), 0xFF3A47D5.toInt(), 190) { b.bottomNav.selectedItemId = R.id.tab_kanaly })
+        r1.addView(kafel("FILMY", R.drawable.nav_filmy, 0xFFE8394D.toInt(), 0xFFF29A3C.toInt(), 190) { b.bottomNav.selectedItemId = R.id.tab_filmy })
+        r1.addView(kafel("SERIALE", R.drawable.nav_seriale, 0xFF8E44C9.toInt(), 0xFF4E6FE0.toInt(), 190) { b.bottomNav.selectedItemId = R.id.tab_seriale })
+        b.rowsList.addView(r1)
+        val r2 = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(dp(9), 0, dp(9), 0) }
+        val zielony = 0xFF4FA36A.toInt()
+        r2.addView(kafel("PROGRAM EPG", R.drawable.ic_series, zielony, zielony, 56) { ekrany.epg() })
+        r2.addView(kafel("ULUBIONE", R.drawable.nav_ulubione, zielony, zielony, 56) { b.bottomNav.selectedItemId = R.id.tab_ulubione })
+        r2.addView(kafel("SZUKAJ", R.drawable.ic_search, zielony, zielony, 56) { ekrany.szukaj() })
+        b.rowsList.addView(r2)
+        val stopka = TextView(this).apply { setTextColor(0xFFCFD8FF.toInt()); textSize = 13f; setPadding(dp(18), dp(18), dp(18), dp(10))
+            text = if (demo) "Tryb demo" else "Zalogowano jako: ${u()}" }
+        b.rowsList.addView(stopka)
+        if (!demo) lifecycleScope.launch {
+            val i = Api.accountInfo(s(), u(), p())
+            if (i != null) stopka.text = "Wygasa: ${i.third}\nZalogowano jako: ${u()}"
+        }
+    }
+
     private fun showStart() {
+        if (Session.opt(this, "styl", "mol") == "smarters") { showStartSmarters(); return }
         tryb(getString(R.string.app_name), true, false)
         dodajBaner("Witaj w OK Player")
         val last = try { Session.lastUrl(this) } catch (e: Exception) { null }
@@ -401,6 +439,7 @@ class MainActivity : AppCompatActivity() {
         wiersz("Wyczyść historię", null, R.drawable.ic_star) { Session.clearHistory(this); dialog("Historia", "Wyczyszczono.") }
         odstep()
         wiersz(getString(R.string.lang_button), null, R.drawable.ic_home) { ekrany.jezyk { k -> AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(k)) } }
+        wiersz("Styl interfejsu", if (Session.opt(this, "styl", "mol") == "smarters") "IPTV Smarters Pro" else "MyTVOnline+", R.drawable.ic_movie) { ekrany.styl { budujUstawienia() } }
         wiersz(getString(R.string.skin_button), null, R.drawable.ic_settings) {
             ekrany.wyglad(skiny.map { it[0] as String }, getSharedPreferences("wyglad", MODE_PRIVATE).getInt("skin", 0)) { i ->
                 getSharedPreferences("wyglad", MODE_PRIVATE).edit().putInt("skin", i).apply(); zastosujWyglad(); ustawieniaWyglad()

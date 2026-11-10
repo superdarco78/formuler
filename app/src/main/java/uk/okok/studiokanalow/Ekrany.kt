@@ -538,6 +538,12 @@ class Ekrany(
         arkusz("Język aplikacji", jez.map { (n, k) -> n to { ustaw(k) } }, jez.indexOfFirst { it.second == akt })
     }
 
+    fun styl(po: () -> Unit) {
+        val kody = listOf("mol", "smarters")
+        wybor("Styl interfejsu", listOf("MyTVOnline+ (rzędy z plakatami)", "IPTV Smarters Pro (duże kafle)"),
+            kody.indexOf(Session.opt(a, "styl", "mol")).coerceAtLeast(0), { Session.setOpt(a, "styl", kody[it]); po() })
+    }
+
     fun wyglad(nazwy: List<String>, biezacy: Int, ustaw: (Int) -> Unit) = wybor("Wygląd", nazwy, biezacy, ustaw)
 
     fun dzwiek(po: () -> Unit) {
