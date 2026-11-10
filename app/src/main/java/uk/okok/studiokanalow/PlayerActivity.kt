@@ -112,6 +112,18 @@ class PlayerActivity : AppCompatActivity() {
         b = ActivityPlayerBinding.inflate(layoutInflater)
         setContentView(b.root)
         b.tvName.text = intent.getStringExtra("name") ?: ""
+        run {
+            val u0 = intent.getStringExtra("url") ?: ""
+            val m = Regex("/live/[^/]+/[^/]+/(\\d+)").find(u0)
+            if (m != null && !intent.getBooleanExtra("demo", false)) {
+                b.tvEpg.text = "Program TV: ładowanie…"
+                lifecycleScope.launch {
+                    val t = try { Api.programTv(Session.server(this@PlayerActivity), Session.user(this@PlayerActivity), Session.pass(this@PlayerActivity), m.groupValues[1]) } catch (e: Exception) { raport("epg blad " + e.javaClass.simpleName + " " + (e.message ?: "").take(60)); "" }
+                    b.tvEpg.text = if (t.isEmpty()) "Program TV: brak danych dla tego kanału" else t
+                    raport("epg " + t.length + " znakow")
+                }
+            }
+        }
         uloz(resources.configuration.orientation)
     }
 
