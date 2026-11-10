@@ -24,7 +24,13 @@ class PlayerActivity : AppCompatActivity() {
         if (!intent.getBooleanExtra("demo", false)) {
             try { Session.saveLast(this, url, intent.getStringExtra("name") ?: "") } catch (e: Exception) { }
         }
-        val p = ExoPlayer.Builder(this).build()
+        // Nazwa jak w VLC - dostawca czesto podaje prawdziwy strumien tylko takim odtwarzaczom.
+        val http = androidx.media3.datasource.DefaultHttpDataSource.Factory()
+            .setUserAgent("VLC/3.0.20 LibVLC/3.0.20")
+            .setAllowCrossProtocolRedirects(true)
+        val p = ExoPlayer.Builder(this)
+            .setMediaSourceFactory(androidx.media3.exoplayer.source.DefaultMediaSourceFactory(http))
+            .build()
         b.playerView.player = p
         p.setMediaItem(MediaItem.fromUri(url))
         p.prepare()

@@ -28,7 +28,9 @@ class MainActivity : AppCompatActivity() {
         demo = intent.getBooleanExtra("demo", false)
 
         channelAdapter = ChannelAdapter { ch -> openPlayer(ch) }
-        tileAdapter = TileAdapter { ch -> openPlayer(ch) }
+        tileAdapter = TileAdapter { ch ->
+            if (b.bottomNav.selectedItemId == R.id.tab_filmy) openDetails(ch) else openPlayer(ch)
+        }
 
         b.btnLogout.setOnClickListener {
             Session.clear(this)
@@ -227,6 +229,16 @@ class MainActivity : AppCompatActivity() {
                 AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(kody[i]))
             }
             .show()
+    }
+
+    private fun openDetails(ch: Channel) {
+        val i = Intent(this, DetailsActivity::class.java)
+        i.putExtra("id", ch.streamId)
+        i.putExtra("name", ch.name)
+        i.putExtra("logo", ch.logo)
+        i.putExtra("url", ch.directUrl ?: "")
+        i.putExtra("demo", demo)
+        startActivity(i)
     }
 
     private fun openPlayer(ch: Channel) {

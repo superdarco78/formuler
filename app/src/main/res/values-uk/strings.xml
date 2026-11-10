@@ -31,4 +31,11 @@
     <string name="opt_resume">Продовжити останній канал</string>
     <string name="yes">Так</string>
     <string name="no">Ні</string>
+    <string name="det_watch">Дивитись</string>
+    <string name="det_trailer">Трейлер</string>
+    <string name="det_cast">Акторський склад</string>
+    <string name="det_media">Носій</string>
+    <string name="det_details">Деталі</string>
+    <string name="det_none">Немає даних</string>
+    <string name="det_open_trailer">Відкрити трейлер</string>
 </resources>

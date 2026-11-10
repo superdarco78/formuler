@@ -39,6 +39,8 @@
             </intent-filter>
         </receiver>
 
+        <activity android:name=".DetailsActivity" android:exported="false" />
+
         <activity android:name=".MainActivity" android:exported="false" />
 
         <service

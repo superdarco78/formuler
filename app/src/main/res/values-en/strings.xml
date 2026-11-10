@@ -31,4 +31,11 @@
     <string name="opt_resume">Resume last channel</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
+    <string name="det_watch">Watch</string>
+    <string name="det_trailer">Trailer</string>
+    <string name="det_cast">Cast</string>
+    <string name="det_media">Media</string>
+    <string name="det_details">Details</string>
+    <string name="det_none">No data</string>
+    <string name="det_open_trailer">Open trailer</string>
 </resources>

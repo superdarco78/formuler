@@ -31,4 +31,11 @@
     <string name="opt_resume">Wznów ostatni kanał</string>
     <string name="yes">Tak</string>
     <string name="no">Nie</string>
+    <string name="det_watch">Oglądaj</string>
+    <string name="det_trailer">Zwiastun</string>
+    <string name="det_cast">Obsada</string>
+    <string name="det_media">Nośnik</string>
+    <string name="det_details">Detale</string>
+    <string name="det_none">Brak danych</string>
+    <string name="det_open_trailer">Otwórz zwiastun</string>
 </resources>

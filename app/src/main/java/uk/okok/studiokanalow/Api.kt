@@ -141,4 +141,29 @@ object Api {
             }
             out
         }
+
+    /** Szczegoly filmu (opis, obsada, ocena, zwiastun) - to, co wpisano w edytorze. */
+    suspend fun vodInfo(server: String, user: String, pass: String, streamId: String): VodInfo? =
+        withContext(Dispatchers.IO) {
+            try {
+                val url = "${baseUrl(server)}/player_api.php?username=$user&password=$pass&action=get_vod_info&vod_id=$streamId"
+                val info = JSONObject(get(url)).optJSONObject("info") ?: return@withContext null
+                fun t(k: String) = info.optString(k).takeIf { it.isNotEmpty() && it != "null" } ?: ""
+                VodInfo(
+                    poster = t("movie_image").ifEmpty { t("cover_big") },
+                    plot = t("plot").ifEmpty { t("description") },
+                    cast = t("cast").ifEmpty { t("actors") },
+                    genre = t("genre"),
+                    year = t("releasedate").take(4).ifEmpty { t("year") },
+                    rating = t("rating"),
+                    duration = t("duration"),
+                    trailer = t("youtube_trailer")
+                )
+            } catch (e: Exception) { null }
+        }
 }
+
+data class VodInfo(
+    val poster: String, val plot: String, val cast: String, val genre: String,
+    val year: String, val rating: String, val duration: String, val trailer: String
+)
