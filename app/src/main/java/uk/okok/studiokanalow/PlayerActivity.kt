@@ -55,7 +55,7 @@ class PlayerActivity : AppCompatActivity() {
                 val body = r.body?.source()?.let { src -> try { src.request(4000); src.buffer.snapshot().utf8() } catch (e: Exception) { "" } } ?: ""
                 val hosty = Regex("https?://([^/\\s]+)").findAll(body).map { it.groupValues[1] }.toSet().take(3).joinToString(",")
                 val sciezek = body.lines().count { it.isNotBlank() && !it.startsWith("#") }
-                "sonda " + r.code + " " + (r.header("Content-Type") ?: "?") + " " + (System.currentTimeMillis() - t0) + "ms pocz=" + body.take(7).replace("\n", " ") + " linii=" + sciezek + " hosty=" + hosty + " finalny=" + r.request.url.host
+                "sonda " + r.code + " " + (r.header("Content-Type") ?: "?") + " " + (System.currentTimeMillis() - t0) + "ms pocz=" + body.take(7).replace("\n", " ") + " linii=" + sciezek + " hosty=" + hosty + " finalny=" + r.request.url.host + " tresc=" + body.take(160).replace(Regex("[^\\p{L}\\p{N} .:,;#-]"), "_")
             }
         } catch (e: Exception) { "sonda blad " + e.javaClass.simpleName + " " + (e.message ?: "").take(80) }
     }
@@ -161,7 +161,7 @@ class PlayerActivity : AppCompatActivity() {
         probowane.clear(); proby = 0
         try { probowane.add(Session.server(this) + "|" + Session.user(this)) } catch (e: Exception) { }
         p.addListener(object : androidx.media3.common.Player.Listener {
-            override fun onPlayerError(error: androidx.media3.common.PlaybackException) { raport("blad " + error.errorCodeName + " " + (error.cause?.message ?: "").take(120)); ostatniBlad = error.errorCodeName + " " + (error.cause?.javaClass?.simpleName ?: "") + " " + (error.cause?.message ?: "").take(80); awaria() }
+            override fun onPlayerError(error: androidx.media3.common.PlaybackException) { if (rozwiazany.isNotEmpty() && proby == 0) lifecycleScope.launch { raport(sonda(rozwiazany)) }; raport("blad " + error.errorCodeName + " " + (error.cause?.message ?: "").take(120)); ostatniBlad = error.errorCodeName + " " + (error.cause?.javaClass?.simpleName ?: "") + " " + (error.cause?.message ?: "").take(80); awaria() }
             override fun onPlaybackStateChanged(state: Int) { raport("stan=" + state + " gra=" + p.isPlaying); if (state == androidx.media3.common.Player.STATE_READY) { proby = 0; czuwak?.cancel() } }
             override fun onVideoSizeChanged(v: androidx.media3.common.VideoSize) { raport("obraz " + v.width + "x" + v.height) }
             override fun onTracksChanged(t: androidx.media3.common.Tracks) {
