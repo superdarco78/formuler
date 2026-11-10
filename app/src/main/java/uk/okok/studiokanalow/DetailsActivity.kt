@@ -57,7 +57,8 @@ class DetailsActivity : AppCompatActivity() {
                         Session.pass(this@DetailsActivity), id)
                     info = vi; sezony = sz
                     vi?.let { fill(it, logo) }
-                } catch (e: Exception) { }
+                    rap("serial id=" + id + " sezony=" + sz.size + " odc=" + sz.sumOf { it.second.size } + " opis=" + (vi?.plot?.length ?: -1))
+                } catch (e: Exception) { rap("serial blad " + e.javaClass.simpleName + " " + (e.message ?: "").take(100)) }
                 render()
             }
         } else if (!demo) {
@@ -65,9 +66,14 @@ class DetailsActivity : AppCompatActivity() {
                 info = Api.vodInfo(Session.server(this@DetailsActivity), Session.user(this@DetailsActivity),
                     Session.pass(this@DetailsActivity), id)
                 info?.let { fill(it, logo) }
+                rap("film id=" + id + " opis=" + (info?.plot?.length ?: -1) + " obsada=" + (info?.cast?.length ?: -1) + " zwiastun=" + (info?.trailer?.length ?: -1))
                 render()
             }
         }
+    }
+
+    private fun rap(m: String) {
+        lifecycleScope.launch { try { Api.raportuj(Device.id(this@DetailsActivity), "v" + (try { packageManager.getPackageInfo(packageName, 0).versionName } catch (e: Exception) { "?" }) + " OK Player " + m) } catch (_: Exception) {} }
     }
 
     private fun pokazSezony(tytul: String, demo: Boolean) {
