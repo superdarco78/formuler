@@ -48,6 +48,26 @@ class MainActivity : AppCompatActivity() {
         } catch (e: Exception) { dialog("Przywracanie", "Nie udało się odczytać pliku.") }
     }
 
+    private fun zastosujKonfig() {
+        val m = b.bottomNav.menu
+        m.findItem(R.id.tab_kanaly)?.isVisible = Konfig.wl(this, "kanaly")
+        m.findItem(R.id.tab_filmy)?.isVisible = Konfig.wl(this, "filmy")
+        m.findItem(R.id.tab_seriale)?.isVisible = Konfig.wl(this, "seriale")
+        m.findItem(R.id.tab_ulubione)?.isVisible = Konfig.wl(this, "ulubione")
+        b.btnSearch.visibility = if (Konfig.wl(this, "szukaj")) View.VISIBLE else View.GONE
+    }
+
+    private fun dodajKomunikat() {
+        val t = Konfig.tekst(this, "wiadomosc")
+        if (t.isEmpty()) return
+        b.rowsList.addView(TextView(this).apply {
+            text = t; setTextColor(Color.WHITE); textSize = 15f
+            val tlo = android.graphics.drawable.GradientDrawable(); tlo.setColor(0xFF262626.toInt()); tlo.cornerRadius = dp(12).toFloat()
+            background = tlo; setPadding(dp(16), dp(14), dp(16), dp(14))
+            layoutParams = LinearLayout.LayoutParams(-1, -2).also { it.setMargins(dp(14), dp(10), dp(14), dp(4)) }
+        })
+    }
+
     private fun przeladujWszystko() {
         vodCache = null; vodCats = null; serCache = null; serCats = null; liveCats = null; liveCache = null; liveGroup = 0
         pokaz(b.bottomNav.selectedItemId)
@@ -82,7 +102,11 @@ class MainActivity : AppCompatActivity() {
         b.bottomNav.selectedItemId = R.id.tab_start
 
         // Automatyczna aktualizacja (sprawdza raz na uruchomienie).
-        if (!demo) lifecycleScope.launch { Updater.check(this@MainActivity) }
+        zastosujKonfig()
+        if (!demo) lifecycleScope.launch {
+            Konfig.odswiez(this@MainActivity); zastosujKonfig(); zastosujWyglad()
+            Updater.check(this@MainActivity)
+        }
     }
 
     private fun pokaz(id: Int) {
@@ -176,6 +200,7 @@ class MainActivity : AppCompatActivity() {
     private fun showStartSmarters() {
         tryb(getString(R.string.app_name), true, false)
         val teraz = java.text.SimpleDateFormat("HH:mm   dd.MM.yyyy", java.util.Locale.getDefault()).format(java.util.Date())
+        dodajKomunikat()
         b.rowsList.addView(TextView(this).apply { text = teraz; setTextColor(0xFFCFD8FF.toInt()); textSize = 15f; setPadding(dp(18), dp(14), dp(18), dp(6)) })
         val r1 = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(dp(9), dp(4), dp(9), 0) }
         r1.addView(kafel("TV NA ŻYWO", R.drawable.nav_tv, 0xFF1DB98A.toInt(), 0xFF3A47D5.toInt(), 190) { b.bottomNav.selectedItemId = R.id.tab_kanaly })
@@ -198,8 +223,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showStart() {
-        if (Session.opt(this, "styl", "mol") == "smarters") { showStartSmarters(); return }
+        if (Konfig.styl(this) == "smarters") { showStartSmarters(); return }
         tryb(getString(R.string.app_name), true, false)
+        dodajKomunikat()
         dodajBaner("Witaj w OK Player")
         val last = try { Session.lastUrl(this) } catch (e: Exception) { null }
         if (last != null && !demo) {
@@ -443,16 +469,16 @@ class MainActivity : AppCompatActivity() {
         })
         val vn = try { packageManager.getPackageInfo(packageName, 0).versionName } catch (e: Exception) { "" }
 
-        wiersz("Serwis Premium", null, R.drawable.ic_crown) { ekrany.premium() }
+        if (Konfig.wl(this, "premium")) wiersz("Serwis Premium", null, R.drawable.ic_crown) { ekrany.premium() }
         odstep()
-        wiersz("Źródła treści", null, R.drawable.ic_tv) { ekrany.zrodlaEkran() }
-        wiersz("Zarządzaj grupami", null, R.drawable.ic_movie) { ekrany.grupy() }
-        wiersz("Dane EPG", null, R.drawable.ic_series) { ekrany.epg() }
+        if (Konfig.wl(this, "zrodla")) wiersz("Źródła treści", null, R.drawable.ic_tv) { ekrany.zrodlaEkran() }
+        if (Konfig.wl(this, "grupy")) wiersz("Zarządzaj grupami", null, R.drawable.ic_movie) { ekrany.grupy() }
+        if (Konfig.wl(this, "epg")) wiersz("Dane EPG", null, R.drawable.ic_series) { ekrany.epg() }
         wiersz("Wyczyść historię", null, R.drawable.ic_star) { Session.clearHistory(this); dialog("Historia", "Wyczyszczono.") }
         odstep()
-        wiersz(getString(R.string.lang_button), null, R.drawable.ic_home) { ekrany.jezyk { k -> AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(k)) } }
-        wiersz("Styl interfejsu", if (Session.opt(this, "styl", "mol") == "smarters") "IPTV Smarters Pro" else "MyTVOnline+", R.drawable.ic_movie) { ekrany.styl { budujUstawienia() } }
-        wiersz(getString(R.string.skin_button), null, R.drawable.ic_settings) {
+        if (Konfig.wl(this, "jezyk")) wiersz(getString(R.string.lang_button), null, R.drawable.ic_home) { ekrany.jezyk { k -> AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(k)) } }
+        if (Konfig.wl(this, "styl_wybor")) wiersz("Styl interfejsu", if (Session.opt(this, "styl", "mol") == "smarters") "IPTV Smarters Pro" else "MyTVOnline+", R.drawable.ic_movie) { ekrany.styl { budujUstawienia() } }
+        if (Konfig.wl(this, "wyglad")) wiersz(getString(R.string.skin_button), null, R.drawable.ic_settings) {
             ekrany.wyglad(skiny.map { it[0] as String }, getSharedPreferences("wyglad", MODE_PRIVATE).getInt("skin", 0)) { i ->
                 getSharedPreferences("wyglad", MODE_PRIVATE).edit().putInt("skin", i).apply(); zastosujWyglad(); ustawieniaWyglad()
             }
@@ -461,9 +487,9 @@ class MainActivity : AppCompatActivity() {
             ", napisy: " + tak(Session.opt(this, "subs") == "1"), R.drawable.ic_radio) { ekrany.dzwiek { budujUstawienia() } }
         wiersz("Opcje odtwarzacza", "Start: " + tak(Session.autostart(this)) + ", wznawianie: " + tak(Session.resume(this)) +
             ", powiększenie: " + tak(Session.opt(this, "zoom") == "1"), R.drawable.ic_tv) { ekrany.odtwarzacz { budujUstawienia() } }
-        wiersz("Opcje rodzicielskie", null, R.drawable.ic_pin) { ekrany.rodzicielskie { pinOk = true } }
+        if (Konfig.wl(this, "rodzic")) wiersz("Opcje rodzicielskie", null, R.drawable.ic_pin) { ekrany.rodzicielskie { pinOk = true } }
         odstep()
-        wiersz("Backup & Przywróć", null, R.drawable.ic_movie) { ekrany.backup() }
+        if (Konfig.wl(this, "backup")) wiersz("Backup & Przywróć", null, R.drawable.ic_movie) { ekrany.backup() }
         wiersz("Zresetuj preferencje użytkownika", null, R.drawable.ic_settings) {
             androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Zresetować preferencje?")
                 .setPositiveButton("Resetuj") { _, _ -> Session.clearOpts(this); pinOk = false; recreate() }
@@ -569,7 +595,7 @@ class MainActivity : AppCompatActivity() {
     )
 
     private fun zastosujWyglad() {
-        val i = getSharedPreferences("wyglad", MODE_PRIVATE).getInt("skin", 0).coerceIn(0, skiny.size - 1)
+        val i = Konfig.skin(this, getSharedPreferences("wyglad", MODE_PRIVATE).getInt("skin", 0)).coerceIn(0, skiny.size - 1)
         val (bg, panel, akcent) = Triple(skiny[i][1] as Int, skiny[i][2] as Int, skiny[i][3] as Int)
         b.root.setBackgroundColor(bg)
         b.header.setBackgroundColor(panel)

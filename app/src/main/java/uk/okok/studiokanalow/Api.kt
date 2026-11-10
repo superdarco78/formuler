@@ -52,6 +52,11 @@ object Api {
             info != null && info.optString("auth", "0") == "1"
         }
 
+    /** Konfiguracja globalna z panelu (konfig.php na serwerze). Null, gdy niedostepna. */
+    suspend fun konfig(kod: String, mac: String): JSONObject? = withContext(Dispatchers.IO) {
+        try { JSONObject(get("https://$HOME/konfig.php?kod=$kod&mac=$mac")) } catch (e: Exception) { null }
+    }
+
     /** Dane konta: (status, typ, wygasniecie) - z odpowiedzi logowania. */
     suspend fun accountInfo(server: String, user: String, pass: String): Triple<String, String, String>? =
         withContext(Dispatchers.IO) {
