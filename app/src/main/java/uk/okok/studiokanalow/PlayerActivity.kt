@@ -19,6 +19,7 @@ class PlayerActivity : AppCompatActivity() {
     private fun norm(s: String) = s.lowercase().replace(Regex("[^\\p{L}\\p{N}]"), "")
 
     /** Gdy kanal przestaje dzialac: najpierw ponawia, potem szuka tego samego kanalu w innych zrodlach (Duza -> Srednia -> Mala). */
+    private var ostatniBlad = ""
     private fun awaria() {
         val p = player ?: return
         if (intent.getBooleanExtra("demo", false) || !Session.optBool(this, "failover", true)) return
@@ -49,7 +50,7 @@ class PlayerActivity : AppCompatActivity() {
                 } catch (e: Exception) { }
             }
             szukam = false
-            if (!znaleziono) android.widget.Toast.makeText(this@PlayerActivity, "Kanał nie działa w żadnym źródle", android.widget.Toast.LENGTH_LONG).show()
+            if (!znaleziono) android.widget.Toast.makeText(this@PlayerActivity, "Kanał nie działa w żadnym źródle (" + ostatniBlad + ")", android.widget.Toast.LENGTH_LONG).show()
         }
     }
 
@@ -109,7 +110,7 @@ class PlayerActivity : AppCompatActivity() {
         probowane.clear(); proby = 0
         try { probowane.add(Session.server(this) + "|" + Session.user(this)) } catch (e: Exception) { }
         p.addListener(object : androidx.media3.common.Player.Listener {
-            override fun onPlayerError(error: androidx.media3.common.PlaybackException) { awaria() }
+            override fun onPlayerError(error: androidx.media3.common.PlaybackException) { ostatniBlad = error.errorCodeName + " " + (error.cause?.javaClass?.simpleName ?: "") + " " + (error.cause?.message ?: "").take(80); awaria() }
             override fun onPlaybackStateChanged(state: Int) { if (state == androidx.media3.common.Player.STATE_READY) proby = 0 }
         })
         p.setMediaItem(MediaItem.fromUri(url))
