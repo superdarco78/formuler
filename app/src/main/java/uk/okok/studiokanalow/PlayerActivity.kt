@@ -91,7 +91,7 @@ class PlayerActivity : AppCompatActivity() {
         }
         // Nazwa jak w VLC - dostawca czesto podaje prawdziwy strumien tylko takim odtwarzaczom.
         val http = androidx.media3.datasource.DefaultHttpDataSource.Factory()
-            .setUserAgent("VLC/3.0.20 LibVLC/3.0.20")
+            .setUserAgent("VLC/3.0.20 OKPlayer/3.12")
             .setAllowCrossProtocolRedirects(true)
         val p = ExoPlayer.Builder(this)
             .setMediaSourceFactory(androidx.media3.exoplayer.source.DefaultMediaSourceFactory(http))
