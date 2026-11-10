@@ -31,6 +31,7 @@ class LoginActivity : AppCompatActivity() {
         b.tvMac.text = "MAC: " + Device.mac(this)
 
         b.btnLogin.setOnClickListener { doLogin() }
+        parowanie()
 
         b.btnDemo.setOnClickListener {
             val i = Intent(this, MainActivity::class.java)
@@ -40,6 +41,37 @@ class LoginActivity : AppCompatActivity() {
 
         // Sprawdz, czy jest nowsza wersja aplikacji (auto-aktualizacja).
         lifecycleScope.launch { Updater.check(this@LoginActivity) }
+    }
+
+    /** Logowanie kodem: aplikacja pokazuje kod z serwera, a po przypisaniu go w panelu loguje sie sama. */
+    private fun parowanie() {
+        lifecycleScope.launch {
+            val dev = Device.id(this@LoginActivity)
+            var sec = ""
+            while (true) {
+                if (sec.isEmpty()) {
+                    val h = Api.appHello(dev, Device.model())
+                    if (h != null && h.optBoolean("ok") && !h.optBoolean("paired") && h.optString("code").isNotEmpty()) {
+                        sec = h.optString("sec"); b.tvCode.text = h.optString("code")
+                    } else { kotlinx.coroutines.delay(5000); continue }
+                }
+                kotlinx.coroutines.delay(3000)
+                val p = Api.appPoll(dev, sec) ?: continue
+                val key = p.optString("key")
+                if (p.optBoolean("paired") && key.isNotEmpty()) {
+                    try {
+                        if (Api.login(Api.HOME, "app", key)) {
+                            Session.save(this@LoginActivity, Api.HOME, "app", key)
+                            goMain(false)
+                            return@launch
+                        }
+                    } catch (e: Exception) { }
+                    sec = ""
+                } else if (p.optInt("wait", 0) != 1) {
+                    sec = ""
+                }
+            }
+        }
     }
 
     private fun doLogin() {

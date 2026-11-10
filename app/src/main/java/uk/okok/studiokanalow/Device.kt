@@ -27,4 +27,9 @@ object Device {
         val p = String.format("%06X", h)
         return "00:1A:79:${p.substring(0, 2)}:${p.substring(2, 4)}:${p.substring(4, 6)}"
     }
+
+    /** Identyfikator urzadzenia dla parowania (litery, cyfry, myslniki; min. 6 znakow). */
+    fun id(ctx: Context): String = ("ok-" + androidId(ctx)).replace(Regex("[^A-Za-z0-9-]"), "")
+
+    fun model(): String = android.os.Build.MODEL ?: "Android"
 }
