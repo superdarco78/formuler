@@ -138,8 +138,7 @@ class MainActivity : AppCompatActivity() {
             setPadding(8, 28, 8, 8)
         })
         fun wiersz(t: String, sub: String? = null, akcja: () -> Unit) = l.addView(TextView(this).apply {
-            text = if (sub.isNullOrEmpty()) t else "$t
-$sub"
+            text = if (sub.isNullOrEmpty()) t else "$t\n$sub"
             setTextColor(getColor(R.color.tx)); textSize = 16f
             setBackgroundResource(R.drawable.bg_input)
             setPadding(36, 30, 36, 30)
@@ -151,10 +150,7 @@ $sub"
 
         sekcja("KONTO I TREŚCI")
         wiersz("Konto i serwis", if (demo) "Tryb testowy (demo)" else Api.HOME) { dialog("Konto i serwis",
-            if (demo) "Tryb testowy — bez konta." else "Serwer: ${Api.HOME}
-Login: ${Session.user(this)}
-
-Konto i listy przypisujesz w panelu (edytor).") }
+            if (demo) "Tryb testowy — bez konta." else "Serwer: ${Api.HOME}\nLogin: ${Session.user(this)}\n\nKonto i listy przypisujesz w panelu (edytor).") }
         wiersz("Źródła treści", "Zarządzane w panelu") { dialog("Źródła treści", "Źródła (listy, dostawcy) ustawiasz w panelu edytora. Aplikacja pobiera je sama.") }
         wiersz("Zarządzaj grupami", "Zarządzane w panelu") { dialog("Zarządzaj grupami", "Kolejność i nazwy grup ustawiasz w edytorze — aplikacja pokazuje je 1 do 1.") }
         wiersz("Dane EPG", "Wkrótce") { dialog("Dane EPG", "Program telewizyjny pojawi się w jednej z następnych wersji (źródło wybierasz w edytorze).") }
@@ -178,9 +174,7 @@ Konto i listy przypisujesz w panelu (edytor).") }
         }
 
         sekcja("INFORMACJE")
-        wiersz("Informacje", "Wersja $vn") { dialog("OK Player", "Wersja: $vn
-Kod: ${Device.code(this)}
-MAC: ${Device.mac(this)}") }
+        wiersz("Informacje", "Wersja $vn") { dialog("OK Player", "Wersja: $vn\nKod: ${Device.code(this)}\nMAC: ${Device.mac(this)}") }
         wiersz(getString(R.string.btn_logout), null) {
             Session.clear(this)
             startActivity(Intent(this, LoginActivity::class.java))
