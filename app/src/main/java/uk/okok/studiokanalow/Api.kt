@@ -115,6 +115,22 @@ object Api {
     /** Stały serwer aplikacji (wbudowany, klient go nie wpisuje). */
     const val HOME = "tv.ok-ok.uk"
 
+    /** Parowanie kodem: serwer wydaje 6-cyfrowy kod (hello). */
+    suspend fun appHello(dev: String, model: String): JSONObject? =
+        withContext(Dispatchers.IO) {
+            try {
+                JSONObject(get("https://$HOME/app.php?a=hello&dev=$dev&model=" + java.net.URLEncoder.encode(model, "UTF-8")))
+            } catch (e: Exception) { null }
+        }
+
+    /** Sprawdza, czy panel przypisal kod do klienta (poll). */
+    suspend fun appPoll(dev: String, sec: String): JSONObject? =
+        withContext(Dispatchers.IO) {
+            try {
+                JSONObject(get("https://$HOME/app.php?a=poll&dev=$dev&sec=" + java.net.URLEncoder.encode(sec, "UTF-8")))
+            } catch (e: Exception) { null }
+        }
+
     /**
      * Logowanie kodem/MAC. Pyta serwer, czy ten kod/MAC jest przypisany do konta.
      * Zwraca (serwer, login, haslo) gdy dowiazane, albo null gdy jeszcze nie.
