@@ -561,6 +561,7 @@ class Ekrany(
             przelacznik(l, "Uruchamiaj ostatni kanał przy starcie", Session.autostart(a)) { Session.setAutostart(a, it); po() }
             przelacznik(l, "Wznawiaj oglądanie", Session.resume(a)) { Session.setResume(a, it); po() }
             przelacznik(l, "Powiększenie obrazu (bez czarnych pasów)", Session.opt(a, "zoom") == "1") { Session.setOpt(a, "zoom", if (it) "1" else "0"); po() }
+            przelacznik(l, "Automatyczne przełączanie źródeł (gdy kanał nie działa)", Session.optBool(a, "failover", true)) { Session.setOptBool(a, "failover", it); po() }
         })
     }
 
