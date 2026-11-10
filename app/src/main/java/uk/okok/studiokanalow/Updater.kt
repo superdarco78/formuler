@@ -43,7 +43,7 @@ object Updater {
         try { Api.raportuj(Device.id(act), "v" + (try { act.packageManager.getPackageInfo(act.packageName, 0).versionName } catch (e: Exception) { "?" }) + " OK Player aktualizacja " + m) } catch (_: Exception) {}
     }
 
-    suspend fun check(act: Activity) {
+    suspend fun check(act: Activity, reczne: Boolean = false) {
         try {
             val json = withContext(Dispatchers.IO) {
                 val req = Request.Builder().url(WERSJA_URL).build()
@@ -55,16 +55,20 @@ object Updater {
             val remoteName = o.optString("versionName", "")
             val url = o.optString("url", STRONA_URL)
             rap(act, "zdalna=" + remoteCode + " lokalna=" + currentCode(act))
-            if (remoteCode > currentCode(act) && !pokazane && !act.isFinishing) {
+            if (remoteCode > currentCode(act) && (reczne || !pokazane) && !act.isFinishing) {
                 pokazane = true
                 androidx.appcompat.app.AlertDialog.Builder(act)
                     .setTitle("Nowa wersja $remoteName")
                     .setMessage("Dostępna jest nowa wersja aplikacji. Zainstalować teraz? Twoje dane i logowanie zostaną zachowane.")
                     .setPositiveButton("Zainstaluj") { _, _ -> pobierzIZainstaluj(act, url) }
-                    .setNegativeButton("Później") { _, _ -> pokazane = false }
+                    .setNegativeButton("Później", null)
+                    .setOnDismissListener { pokazane = false }
                     .show()
+            } else if (reczne) {
+                android.widget.Toast.makeText(act, "Masz najnowszą wersję (" + remoteName + ")", android.widget.Toast.LENGTH_LONG).show()
             }
         } catch (e: Exception) {
+            if (reczne) android.widget.Toast.makeText(act, "Nie udało się sprawdzić aktualizacji", android.widget.Toast.LENGTH_LONG).show()
             rap(act, "blad " + e.javaClass.simpleName + " " + (e.message ?: "").take(80))
         }
     }

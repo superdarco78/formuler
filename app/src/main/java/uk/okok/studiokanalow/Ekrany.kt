@@ -711,6 +711,8 @@ class Ekrany(
         r.addView(TextView(a).apply { text = "Wersja aplikacji"; setTextColor(Color.WHITE); textSize = 16f }, LinearLayout.LayoutParams(dp(140), -2))
         r.addView(TextView(a).apply { text = wersja; setTextColor(Color.WHITE); textSize = 16f })
         v.addView(r)
+        v.addView(TextView(a).apply { text = "⟳   Sprawdź aktualizację"; setTextColor(0xFF4F7BFF.toInt()); textSize = 17f; setPadding(0, dp(8), 0, dp(16))
+            setOnClickListener { bs.dismiss(); a.lifecycleScope.launch { Updater.check(a, true) } } })
         fun poz(t: String, tresc: String) = v.addView(TextView(a).apply { text = t; setTextColor(tekst); textSize = 16f; setPadding(0, dp(16), 0, dp(16))
             setOnClickListener { AlertDialog.Builder(a).setTitle(t).setMessage(tresc).setPositiveButton("OK", null).show() } })
         poz("Warunki użytkowania (EULA)", "OK Player jest odtwarzaczem. Korzystasz z niego z własnym kontem otrzymanym od dostawcy usługi. Autor nie odpowiada za treści dostarczane przez serwis.")
