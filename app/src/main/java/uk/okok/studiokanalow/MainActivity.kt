@@ -37,11 +37,15 @@ class MainActivity : AppCompatActivity() {
         }
 
         b.btnLanguage.setOnClickListener { pokazWyborJezyka() }
+        b.btnSkin.setOnClickListener { pokazWyborWygladu() }
+        zastosujWyglad()
 
         b.bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.tab_kanaly -> { showKanaly(); true }
                 R.id.tab_filmy -> { showFilmy(); true }
+                R.id.tab_seriale -> { showSeriale(); true }
+                R.id.tab_radio -> { showRadio(); true }
                 R.id.tab_ustawienia -> { showUstawienia(); true }
                 else -> false
             }
@@ -79,6 +83,32 @@ class MainActivity : AppCompatActivity() {
             hideBusy()
         } else {
             loadTiles { Api.vodStreams(Session.server(this), Session.user(this), Session.pass(this), null) }
+        }
+    }
+
+    private fun showSeriale() {
+        b.tvTitle.text = getString(R.string.tab_seriale)
+        b.settingsPanel.visibility = View.GONE
+        b.recycler.visibility = View.VISIBLE
+        b.recycler.layoutManager = GridLayoutManager(this, 3)
+        b.recycler.adapter = tileAdapter
+        if (demo) {
+            tileAdapter.submit(Demo.seriale); b.tvCount.text = "${Demo.seriale.size}"; hideBusy()
+        } else {
+            tileAdapter.submit(emptyList()); b.tvCount.text = ""; info(getString(R.string.empty_demo))
+        }
+    }
+
+    private fun showRadio() {
+        b.tvTitle.text = getString(R.string.tab_radio)
+        b.settingsPanel.visibility = View.GONE
+        b.recycler.visibility = View.VISIBLE
+        b.recycler.layoutManager = LinearLayoutManager(this)
+        b.recycler.adapter = channelAdapter
+        if (demo) {
+            channelAdapter.submit(Demo.radio); b.tvCount.text = "${Demo.radio.size}"; hideBusy()
+        } else {
+            channelAdapter.submit(emptyList()); b.tvCount.text = ""; info(getString(R.string.empty_demo))
         }
     }
 
@@ -135,11 +165,48 @@ class MainActivity : AppCompatActivity() {
 
     private fun hideBusy() {
         b.progress.visibility = View.GONE
+        b.tvInfo.visibility = View.GONE
     }
 
     private fun info(text: String) {
         b.tvInfo.text = text
         b.tvInfo.visibility = View.VISIBLE
+    }
+
+    // ----- wyglad (skorki demo) -----
+
+    private val skiny = listOf(
+        // nazwa, tlo, panel, akcent
+        arrayOf("Granat (domyślny)", 0xFF070B16.toInt(), 0xFF0F1830.toInt(), 0xFF4F7CFF.toInt()),
+        arrayOf("Czarny OLED", 0xFF000000.toInt(), 0xFF111111.toInt(), 0xFF38E0D6.toInt()),
+        arrayOf("Zieleń nocna", 0xFF07130F.toInt(), 0xFF0E2219.toInt(), 0xFF35E08A.toInt()),
+        arrayOf("Fiolet", 0xFF0E0A18.toInt(), 0xFF1B1430.toInt(), 0xFFB07CFF.toInt()),
+        arrayOf("Bursztyn", 0xFF140E06.toInt(), 0xFF241A0C.toInt(), 0xFFFFC24D.toInt())
+    )
+
+    private fun zastosujWyglad() {
+        val i = getSharedPreferences("wyglad", MODE_PRIVATE).getInt("skin", 0).coerceIn(0, skiny.size - 1)
+        val (bg, panel, akcent) = Triple(skiny[i][1] as Int, skiny[i][2] as Int, skiny[i][3] as Int)
+        b.root.setBackgroundColor(bg)
+        b.header.setBackgroundColor(panel)
+        b.bottomNav.setBackgroundColor(panel)
+        val stany = arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf())
+        val kol = android.content.res.ColorStateList(stany, intArrayOf(akcent, 0xFF7F90B8.toInt()))
+        b.bottomNav.itemIconTintList = kol
+        b.bottomNav.itemTextColor = kol
+        b.bottomNav.itemActiveIndicatorColor = android.content.res.ColorStateList.valueOf((akcent and 0x00FFFFFF) or 0x33000000)
+        b.tvTitle.setTextColor(akcent)
+    }
+
+    private fun pokazWyborWygladu() {
+        val nazwy = skiny.map { it[0] as String }.toTypedArray()
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(R.string.skin_title)
+            .setItems(nazwy) { _, i ->
+                getSharedPreferences("wyglad", MODE_PRIVATE).edit().putInt("skin", i).apply()
+                zastosujWyglad()
+            }
+            .show()
     }
 
     private fun pokazWyborJezyka() {

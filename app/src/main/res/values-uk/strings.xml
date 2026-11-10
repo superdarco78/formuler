@@ -22,4 +22,8 @@
     <string name="empty_demo">Цей розділ недоступний у демо-режимі</string>
     <string name="lang_button">Мова</string>
     <string name="lang_title">Виберіть мову</string>
+    <string name="tab_seriale">Серіали</string>
+    <string name="tab_radio">Радіо</string>
+    <string name="skin_button">Вигляд</string>
+    <string name="skin_title">Оберіть вигляд</string>
 </resources>

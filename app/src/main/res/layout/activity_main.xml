@@ -7,6 +7,7 @@
     android:background="@color/bg">
 
     <LinearLayout
+        android:id="@+id/header"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
@@ -64,6 +65,15 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/lang_button"
+                android:textColor="@color/tx"
+                android:backgroundTint="@color/panel2"
+                android:layout_marginBottom="12dp" />
+
+            <Button
+                android:id="@+id/btnSkin"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/skin_button"
                 android:textColor="@color/tx"
                 android:backgroundTint="@color/panel2"
                 android:layout_marginBottom="12dp" />

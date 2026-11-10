@@ -22,4 +22,8 @@
     <string name="empty_demo">Dieser Bereich ist im Demomodus nicht verfügbar</string>
     <string name="lang_button">Sprache</string>
     <string name="lang_title">Sprache wählen</string>
+    <string name="tab_seriale">Serien</string>
+    <string name="tab_radio">Radio</string>
+    <string name="skin_button">Aussehen</string>
+    <string name="skin_title">Aussehen wählen</string>
 </resources>

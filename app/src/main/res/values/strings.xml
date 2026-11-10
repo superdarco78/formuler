@@ -22,4 +22,8 @@
     <string name="empty_demo">W trybie testowym brak tej sekcji</string>
     <string name="lang_button">Język</string>
     <string name="lang_title">Wybierz język</string>
+    <string name="tab_seriale">Seriale</string>
+    <string name="tab_radio">Radio</string>
+    <string name="skin_button">Wygląd</string>
+    <string name="skin_title">Wybierz wygląd</string>
 </resources>
