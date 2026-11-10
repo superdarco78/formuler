@@ -219,7 +219,7 @@ object Api {
     /** Odcinki serialu - kazdy ma gotowy adres w directUrl. */
     suspend fun seriesEpisodes(server: String, user: String, pass: String, seriesId: String): List<Channel> =
         withContext(Dispatchers.IO) {
-            val url = "${baseUrl(server)}/player_api.php?username=$user&password=$pass&action=get_series_info&series_id=$seriesId"
+            val url = "${baseUrl(server)}/player_api.php?username=$user&password=$pass&action=get_series_info&series_id=$seriesId&okp=1"
             val eps = JSONObject(get(url)).optJSONObject("episodes")
             val out = ArrayList<Channel>()
             if (eps != null) {
@@ -243,7 +243,7 @@ object Api {
     /** Szczegoly serialu: opis/obsada/ocena + odcinki pogrupowane w sezony. */
     suspend fun seriesDetails(server: String, user: String, pass: String, seriesId: String): Pair<VodInfo?, List<Pair<String, List<Channel>>>> =
         withContext(Dispatchers.IO) {
-            val url = "${baseUrl(server)}/player_api.php?username=$user&password=$pass&action=get_series_info&series_id=$seriesId"
+            val url = "${baseUrl(server)}/player_api.php?username=$user&password=$pass&action=get_series_info&series_id=$seriesId&okp=1"
             val root = JSONObject(get(url))
             val inf = root.optJSONObject("info")
             fun t(k: String) = inf?.optString(k)?.takeIf { it.isNotEmpty() && it != "null" } ?: ""
@@ -276,7 +276,7 @@ object Api {
     suspend fun vodInfo(server: String, user: String, pass: String, streamId: String): VodInfo? =
         withContext(Dispatchers.IO) {
             try {
-                val url = "${baseUrl(server)}/player_api.php?username=$user&password=$pass&action=get_vod_info&vod_id=$streamId"
+                val url = "${baseUrl(server)}/player_api.php?username=$user&password=$pass&action=get_vod_info&vod_id=$streamId&okp=1"
                 val info = JSONObject(get(url)).optJSONObject("info") ?: return@withContext null
                 fun t(k: String) = info.optString(k).takeIf { it.isNotEmpty() && it != "null" } ?: ""
                 VodInfo(
