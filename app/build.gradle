@@ -11,8 +11,8 @@ android {
         applicationId "uk.okok.studiokanalow"
         minSdk 21
         targetSdk 34
-        versionCode 4
-        versionName "1.3"
+        versionCode 5
+        versionName "1.4"
     }
 
     signingConfigs {
@@ -34,9 +34,10 @@ android {
             signingConfig signingConfigs.stala
         }
         release {
-            minifyEnabled true
-            shrinkResources true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // Wersja wydana (nie debug) - mniej ostrzezen Play Protect.
+            // Obfuskacje wlaczymy pozniej, gdy apka bedzie dopracowana.
+            minifyEnabled false
+            shrinkResources false
             signingConfig signingConfigs.stala
         }
     }
