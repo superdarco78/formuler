@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Studio Kanałów TV</string>
-    <string name="login_title">Studio Kanałów TV</string>
+    <string name="app_name">OK Player</string>
+    <string name="login_title">OK Player</string>
     <string name="login_subtitle">Sign in to watch</string>
     <string name="hint_server">Server address (e.g. tv.ok-ok.uk)</string>
     <string name="hint_user">Login</string>
