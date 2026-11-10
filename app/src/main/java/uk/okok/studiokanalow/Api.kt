@@ -115,6 +115,11 @@ object Api {
     /** Stały serwer aplikacji (wbudowany, klient go nie wpisuje). */
     const val HOME = "tv.ok-ok.uk"
 
+    /** Raport bledu odtwarzania na serwer (diagnostyka, bez hasel i kluczy). */
+    suspend fun raportuj(dev: String, msg: String) = withContext(Dispatchers.IO) {
+        try { get("https://$HOME/app.php?a=blad&dev=$dev&msg=" + java.net.URLEncoder.encode(msg, "UTF-8")) } catch (e: Exception) { }
+    }
+
     /** Parowanie kodem: serwer wydaje 6-cyfrowy kod (hello). */
     suspend fun appHello(dev: String, model: String): JSONObject? =
         withContext(Dispatchers.IO) {

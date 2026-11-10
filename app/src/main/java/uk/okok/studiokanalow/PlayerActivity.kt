@@ -20,6 +20,24 @@ class PlayerActivity : AppCompatActivity() {
 
     /** Gdy kanal przestaje dzialac: najpierw ponawia, potem szuka tego samego kanalu w innych zrodlach (Duza -> Srednia -> Mala). */
     private var ostatniBlad = ""
+    private fun raport(t: String) {
+        try {
+            val n = try { title?.toString() ?: "" } catch (e: Exception) { "" }
+            lifecycleScope.launch { Api.raportuj(Device.id(this@PlayerActivity), "v" + (try { packageManager.getPackageInfo(packageName, 0).versionName } catch (e: Exception) { "?" }) + " " + n + " " + t) }
+        } catch (e: Exception) { }
+    }
+    private var czuwak: kotlinx.coroutines.Job? = null
+    /** Jesli po 20 s nie ma obrazu - zglos stan i przelacz zrodlo. */
+    private fun czuwajNad(p: androidx.media3.exoplayer.ExoPlayer) {
+        czuwak?.cancel()
+        czuwak = lifecycleScope.launch {
+            kotlinx.coroutines.delay(20000)
+            if (p.playbackState != androidx.media3.common.Player.STATE_READY) {
+                raport("brak obrazu po 20 s, stan=" + p.playbackState)
+                awaria()
+            }
+        }
+    }
     private fun awaria() {
         val p = player ?: return
         if (intent.getBooleanExtra("demo", false) || !Session.optBool(this, "failover", true)) return
@@ -110,11 +128,12 @@ class PlayerActivity : AppCompatActivity() {
         probowane.clear(); proby = 0
         try { probowane.add(Session.server(this) + "|" + Session.user(this)) } catch (e: Exception) { }
         p.addListener(object : androidx.media3.common.Player.Listener {
-            override fun onPlayerError(error: androidx.media3.common.PlaybackException) { ostatniBlad = error.errorCodeName + " " + (error.cause?.javaClass?.simpleName ?: "") + " " + (error.cause?.message ?: "").take(80); awaria() }
-            override fun onPlaybackStateChanged(state: Int) { if (state == androidx.media3.common.Player.STATE_READY) proby = 0 }
+            override fun onPlayerError(error: androidx.media3.common.PlaybackException) { raport("blad " + error.errorCodeName + " " + (error.cause?.message ?: "").take(120)); ostatniBlad = error.errorCodeName + " " + (error.cause?.javaClass?.simpleName ?: "") + " " + (error.cause?.message ?: "").take(80); awaria() }
+            override fun onPlaybackStateChanged(state: Int) { if (state == androidx.media3.common.Player.STATE_READY) { proby = 0; czuwak?.cancel() } }
         })
         p.setMediaItem(MediaItem.fromUri(url))
         p.prepare()
+        czuwajNad(p)
         p.playWhenReady = true
         player = p
     }
