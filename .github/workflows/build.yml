@@ -1,0 +1,52 @@
+name: Budowa APK (Studio Kanalow TV)
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pobierz kod
+        uses: actions/checkout@v4
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Zaakceptuj licencje SDK
+        run: yes | sdkmanager --licenses || true
+
+      - name: Wygeneruj wrapper Gradle
+        run: gradle wrapper --gradle-version 8.7
+
+      - name: Zbuduj APK (debug)
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Przygotuj plik
+        run: |
+          mkdir -p dist
+          cp app/build/outputs/apk/debug/app-debug.apk dist/studio-kanalow-tv.apk
+
+      - name: Wyslij jako artefakt
+        uses: actions/upload-artifact@v4
+        with:
+          name: studio-kanalow-tv-apk
+          path: dist/studio-kanalow-tv.apk
+
+      - name: Opublikuj do pobrania (Release)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-latest
+          name: Studio Kanalow TV - najnowszy APK
+          files: dist/studio-kanalow-tv.apk

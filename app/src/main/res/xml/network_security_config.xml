@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Domyslnie wymagamy HTTPS. Dla serwerow IPTV, ktore czasem oddaja strumien po HTTP,
+         dopuszczamy zwykly ruch tylko dla domen ok-ok.uk (strumienie), reszta tylko szyfrowana. -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">ok-ok.uk</domain>
+    </domain-config>
+</network-security-config>

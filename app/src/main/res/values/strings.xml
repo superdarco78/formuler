@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Studio Kanałów TV</string>
+    <string name="login_title">Studio Kanałów TV</string>
+    <string name="login_subtitle">Zaloguj się, aby oglądać</string>
+    <string name="hint_server">Adres serwera (np. tv.ok-ok.uk)</string>
+    <string name="hint_user">Login</string>
+    <string name="hint_pass">Hasło</string>
+    <string name="btn_login">Zaloguj</string>
+    <string name="logging_in">Logowanie…</string>
+    <string name="err_fill">Wpisz serwer, login i hasło</string>
+    <string name="err_login">Błędny login lub hasło</string>
+    <string name="err_net">Brak połączenia z serwerem</string>
+    <string name="loading">Wczytywanie…</string>
+    <string name="channels_title">Kanały</string>
+    <string name="btn_logout">Wyloguj</string>
+</resources>

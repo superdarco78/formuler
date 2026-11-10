@@ -1,0 +1,93 @@
+package uk.okok.studiokanalow
+
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.json.JSONArray
+import org.json.JSONObject
+import uk.okok.studiokanalow.model.Category
+import uk.okok.studiokanalow.model.Channel
+import java.util.concurrent.TimeUnit
+
+/**
+ * Klient Xtream API (player_api.php) do serwera klienta.
+ * Zadne adresy ani dane nie sa wpisane na sztywno - przychodza z sesji (to, co wpisal klient).
+ */
+object Api {
+
+    private val client = OkHttpClient.Builder()
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(20, TimeUnit.SECONDS)
+        .followRedirects(true)
+        .followSslRedirects(true)
+        .build()
+
+    /** Normalizuje adres serwera do pelnego http(s) bez koncowego ukosnika. */
+    private fun baseUrl(server: String): String {
+        var s = server.trim().trimEnd('/')
+        if (!s.startsWith("http://") && !s.startsWith("https://")) {
+            s = "https://$s"
+        }
+        return s
+    }
+
+    private fun get(url: String): String {
+        val req = Request.Builder().url(url)
+            .header("User-Agent", "StudioKanalow/1.0")
+            .build()
+        client.newCall(req).execute().use { resp ->
+            if (!resp.isSuccessful) throw RuntimeException("HTTP ${resp.code}")
+            return resp.body?.string() ?: ""
+        }
+    }
+
+    /** Logowanie: zwraca true jesli serwer potwierdzi konto. */
+    suspend fun login(server: String, user: String, pass: String): Boolean =
+        withContext(Dispatchers.IO) {
+            val url = "${baseUrl(server)}/player_api.php?username=$user&password=$pass"
+            val body = get(url)
+            val obj = JSONObject(body)
+            val info = obj.optJSONObject("user_info")
+            info != null && info.optString("auth", "0") == "1"
+        }
+
+    suspend fun liveCategories(server: String, user: String, pass: String): List<Category> =
+        withContext(Dispatchers.IO) {
+            val url = "${baseUrl(server)}/player_api.php?username=$user&password=$pass&action=get_live_categories"
+            val arr = JSONArray(get(url))
+            val out = ArrayList<Category>()
+            for (i in 0 until arr.length()) {
+                val o = arr.getJSONObject(i)
+                out.add(Category(o.optString("category_id"), o.optString("category_name")))
+            }
+            out
+        }
+
+    suspend fun liveStreams(server: String, user: String, pass: String, categoryId: String?): List<Channel> =
+        withContext(Dispatchers.IO) {
+            var url = "${baseUrl(server)}/player_api.php?username=$user&password=$pass&action=get_live_streams"
+            if (!categoryId.isNullOrEmpty()) url += "&category_id=$categoryId"
+            val arr = JSONArray(get(url))
+            val out = ArrayList<Channel>()
+            for (i in 0 until arr.length()) {
+                val o = arr.getJSONObject(i)
+                val logo = o.optString("stream_icon").takeIf { it.isNotEmpty() && it != "null" }
+                out.add(
+                    Channel(
+                        streamId = o.optString("stream_id"),
+                        name = o.optString("name"),
+                        logo = logo,
+                        categoryId = o.optString("category_id"),
+                        num = o.optInt("num", i + 1)
+                    )
+                )
+            }
+            out
+        }
+
+    /** Buduje adres strumienia na zywo. */
+    fun liveStreamUrl(server: String, user: String, pass: String, streamId: String): String {
+        return "${baseUrl(server)}/live/$user/$pass/$streamId.m3u8"
+    }
+}
