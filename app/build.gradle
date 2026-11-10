@@ -11,8 +11,8 @@ android {
         applicationId "uk.okok.studiokanalow"
         minSdk 21
         targetSdk 34
-        versionCode 46
-        versionName "3.25"
+        versionCode 47
+        versionName "3.26"
     }
 
     signingConfigs {

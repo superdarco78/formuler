@@ -118,9 +118,10 @@ class PlayerActivity : AppCompatActivity() {
             if (m != null && !intent.getBooleanExtra("demo", false)) {
                 b.tvEpg.text = "Program TV: ładowanie…"
                 lifecycleScope.launch {
-                    val t = try { Api.programTv(Session.server(this@PlayerActivity), Session.user(this@PlayerActivity), Session.pass(this@PlayerActivity), m.groupValues[1]) } catch (e: Exception) { raport("epg blad " + e.javaClass.simpleName + " " + (e.message ?: "").take(60)); "" }
-                    b.tvEpg.text = if (t.isEmpty()) "Program TV: brak danych dla tego kanału" else t
-                    raport("epg " + t.length + " znakow")
+                    val l = try { Api.programTv(Session.server(this@PlayerActivity), Session.user(this@PlayerActivity), Session.pass(this@PlayerActivity), m.groupValues[1]) } catch (e: Exception) { raport("epg blad " + e.javaClass.simpleName + " " + (e.message ?: "").take(60)); emptyList() }
+                    if (l.isEmpty()) { b.tvEpg.text = "Program TV: brak danych dla tego kanału"; return@launch }
+                    pokazProgram(l)
+                    raport("epg " + l.size + " pozycji")
                 }
             }
         }
@@ -128,6 +129,33 @@ class PlayerActivity : AppCompatActivity() {
             requestedOrientation = if (pelny) android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         }
         uloz(resources.configuration.orientation)
+    }
+
+    private fun pokazProgram(l: List<Api.Audycja>) {
+        val fmt = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+        val teraz = System.currentTimeMillis() / 1000
+        val sb = android.text.SpannableStringBuilder()
+        fun dodaj(t: String, kolor: Int, rozm: Float, gruby: Boolean) {
+            val a = sb.length; sb.append(t)
+            sb.setSpan(android.text.style.ForegroundColorSpan(kolor), a, sb.length, 0)
+            sb.setSpan(android.text.style.RelativeSizeSpan(rozm), a, sb.length, 0)
+            if (gruby) sb.setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), a, sb.length, 0)
+        }
+        l.forEachIndexed { i, au ->
+            if (i > 0) sb.append("\n")
+            val trwa = au.start <= teraz
+            if (trwa) {
+                dodaj("TERAZ  ", 0xFF4F7BFF.toInt(), 0.9f, true)
+                dodaj(au.tytul, 0xFFFFFFFF.toInt(), 1.15f, true)
+                if (au.koniec > 0) dodaj("   " + fmt.format(java.util.Date(au.start * 1000)) + " – " + fmt.format(java.util.Date(au.koniec * 1000)), 0xFF9A9A9A.toInt(), 0.9f, false)
+                sb.append("\n")
+            } else {
+                dodaj(fmt.format(java.util.Date(au.start * 1000)) + "   ", 0xFF4F7BFF.toInt(), 1f, true)
+                dodaj(au.tytul, 0xFFD0D0D0.toInt(), 1f, false)
+            }
+        }
+        b.tvEpg.setLineSpacing(0f, 1.3f)
+        b.tvEpg.text = sb
     }
 
     override fun onConfigurationChanged(c: android.content.res.Configuration) {

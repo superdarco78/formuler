@@ -292,30 +292,24 @@ object Api {
             } catch (e: Exception) { null }
         }
 
+    /** Pozycja programu TV: tytul, poczatek i koniec (sekundy). */
+    data class Audycja(val tytul: String, val start: Long, val koniec: Long)
+
     /** Program TV: teraz i nastepne (serwer pobiera od dostawcy, okp=1). */
-    suspend fun programTv(server: String, user: String, pass: String, streamId: String): String =
+    suspend fun programTv(server: String, user: String, pass: String, streamId: String): List<Audycja> =
         withContext(Dispatchers.IO) {
-            val url = "${baseUrl(server)}/player_api.php?username=$user&password=$pass&action=get_short_epg&stream_id=$streamId&limit=5&okp=1"
-            val arr = JSONObject(get(url)).optJSONArray("epg_listings") ?: return@withContext ""
-            val fmt = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+            val url = "${baseUrl(server)}/player_api.php?username=$user&password=$pass&action=get_short_epg&stream_id=$streamId&limit=6&okp=1"
+            val arr = JSONObject(get(url)).optJSONArray("epg_listings") ?: return@withContext emptyList()
             fun dek(x: String) = try { String(android.util.Base64.decode(x, android.util.Base64.DEFAULT), Charsets.UTF_8) } catch (e: Exception) { x }
-            val sb = StringBuilder()
             val teraz = System.currentTimeMillis() / 1000
+            val out = ArrayList<Audycja>()
             for (i in 0 until arr.length()) {
                 val o = arr.getJSONObject(i)
                 val st = o.optString("start_timestamp").toLongOrNull() ?: 0L
                 val en = o.optString("stop_timestamp").toLongOrNull() ?: 0L
                 if (en in 1..teraz) continue
-                val znacznik = if (st <= teraz) "TERAZ" else fmt.format(java.util.Date(st * 1000))
-                if (sb.isNotEmpty()) sb.append("\n")
-                sb.append(znacznik).append("  ").append(dek(o.optString("title")))
-                if (st <= teraz && en > 0) sb.append("  (do ").append(fmt.format(java.util.Date(en * 1000))).append(")")
+                out.add(Audycja(dek(o.optString("title")), st, en))
             }
-            sb.toString()
+            out
         }
 }
-
-data class VodInfo(
-    val poster: String, val plot: String, val cast: String, val genre: String,
-    val year: String, val rating: String, val duration: String, val trailer: String
-)
