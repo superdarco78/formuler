@@ -19,6 +19,23 @@ class PlayerActivity : AppCompatActivity() {
     private fun norm(s: String) = s.lowercase().replace(Regex("[^\\p{L}\\p{N}]"), "")
 
     /** Gdy kanal przestaje dzialac: najpierw ponawia, potem szuka tego samego kanalu w innych zrodlach (Duza -> Srednia -> Mala). */
+    /**
+     * Serwer wstrzykuje komunikaty do strumienia, gdy zobaczy nazwe VLC (to dla MyTVOnline+),
+     * a dostawca wymaga nazwy VLC. Dlatego przekierowanie odczytujemy pod neutralna nazwa,
+     * a odtwarzacz laczy sie z dostawca juz jako VLC.
+     */
+    private suspend fun rozwiaz(url: String): String = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        try {
+            if (!url.contains(Api.HOME)) return@withContext url
+            val c = okhttp3.OkHttpClient.Builder().followRedirects(false).followSslRedirects(false)
+                .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS).readTimeout(10, java.util.concurrent.TimeUnit.SECONDS).build()
+            c.newCall(okhttp3.Request.Builder().url(url).header("User-Agent", "OKPlayer/resolver").build()).execute().use { r ->
+                val loc = r.header("Location")
+                if (r.code in 300..399 && !loc.isNullOrEmpty()) r.request.url.resolve(loc)?.toString() ?: url else url
+            }
+        } catch (e: Exception) { url }
+    }
+
     private var ostatniBlad = ""
     private fun raport(t: String) {
         try {
@@ -109,7 +126,7 @@ class PlayerActivity : AppCompatActivity() {
         }
         // Nazwa jak w VLC - dostawca czesto podaje prawdziwy strumien tylko takim odtwarzaczom.
         val http = androidx.media3.datasource.DefaultHttpDataSource.Factory()
-            .setUserAgent("VLC/3.0.20 OKPlayer/3.12")
+            .setUserAgent("VLC/3.0.20 LibVLC/3.0.20")
             .setAllowCrossProtocolRedirects(true)
         val p = ExoPlayer.Builder(this)
             .setMediaSourceFactory(androidx.media3.exoplayer.source.DefaultMediaSourceFactory(http))
@@ -136,11 +153,15 @@ class PlayerActivity : AppCompatActivity() {
                 raport("sciezki " + o)
             }
         })
-        p.setMediaItem(MediaItem.fromUri(url))
-        p.prepare()
-        czuwajNad(p)
-        p.playWhenReady = true
         player = p
+        lifecycleScope.launch {
+            val u2 = rozwiaz(url)
+            if (u2 != url) raport("przekierowanie na " + (try { android.net.Uri.parse(u2).host } catch (e: Exception) { "?" }))
+            p.setMediaItem(MediaItem.fromUri(u2))
+            p.prepare()
+            czuwajNad(p)
+            p.playWhenReady = true
+        }
     }
 
     override fun onStop() {
