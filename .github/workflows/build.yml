@@ -21,12 +21,6 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Zaakceptuj licencje SDK
-        run: yes | sdkmanager --licenses || true
-
       - name: Wygeneruj wrapper Gradle
         run: gradle wrapper --gradle-version 8.7
 
