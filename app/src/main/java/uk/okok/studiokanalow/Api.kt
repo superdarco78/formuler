@@ -52,6 +52,22 @@ object Api {
             info != null && info.optString("auth", "0") == "1"
         }
 
+    /** Dane konta: (status, typ, wygasniecie) - z odpowiedzi logowania. */
+    suspend fun accountInfo(server: String, user: String, pass: String): Triple<String, String, String>? =
+        withContext(Dispatchers.IO) {
+            try {
+                val obj = JSONObject(get("${baseUrl(server)}/player_api.php?username=$user&password=$pass"))
+                val info = obj.optJSONObject("user_info") ?: return@withContext null
+                val st = if (info.optString("auth", "0") == "1" && info.optString("status", "Active").equals("Active", true)) "Aktywowany" else info.optString("status", "Nieaktywny")
+                val typ = if (info.optString("is_trial", "0") == "1") "Próbne" else "Abonament"
+                val exp = info.optString("exp_date")
+                val ex = exp.toLongOrNull()?.let {
+                    java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault()).format(java.util.Date(it * 1000))
+                } ?: "Bezterminowo"
+                Triple(st, typ, ex)
+            } catch (e: Exception) { null }
+        }
+
     suspend fun liveCategories(server: String, user: String, pass: String): List<Category> =
         withContext(Dispatchers.IO) {
             val url = "${baseUrl(server)}/player_api.php?username=$user&password=$pass&action=get_live_categories"
@@ -135,7 +151,8 @@ object Api {
                         logo = poster,
                         categoryId = o.optString("category_id"),
                         num = o.optInt("num", i + 1),
-                        directUrl = movieUrl
+                        directUrl = movieUrl,
+                        rating = o.optString("rating_5based").toDoubleOrNull() ?: o.optString("rating").toDoubleOrNull() ?: 0.0
                     )
                 )
             }
@@ -167,7 +184,8 @@ object Api {
                 val o = arr.getJSONObject(i)
                 val cover = o.optString("cover").takeIf { it.isNotEmpty() && it != "null" }
                 out.add(Channel(o.optString("series_id"), o.optString("name"), cover,
-                    o.optString("category_id"), i + 1))
+                    o.optString("category_id"), i + 1, null,
+                    o.optString("rating_5based").toDoubleOrNull() ?: o.optString("rating").toDoubleOrNull() ?: 0.0))
             }
             out
         }

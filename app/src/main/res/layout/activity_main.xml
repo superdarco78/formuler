@@ -32,6 +32,16 @@
             android:textColor="@color/muted" />
 
         <ImageButton
+            android:id="@+id/btnSearch"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_marginStart="6dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Szukaj"
+            android:src="@drawable/ic_search"
+            android:tint="@color/tx" />
+
+        <ImageButton
             android:id="@+id/btnGear"
             android:layout_width="44dp"
             android:layout_height="44dp"
@@ -126,6 +136,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/panel"
-        app:labelVisibilityMode="labeled"
+        app:labelVisibilityMode="unlabeled"
         app:menu="@menu/dolne_menu" />
 </LinearLayout>

@@ -101,4 +101,46 @@ object Session {
         opts(ctx).edit().putString("fav_$kind", arr.toString()).apply()
         return dodano
     }
+
+    // ----- dodatkowe opcje i zrodla (v3.0) -----
+    fun optBool(ctx: Context, key: String, def: Boolean) = opts(ctx).getBoolean(key, def)
+    fun setOptBool(ctx: Context, key: String, v: Boolean) = opts(ctx).edit().putBoolean(key, v).apply()
+    fun idSet(ctx: Context, key: String): MutableSet<String> =
+        opt(ctx, key).split(",").filter { it.isNotEmpty() }.toMutableSet()
+    fun setIdSet(ctx: Context, key: String, v: Set<String>) = setOpt(ctx, key, v.joinToString(","))
+
+    fun sources(ctx: Context): JSONArray = try { JSONArray(prefs(ctx).getString("zrodla", "[]")) } catch (e: Exception) { JSONArray() }
+    fun saveSources(ctx: Context, a: JSONArray) = prefs(ctx).edit().putString("zrodla", a.toString()).apply()
+
+    /** Kopia zapasowa BEZ hasel: opcje, ulubione, ukryte/przypiete grupy, lista zrodel (bez hasel). */
+    fun exportBackup(ctx: Context): String {
+        val o = JSONObject()
+        val all = JSONObject()
+        for ((k, v) in opts(ctx).all) if (k != "pin") all.put(k, v)
+        o.put("opcje", all)
+        val src = JSONArray()
+        val cur = sources(ctx)
+        for (i in 0 until cur.length()) {
+            val c = JSONObject(cur.getJSONObject(i).toString()); c.remove("pass"); src.put(c)
+        }
+        o.put("zrodla", src)
+        o.put("wersja", 1)
+        return o.toString(2)
+    }
+
+    fun importBackup(ctx: Context, json: String): Boolean = try {
+        val o = JSONObject(json)
+        val all = o.getJSONObject("opcje")
+        val e = opts(ctx).edit()
+        for (k in all.keys()) {
+            if (k == "pin") continue
+            when (val v = all.get(k)) {
+                is Boolean -> e.putBoolean(k, v)
+                is Int -> e.putInt(k, v)
+                is String -> e.putString(k, v)
+            }
+        }
+        e.apply()
+        true
+    } catch (e: Exception) { false }
 }

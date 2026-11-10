@@ -7,6 +7,7 @@ import android.view.View
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
@@ -29,8 +30,33 @@ class MainActivity : AppCompatActivity() {
     private var serCats: List<Category>? = null
     private var liveCats: List<Category>? = null
     private var liveGroup = 0
+    private var liveCache: List<Channel>? = null
+    private var liveFiltr: List<Category> = emptyList()
     private var favTab = 0
     private var wersjaEkranu = 0
+
+    private val zapiszLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        if (uri != null) try {
+            contentResolver.openOutputStream(uri)?.use { it.write(Session.exportBackup(this).toByteArray()) }
+            dialog("Kopia zapasowa", "Zapisano plik kopii (bez haseł).")
+        } catch (e: Exception) { dialog("Kopia zapasowa", "Nie udało się zapisać pliku.") }
+    }
+    private val wczytajLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) try {
+            val t = contentResolver.openInputStream(uri)?.use { String(it.readBytes()) } ?: ""
+            if (Session.importBackup(this, t)) recreate() else dialog("Przywracanie", "To nie jest plik kopii OK Player.")
+        } catch (e: Exception) { dialog("Przywracanie", "Nie udało się odczytać pliku.") }
+    }
+
+    private fun przeladujWszystko() {
+        vodCache = null; vodCats = null; serCache = null; serCats = null; liveCats = null; liveCache = null; liveGroup = 0
+        pokaz(b.bottomNav.selectedItemId)
+    }
+
+    private val ekrany by lazy {
+        Ekrany(this, demo, { przeladujWszystko() }, { ch -> openDetails(ch) }, { ch -> openPlayer(ch) }, { ch -> openSeries(ch) },
+            { zapiszLauncher.launch("ok-player-kopia.json") }, { wczytajLauncher.launch(arrayOf("*/*")) })
+    }
 
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
     private fun s() = Session.server(this)
@@ -50,6 +76,7 @@ class MainActivity : AppCompatActivity() {
 
         zastosujWyglad()
         b.btnGear.setOnClickListener { showUstawienia() }
+        b.btnSearch.setOnClickListener { ekrany.szukaj() }
         b.bottomNav.setOnItemSelectedListener { item -> pokaz(item.itemId); true }
         b.bottomNav.setOnItemReselectedListener { item -> pokaz(item.itemId) }
         b.bottomNav.selectedItemId = R.id.tab_start
@@ -83,7 +110,7 @@ class MainActivity : AppCompatActivity() {
         b.rowsList.removeAllViews()
     }
 
-    private fun dodajRzad(tytul: String, lista: List<Channel>, onClick: (Channel) -> Unit, szer: Int = 112) {
+    private fun dodajRzad(tytul: String, lista: List<Channel>, onClick: (Channel) -> Unit, szer: Int = 112, rank: Boolean = false) {
         if (lista.isEmpty()) return
         b.rowsList.addView(TextView(this).apply {
             text = tytul
@@ -94,7 +121,7 @@ class MainActivity : AppCompatActivity() {
         rv.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
         rv.setPadding(dp(12), 0, dp(12), 0)
         rv.clipToPadding = false
-        val ad = TileAdapter(szer, onClick)
+        val ad = TileAdapter(szer, rank, onClick)
         ad.submit(lista)
         rv.adapter = ad
         b.rowsList.addView(rv, LinearLayout.LayoutParams(-1, -2))
@@ -114,11 +141,12 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    private fun grupuj(streams: List<Channel>, cats: List<Category>?, max: Int): List<Pair<String, List<Channel>>> {
+    private fun grupuj(streams: List<Channel>, cats0: List<Category>?, max: Int, rodzaj: String = "vod"): List<Pair<String, List<Channel>>> {
+        val cats = cats0?.let { Filtr.kategorie(this, rodzaj, it) }
         val nazwy = LinkedHashMap<String, String>()
         cats?.forEach { nazwy[it.id] = it.name }
         val mapa = LinkedHashMap<String, MutableList<Channel>>()
-        for (c in streams) mapa.getOrPut(c.categoryId ?: "") { ArrayList() }.add(c)
+        for (c in streams.filter { st -> cats == null || cats.isEmpty() || cats.any { it.id == st.categoryId } }) mapa.getOrPut(c.categoryId ?: "") { ArrayList() }.add(c)
         val out = ArrayList<Pair<String, List<Channel>>>()
         val kolejnosc = if (nazwy.isNotEmpty()) nazwy.keys.toList() + mapa.keys.filter { it !in nazwy } else mapa.keys.toList()
         for (k in kolejnosc) {
@@ -141,8 +169,9 @@ class MainActivity : AppCompatActivity() {
                 { ch -> openPlayer(ch) })
         }
         if (demo) {
-            dodajRzad("Filmy", Demo.films, { ch -> openDetails(ch) })
-            dodajRzad("Seriale", Demo.seriale, { ch -> openPlayer(ch) })
+            dodajRzad("Popularne filmy", Demo.films, { ch -> openDetails(ch) }, 112, true)
+            dodajRzad("Popularne seriale", Demo.seriale, { ch -> openPlayer(ch) }, 112, true)
+            dodajRzad("Najnowsze kanały telewizyjne", Demo.channels, { ch -> openPlayer(ch) })
             return
         }
         val wersja = wersjaEkranu
@@ -150,11 +179,23 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 val v = vodCache ?: Api.vodStreams(s(), u(), p(), null).also { vodCache = it }
+                val vc = vodCats ?: try { Api.vodCategories(s(), u(), p()).also { vodCats = it } } catch (e: Exception) { emptyList() }
                 val sr = serCache ?: try { Api.seriesList(s(), u(), p()).also { serCache = it } } catch (e: Exception) { emptyList() }
+                val sc = serCats ?: try { Api.seriesCategories(s(), u(), p()).also { serCats = it } } catch (e: Exception) { emptyList() }
+                val kan = liveCache ?: try { Api.liveStreams(s(), u(), p(), null).also { liveCache = it } } catch (e: Exception) { emptyList() }
                 hideBusy()
                 if (wersja != wersjaEkranu) return@launch
-                dodajRzad("Nowo dodane filmy", v.takeLast(30).reversed(), { ch -> openDetails(ch) })
-                dodajRzad("Seriale", sr.take(30), { ch -> openSeries(ch) })
+                fun ok(l: List<Channel>, c: List<Category>, r: String): List<Channel> {
+                    val dozw = Filtr.kategorie(this@MainActivity, r, c).map { it.id }.toSet()
+                    return if (c.isEmpty()) l else l.filter { it.categoryId in dozw }
+                }
+                val vf = ok(v, vc, "vod"); val sf = ok(sr, sc, "ser")
+                val pop = if (vf.any { it.rating > 0 }) vf.sortedByDescending { it.rating }.take(10) else vf.takeLast(10).reversed()
+                val pops = if (sf.any { it.rating > 0 }) sf.sortedByDescending { it.rating }.take(10) else sf.takeLast(10).reversed()
+                dodajRzad("Popularne filmy", pop, { ch -> openDetails(ch) }, 130, true)
+                dodajRzad("Popularne seriale", pops, { ch -> openSeries(ch) }, 130, true)
+                dodajRzad("Najnowsze kanały telewizyjne", kan.takeLast(30).reversed(), { ch -> openPlayer(ch) })
+                dodajRzad("Nowo dodane filmy", vf.takeLast(30).reversed(), { ch -> openDetails(ch) })
             } catch (e: Exception) {
                 hideBusy(); info(getString(R.string.err_net))
             }
@@ -175,7 +216,9 @@ class MainActivity : AppCompatActivity() {
             try {
                 val cats = liveCats ?: Api.liveCategories(s(), u(), p()).also { liveCats = it }
                 if (wersja != wersjaEkranu) return@launch
-                budujGrupy(cats)
+                liveFiltr = Filtr.kategorie(this@MainActivity, "live", cats)
+                if (liveGroup >= liveFiltr.size) liveGroup = 0
+                budujGrupy(liveFiltr)
                 wczytajGrupe()
             } catch (e: Exception) {
                 hideBusy(); info(getString(R.string.err_net))
@@ -201,8 +244,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun wczytajGrupe() {
-        val cats = liveCats ?: return
-        val id = cats.getOrNull(liveGroup)?.id
+        val id = liveFiltr.getOrNull(liveGroup)?.id
         val wersja = wersjaEkranu
         showBusy()
         lifecycleScope.launch {
@@ -251,7 +293,7 @@ class MainActivity : AppCompatActivity() {
                 hideBusy()
                 if (wersja != wersjaEkranu) return@launch
                 b.tvCount.text = "${v.size}"
-                for ((n, l) in grupuj(v, c, 30)) dodajRzad(n, l, { ch -> openSeries(ch) })
+                for ((n, l) in grupuj(v, c, 30, "ser")) dodajRzad(n, l, { ch -> openSeries(ch) })
                 if (v.isEmpty()) info("Pusto")
             } catch (e: Exception) {
                 hideBusy(); info(getString(R.string.err_net))
@@ -315,7 +357,7 @@ class MainActivity : AppCompatActivity() {
         b.tvInfo.visibility = View.GONE
         b.tvCount.text = ""
         val pin = Session.opt(this, "pin")
-        if (pin.isNotEmpty() && !pinOk) {
+        if (pin.isNotEmpty() && Session.optBool(this, "lock_settings", true) && !pinOk) {
             b.settingsPanel.visibility = View.GONE
             pytajOPin(pin) { pinOk = true; showUstawienia() }
             return
@@ -329,49 +371,48 @@ class MainActivity : AppCompatActivity() {
     private fun budujUstawienia() {
         val l = b.settingsList
         l.removeAllViews()
-        fun sekcja(t: String) = l.addView(TextView(this).apply {
-            text = t; setTextColor(getColor(R.color.muted)); textSize = 12f
-            setPadding(8, 28, 8, 8)
-        })
-        fun wiersz(t: String, sub: String? = null, akcja: () -> Unit) = l.addView(TextView(this).apply {
+        fun odstep() = l.addView(View(this), LinearLayout.LayoutParams(-1, dp(14)))
+        fun wiersz(t: String, sub: String? = null, ikona: Int = 0, akcja: () -> Unit) = l.addView(TextView(this).apply {
             text = if (sub.isNullOrEmpty()) t else "$t\n$sub"
-            setTextColor(getColor(R.color.tx)); textSize = 16f
-            setBackgroundResource(R.drawable.bg_input)
-            setPadding(36, 30, 36, 30)
-            val lp = android.widget.LinearLayout.LayoutParams(-1, -2); lp.bottomMargin = 8
+            setTextColor(0xFFEDEDED.toInt()); textSize = 16f
+            setBackgroundColor(0xFF262626.toInt())
+            if (ikona != 0) {
+                val d = androidx.core.content.ContextCompat.getDrawable(this@MainActivity, ikona)?.mutate()
+                d?.setBounds(0, 0, dp(24), dp(24)); d?.setTint(0xFFD0D0D0.toInt())
+                setCompoundDrawables(d, null, null, null); compoundDrawablePadding = dp(18)
+            }
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            setPadding(dp(16), dp(18), dp(16), dp(18))
+            val lp = LinearLayout.LayoutParams(-1, -2); lp.bottomMargin = dp(2)
             layoutParams = lp
             setOnClickListener { akcja() }
         })
         val vn = try { packageManager.getPackageInfo(packageName, 0).versionName } catch (e: Exception) { "" }
 
-        sekcja("KONTO I TREŚCI")
-        wiersz("Konto i serwis", if (demo) "Tryb testowy (demo)" else Api.HOME) { dialog("Konto i serwis",
-            if (demo) "Tryb testowy — bez konta." else "Serwer: ${Api.HOME}\nLogin: ${Session.user(this)}\n\nKonto i listy przypisujesz w panelu (edytor).") }
-        wiersz("Źródła treści", "Zarządzane w panelu") { dialog("Źródła treści", "Źródła (listy, dostawcy) ustawiasz w panelu edytora. Aplikacja pobiera je sama.") }
-        wiersz("Zarządzaj grupami", "Zarządzane w panelu") { dialog("Zarządzaj grupami", "Kolejność i nazwy grup ustawiasz w edytorze — aplikacja pokazuje je 1 do 1.") }
-        wiersz("Dane EPG", "Wkrótce") { dialog("Dane EPG", "Program telewizyjny pojawi się w jednej z następnych wersji (źródło wybierasz w edytorze).") }
-        wiersz("Wyczyść historię", "Ostatnio oglądany kanał") { Session.clearHistory(this); dialog("Historia", "Wyczyszczono.") }
-
-        sekcja("APLIKACJA")
-        wiersz(getString(R.string.lang_button), null) { pokazWyborJezyka() }
-        wiersz(getString(R.string.skin_button), null) { pokazWyborWygladu() }
+        wiersz("Serwis Premium", null, R.drawable.ic_crown) { ekrany.premium() }
+        odstep()
+        wiersz("Źródła treści", null, R.drawable.ic_tv) { ekrany.zrodlaEkran() }
+        wiersz("Zarządzaj grupami", null, R.drawable.ic_movie) { ekrany.grupy() }
+        wiersz("Dane EPG", null, R.drawable.ic_series) { dialog("Dane EPG", "Program telewizyjny pojawi się w jednej z następnych wersji.") }
+        wiersz("Wyczyść historię", null, R.drawable.ic_star) { Session.clearHistory(this); dialog("Historia", "Wyczyszczono.") }
+        odstep()
+        wiersz(getString(R.string.lang_button), null, R.drawable.ic_home) { pokazWyborJezyka() }
+        wiersz(getString(R.string.skin_button), null, R.drawable.ic_settings) { pokazWyborWygladu() }
         wiersz("Dźwięk i napisy", "Język: " + Session.opt(this, "audio_lang").ifEmpty { "auto" } +
-            ", napisy: " + tak(Session.opt(this, "subs") == "1")) { pokazDzwiek() }
+            ", napisy: " + tak(Session.opt(this, "subs") == "1"), R.drawable.ic_radio) { pokazDzwiek() }
         wiersz("Opcje odtwarzacza", "Start: " + tak(Session.autostart(this)) + ", wznawianie: " + tak(Session.resume(this)) +
-            ", powiększenie: " + tak(Session.opt(this, "zoom") == "1")) { pokazOpcjeOdtwarzacza() }
-        wiersz("Opcje rodzicielskie", if (Session.opt(this, "pin").isEmpty()) "PIN wyłączony" else "PIN włączony") { pokazPin() }
-
-        sekcja("DANE")
-        wiersz("Backup i przywracanie", "Wkrótce — ustawienia na serwerze") { dialog("Backup", "Kopia ustawień na serwerze pojawi się po dowiązaniu konta kodem.") }
-        wiersz("Zresetuj preferencje użytkownika", null) {
+            ", powiększenie: " + tak(Session.opt(this, "zoom") == "1"), R.drawable.ic_tv) { pokazOpcjeOdtwarzacza() }
+        wiersz("Opcje rodzicielskie", null, R.drawable.ic_pin) { ekrany.rodzicielskie { pinOk = true } }
+        odstep()
+        wiersz("Backup & Przywróć", null, R.drawable.ic_movie) { ekrany.backup() }
+        wiersz("Zresetuj preferencje użytkownika", null, R.drawable.ic_settings) {
             androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Zresetować preferencje?")
                 .setPositiveButton("Resetuj") { _, _ -> Session.clearOpts(this); pinOk = false; recreate() }
                 .setNegativeButton("Anuluj", null).show()
         }
-
-        sekcja("INFORMACJE")
-        wiersz("Informacje", "Wersja $vn") { dialog("OK Player", "Wersja: $vn\nKod: ${Device.code(this)}\nMAC: ${Device.mac(this)}") }
-        wiersz(getString(R.string.btn_logout), null) {
+        odstep()
+        wiersz("Informacje", "Wersja $vn", R.drawable.ic_home) { ekrany.informacje(vn ?: "") }
+        wiersz(getString(R.string.btn_logout), null, R.drawable.ic_eye_off) {
             Session.clear(this)
             startActivity(Intent(this, LoginActivity::class.java))
             finish()
@@ -524,5 +565,9 @@ class MainActivity : AppCompatActivity() {
         i.putExtra("demo", demo)
         startActivity(i)
     }
-}
 
+    override fun onDestroy() {
+        if (isFinishing && Session.optBool(this, "clear_exit", false)) Session.clearHistory(this)
+        super.onDestroy()
+    }
+}

@@ -10,6 +10,7 @@ import uk.okok.studiokanalow.model.Channel
 /** Kafle z okladkami - do Filmow/Seriali. */
 class TileAdapter(
     private val widthDp: Int = 0,
+    private val rank: Boolean = false,
     private val onClick: (Channel) -> Unit
 ) : RecyclerView.Adapter<TileAdapter.VH>() {
 
@@ -36,6 +37,8 @@ class TileAdapter(
             holder.b.ivPoster.layoutParams = lp
         }
         holder.b.tvTitle.text = ch.name
+        holder.b.tvRank.visibility = if (rank) android.view.View.VISIBLE else android.view.View.GONE
+        if (rank) holder.b.tvRank.text = (position + 1).toString()
         if (!ch.logo.isNullOrEmpty()) {
             holder.b.ivPoster.load(ch.logo) {
                 placeholder(R.drawable.ic_movie); error(R.drawable.ic_movie)

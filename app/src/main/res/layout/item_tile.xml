@@ -9,6 +9,9 @@
     android:focusable="true"
     android:clickable="true">
 
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
     <ImageView
         android:id="@+id/ivPoster"
         android:layout_width="match_parent"
@@ -19,6 +22,19 @@
         android:src="@drawable/ic_movie"
         app:layout_constraintDimensionRatio="2:3"
         android:minHeight="150dp" />
+    <TextView
+        android:id="@+id/tvRank"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|start"
+        android:visibility="gone"
+        android:textColor="#FFFFFFFF"
+        android:textStyle="bold|italic"
+        android:textSize="54sp"
+        android:shadowColor="#FF000000"
+        android:shadowRadius="8"
+        android:paddingStart="4dp" />
+    </FrameLayout>
 
     <TextView
         android:id="@+id/tvTitle"
