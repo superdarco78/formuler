@@ -10,5 +10,6 @@ data class Channel(
     val name: String,
     val logo: String?,
     val categoryId: String?,
-    val num: Int
+    val num: Int,
+    val directUrl: String? = null
 )

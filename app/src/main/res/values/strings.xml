@@ -14,4 +14,5 @@
     <string name="loading">Wczytywanie…</string>
     <string name="channels_title">Kanały</string>
     <string name="btn_logout">Wyloguj</string>
+    <string name="btn_demo">Wejdź w trybie testowym (demo)</string>
 </resources>

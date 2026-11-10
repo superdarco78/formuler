@@ -27,6 +27,12 @@ class LoginActivity : AppCompatActivity() {
         b.etServer.setText("tv.ok-ok.uk")
 
         b.btnLogin.setOnClickListener { doLogin() }
+
+        b.btnDemo.setOnClickListener {
+            val i = Intent(this, MainActivity::class.java)
+            i.putExtra("demo", true)
+            startActivity(i)
+        }
     }
 
     private fun doLogin() {

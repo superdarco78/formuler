@@ -30,7 +30,13 @@ class MainActivity : AppCompatActivity() {
             finish()
         }
 
-        loadChannels()
+        if (intent.getBooleanExtra("demo", false)) {
+            adapter.submit(Demo.channels)
+            b.tvCount.text = "Tryb testowy: ${Demo.channels.size}"
+            b.progress.visibility = View.GONE
+        } else {
+            loadChannels()
+        }
     }
 
     private fun loadChannels() {
@@ -60,7 +66,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun openPlayer(ch: Channel) {
-        val url = Api.liveStreamUrl(
+        val url = ch.directUrl ?: Api.liveStreamUrl(
             Session.server(this), Session.user(this), Session.pass(this), ch.streamId
         )
         val i = Intent(this, PlayerActivity::class.java)

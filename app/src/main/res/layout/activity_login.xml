@@ -92,5 +92,14 @@
             android:layout_height="wrap_content"
             android:visibility="gone"
             android:layout_marginTop="16dp" />
+
+        <Button
+            android:id="@+id/btnDemo"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:text="@string/btn_demo"
+            android:textColor="@color/accent2"
+            android:backgroundTint="@color/panel2"
+            android:layout_marginTop="14dp" />
     </LinearLayout>
 </ScrollView>
