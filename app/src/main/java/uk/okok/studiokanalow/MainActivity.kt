@@ -110,6 +110,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        if (!demo) lifecycleScope.launch { Updater.check(this@MainActivity) }
+    }
+
     private fun pokaz(id: Int) {
         wersjaEkranu++
         zastosujWyglad()

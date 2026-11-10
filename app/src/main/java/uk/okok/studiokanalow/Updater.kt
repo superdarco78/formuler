@@ -37,26 +37,35 @@ object Updater {
         } catch (e: Exception) { 0L }
     }
 
+    private var pokazane = false
+
+    private suspend fun rap(act: Activity, m: String) {
+        try { Api.raportuj(Device.id(act), "v" + (try { act.packageManager.getPackageInfo(act.packageName, 0).versionName } catch (e: Exception) { "?" }) + " OK Player aktualizacja " + m) } catch (_: Exception) {}
+    }
+
     suspend fun check(act: Activity) {
         try {
             val json = withContext(Dispatchers.IO) {
                 val req = Request.Builder().url(WERSJA_URL).build()
                 client.newCall(req).execute().use { it.body?.string() ?: "" }
             }
-            if (json.isEmpty()) return
+            if (json.isEmpty()) { rap(act, "pusta odpowiedz"); return }
             val o = JSONObject(json)
             val remoteCode = o.optLong("versionCode", 0)
             val remoteName = o.optString("versionName", "")
             val url = o.optString("url", STRONA_URL)
-            if (remoteCode > currentCode(act)) {
+            rap(act, "zdalna=" + remoteCode + " lokalna=" + currentCode(act))
+            if (remoteCode > currentCode(act) && !pokazane && !act.isFinishing) {
+                pokazane = true
                 androidx.appcompat.app.AlertDialog.Builder(act)
                     .setTitle("Nowa wersja $remoteName")
                     .setMessage("Dostępna jest nowa wersja aplikacji. Zainstalować teraz? Twoje dane i logowanie zostaną zachowane.")
                     .setPositiveButton("Zainstaluj") { _, _ -> pobierzIZainstaluj(act, url) }
-                    .setNegativeButton("Później", null)
+                    .setNegativeButton("Później") { _, _ -> pokazane = false }
                     .show()
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            rap(act, "blad " + e.javaClass.simpleName + " " + (e.message ?: "").take(80))
         }
     }
 
