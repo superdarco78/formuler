@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <!-- Domyslnie wymagamy HTTPS. Dla serwerow IPTV, ktore czasem oddaja strumien po HTTP,
-         dopuszczamy zwykly ruch tylko dla domen ok-ok.uk (strumienie), reszta tylko szyfrowana. -->
-    <base-config cleartextTrafficPermitted="false">
+    <!-- Strumienie IPTV od dostawcow czesto ida po HTTP (przekierowanie z serwera), wiec zwykly ruch jest dopuszczony.
+          -->
+    <base-config cleartextTrafficPermitted="true">
         <trust-anchors>
             <certificates src="system" />
         </trust-anchors>
