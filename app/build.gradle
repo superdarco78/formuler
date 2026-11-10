@@ -11,8 +11,19 @@ android {
         applicationId "uk.okok.studiokanalow"
         minSdk 21
         targetSdk 34
-        versionCode 3
-        versionName "1.2"
+        versionCode 4
+        versionName "1.3"
+    }
+
+    signingConfigs {
+        stala {
+            // Staly klucz podpisu - wszystkie wersje maja ten sam podpis,
+            // dzieki czemu aktualizacje instaluja sie bez bledu "Nie zainstalowano".
+            storeFile file("studio.keystore")
+            storePassword "studio123"
+            keyAlias "studio"
+            keyPassword "studio123"
+        }
     }
 
     buildTypes {
@@ -20,11 +31,13 @@ android {
             // Cegla 1: bez obfuskacji, zeby najpierw potwierdzic, ze apka dziala.
             // Pancerz (obfuskacja) wlaczymy w kolejnym kroku.
             minifyEnabled false
+            signingConfig signingConfigs.stala
         }
         release {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.stala
         }
     }
     compileOptions {
