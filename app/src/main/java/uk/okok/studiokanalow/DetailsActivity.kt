@@ -118,13 +118,26 @@ class DetailsActivity : AppCompatActivity() {
                     startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(u)))
                 }
                 getString(R.string.det_open_trailer)
-            } else none
+            } else {
+                b.tvTabContent.setOnClickListener {
+                    val q = Uri.encode((intent.getStringExtra("name") ?: "") + " zwiastun")
+                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/results?search_query=$q")))
+                }
+                "▶  Znajdź zwiastun na YouTube"
+            }
             1 -> v?.cast?.takeIf { it.isNotEmpty() } ?: none
             2 -> if (intent.getBooleanExtra("serial", false))
                     (if (sezony.isEmpty()) none else "Sezonów: ${sezony.size}\nOdcinków: ${sezony.sumOf { it.second.size }}")
-                else (intent.getStringExtra("url") ?: "").substringAfterLast('.', "").uppercase().ifEmpty { none }
+                else listOf((intent.getStringExtra("url") ?: "").substringAfterLast('.', "").uppercase(), v?.media ?: "").filter { x -> x.isNotEmpty() }.joinToString("\n").ifEmpty { none }
             else -> v?.let {
-                listOf(it.year, it.genre, it.duration, it.rating).filter { x -> x.isNotEmpty() }.joinToString("\n")
+                listOfNotNull(
+                    it.premiera.ifEmpty { it.year }.takeIf { x -> x.isNotEmpty() }?.let { x -> "Premiera: $x" },
+                    it.genre.takeIf { x -> x.isNotEmpty() }?.let { x -> "Gatunek: $x" },
+                    it.duration.takeIf { x -> x.isNotEmpty() }?.let { x -> "Czas: $x" },
+                    it.rating.takeIf { x -> x.isNotEmpty() }?.let { x -> "Ocena: $x" },
+                    it.director.takeIf { x -> x.isNotEmpty() }?.let { x -> "Reżyseria: $x" },
+                    it.country.takeIf { x -> x.isNotEmpty() }?.let { x -> "Kraj: $x" }
+                ).joinToString("\n")
             }?.ifEmpty { none } ?: none
         }
     }

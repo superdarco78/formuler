@@ -287,7 +287,12 @@ object Api {
                     year = t("releasedate").take(4).ifEmpty { t("year") },
                     rating = t("rating"),
                     duration = t("duration"),
-                    trailer = t("youtube_trailer")
+                    trailer = t("youtube_trailer"),
+                    director = t("director"), country = t("country"), premiera = t("releasedate"),
+                    media = listOfNotNull(
+                        info.optJSONObject("video")?.let { v -> listOf(v.optString("codec_name"), v.optString("width") + "x" + v.optString("height")).filter { x -> x.isNotEmpty() && x != "x" }.joinToString(" ") }?.ifEmpty { null },
+                        info.optJSONObject("audio")?.let { au -> listOf(au.optString("codec_name"), au.optString("channel_layout")).filter { x -> x.isNotEmpty() }.joinToString(" ") }?.ifEmpty { null }
+                    ).joinToString("\n")
                 )
             } catch (e: Exception) { null }
         }
@@ -316,5 +321,6 @@ object Api {
 
 data class VodInfo(
     val poster: String, val plot: String, val cast: String, val genre: String,
-    val year: String, val rating: String, val duration: String, val trailer: String
+    val year: String, val rating: String, val duration: String, val trailer: String,
+    val director: String = "", val country: String = "", val premiera: String = "", val media: String = ""
 )
