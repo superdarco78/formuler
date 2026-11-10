@@ -38,6 +38,9 @@ class MainActivity : AppCompatActivity() {
 
         b.btnLanguage.setOnClickListener { pokazWyborJezyka() }
         b.btnSkin.setOnClickListener { pokazWyborWygladu() }
+        odswiezOpcjeStartu()
+        b.btnAutostart.setOnClickListener { Session.setAutostart(this, !Session.autostart(this)); odswiezOpcjeStartu() }
+        b.btnResume.setOnClickListener { Session.setResume(this, !Session.resume(this)); odswiezOpcjeStartu() }
         zastosujWyglad()
 
         b.bottomNav.setOnItemSelectedListener { item ->
@@ -84,6 +87,12 @@ class MainActivity : AppCompatActivity() {
         } else {
             loadTiles { Api.vodStreams(Session.server(this), Session.user(this), Session.pass(this), null) }
         }
+    }
+
+    private fun odswiezOpcjeStartu() {
+        val t = getString(R.string.yes); val n = getString(R.string.no)
+        b.btnAutostart.text = getString(R.string.opt_autostart) + ": " + (if (Session.autostart(this)) t else n)
+        b.btnResume.text = getString(R.string.opt_resume) + ": " + (if (Session.resume(this)) t else n)
     }
 
     private fun showSeriale() {
@@ -227,6 +236,7 @@ class MainActivity : AppCompatActivity() {
         val i = Intent(this, PlayerActivity::class.java)
         i.putExtra("url", url)
         i.putExtra("name", ch.name)
+        i.putExtra("demo", demo)
         startActivity(i)
     }
 }

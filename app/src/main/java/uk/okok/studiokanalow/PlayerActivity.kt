@@ -21,6 +21,9 @@ class PlayerActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         val url = intent.getStringExtra("url") ?: return
+        if (!intent.getBooleanExtra("demo", false)) {
+            try { Session.saveLast(this, url, intent.getStringExtra("name") ?: "") } catch (e: Exception) { }
+        }
         val p = ExoPlayer.Builder(this).build()
         b.playerView.player = p
         p.setMediaItem(MediaItem.fromUri(url))

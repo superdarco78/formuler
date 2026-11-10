@@ -58,7 +58,7 @@ class LoginActivity : AppCompatActivity() {
                 val ok = Api.login(server, user, pass)
                 if (ok) {
                     Session.save(this@LoginActivity, server, user, pass)
-                    goMain()
+                    goMain(false)
                 } else {
                     setBusy(false)
                     b.tvError.text = getString(R.string.err_login)
@@ -78,8 +78,17 @@ class LoginActivity : AppCompatActivity() {
         b.btnLogin.text = getString(if (busy) R.string.logging_in else R.string.btn_login)
     }
 
-    private fun goMain() {
+    private fun goMain(resume: Boolean = true) {
         startActivity(Intent(this, MainActivity::class.java))
+        if (resume && Session.resume(this)) {
+            val u = try { Session.lastUrl(this) } catch (e: Exception) { null }
+            if (u != null) {
+                val i = Intent(this, PlayerActivity::class.java)
+                i.putExtra("url", u)
+                i.putExtra("name", Session.lastName(this))
+                startActivity(i)
+            }
+        }
         finish()
     }
 }

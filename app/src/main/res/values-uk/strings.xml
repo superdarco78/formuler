@@ -27,4 +27,8 @@
     <string name="skin_button">Вигляд</string>
     <string name="skin_title">Оберіть вигляд</string>
     <string name="pair_title">Ваш код у панелі:</string>
+    <string name="opt_autostart">Запуск при увімкненні пристрою</string>
+    <string name="opt_resume">Продовжити останній канал</string>
+    <string name="yes">Так</string>
+    <string name="no">Ні</string>
 </resources>

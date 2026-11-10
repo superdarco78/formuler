@@ -79,6 +79,22 @@
                 android:layout_marginBottom="12dp" />
 
             <Button
+                android:id="@+id/btnAutostart"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/tx"
+                android:backgroundTint="@color/panel2"
+                android:layout_marginBottom="12dp" />
+
+            <Button
+                android:id="@+id/btnResume"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/tx"
+                android:backgroundTint="@color/panel2"
+                android:layout_marginBottom="12dp" />
+
+            <Button
                 android:id="@+id/btnLogout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

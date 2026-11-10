@@ -27,4 +27,8 @@
     <string name="skin_button">Appearance</string>
     <string name="skin_title">Choose appearance</string>
     <string name="pair_title">Your code in the panel:</string>
+    <string name="opt_autostart">Start on device boot</string>
+    <string name="opt_resume">Resume last channel</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
 </resources>

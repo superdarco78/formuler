@@ -45,4 +45,17 @@ object Session {
     fun clear(ctx: Context) {
         prefs(ctx).edit().clear().apply()
     }
+
+    // ----- ostatni kanal i opcje startu -----
+    fun saveLast(ctx: Context, url: String, name: String) {
+        prefs(ctx).edit().putString("last_url", url).putString("last_name", name).apply()
+    }
+    fun lastUrl(ctx: Context): String? = prefs(ctx).getString("last_url", null)
+    fun lastName(ctx: Context): String = prefs(ctx).getString("last_name", "") ?: ""
+
+    private fun opts(ctx: Context) = ctx.getSharedPreferences("ustawienia", Context.MODE_PRIVATE)
+    fun autostart(ctx: Context) = opts(ctx).getBoolean("autostart", true)
+    fun setAutostart(ctx: Context, v: Boolean) = opts(ctx).edit().putBoolean("autostart", v).apply()
+    fun resume(ctx: Context) = opts(ctx).getBoolean("resume", true)
+    fun setResume(ctx: Context, v: Boolean) = opts(ctx).edit().putBoolean("resume", v).apply()
 }
