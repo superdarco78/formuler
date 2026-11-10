@@ -313,3 +313,8 @@ object Api {
             out
         }
 }
+
+data class VodInfo(
+    val poster: String, val plot: String, val cast: String, val genre: String,
+    val year: String, val rating: String, val duration: String, val trailer: String
+)
