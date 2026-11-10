@@ -18,6 +18,7 @@ class DetailsActivity : AppCompatActivity() {
     private var info: VodInfo? = null
     private var tab = 0
     private lateinit var tabs: List<TextView>
+    private var sezony: List<Pair<String, List<uk.okok.studiokanalow.model.Channel>>> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,10 +30,12 @@ class DetailsActivity : AppCompatActivity() {
         val logo = intent.getStringExtra("logo")
         val id = intent.getStringExtra("id") ?: ""
         val demo = intent.getBooleanExtra("demo", false)
+        val serial = intent.getBooleanExtra("serial", false)
 
         b.tvName.text = name
         if (!logo.isNullOrEmpty()) b.ivPoster.load(logo)
         b.btnWatch.setOnClickListener {
+            if (serial) { pokazSezony(name, demo); return@setOnClickListener }
             val i = Intent(this, PlayerActivity::class.java)
             i.putExtra("url", url); i.putExtra("name", name); i.putExtra("demo", demo)
             startActivity(i)
@@ -47,7 +50,17 @@ class DetailsActivity : AppCompatActivity() {
         tabs.forEachIndexed { i, t -> t.setOnClickListener { tab = i; render() } }
         render()
 
-        if (!demo) {
+        if (!demo && serial) {
+            lifecycleScope.launch {
+                try {
+                    val (vi, sz) = Api.seriesDetails(Session.server(this@DetailsActivity), Session.user(this@DetailsActivity),
+                        Session.pass(this@DetailsActivity), id)
+                    info = vi; sezony = sz
+                    vi?.let { fill(it, logo) }
+                } catch (e: Exception) { }
+                render()
+            }
+        } else if (!demo) {
             lifecycleScope.launch {
                 info = Api.vodInfo(Session.server(this@DetailsActivity), Session.user(this@DetailsActivity),
                     Session.pass(this@DetailsActivity), id)
@@ -55,6 +68,23 @@ class DetailsActivity : AppCompatActivity() {
                 render()
             }
         }
+    }
+
+    private fun pokazSezony(tytul: String, demo: Boolean) {
+        if (sezony.isEmpty()) {
+            androidx.appcompat.app.AlertDialog.Builder(this).setTitle(tytul).setMessage("Brak odcinków.").setPositiveButton("OK", null).show(); return
+        }
+        fun odcinki(i: Int) {
+            val eps = sezony[i].second
+            androidx.appcompat.app.AlertDialog.Builder(this).setTitle("$tytul — ${sezony[i].first}")
+                .setItems(eps.map { it.name }.toTypedArray()) { _, k ->
+                    startActivity(Intent(this, PlayerActivity::class.java)
+                        .putExtra("url", eps[k].directUrl ?: "").putExtra("name", "$tytul — ${eps[k].name}").putExtra("demo", demo))
+                }.show()
+        }
+        if (sezony.size == 1) odcinki(0)
+        else androidx.appcompat.app.AlertDialog.Builder(this).setTitle(tytul)
+            .setItems(sezony.map { "${it.first} (${it.second.size})" }.toTypedArray()) { _, i -> odcinki(i) }.show()
     }
 
     private fun fill(v: VodInfo, logo: String?) {
@@ -84,7 +114,9 @@ class DetailsActivity : AppCompatActivity() {
                 getString(R.string.det_open_trailer)
             } else none
             1 -> v?.cast?.takeIf { it.isNotEmpty() } ?: none
-            2 -> (intent.getStringExtra("url") ?: "").substringAfterLast('.', "").uppercase().ifEmpty { none }
+            2 -> if (intent.getBooleanExtra("serial", false))
+                    (if (sezony.isEmpty()) none else "Sezonów: ${sezony.size}\nOdcinków: ${sezony.sumOf { it.second.size }}")
+                else (intent.getStringExtra("url") ?: "").substringAfterLast('.', "").uppercase().ifEmpty { none }
             else -> v?.let {
                 listOf(it.year, it.genre, it.duration, it.rating).filter { x -> x.isNotEmpty() }.joinToString("\n")
             }?.ifEmpty { none } ?: none

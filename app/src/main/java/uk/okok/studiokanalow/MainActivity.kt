@@ -336,15 +336,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun openSeries(ch: Channel) {
-        lifecycleScope.launch {
-            try {
-                val eps = Api.seriesEpisodes(s(), u(), p(), ch.streamId)
-                if (eps.isEmpty()) { dialog(ch.name, "Brak odcinków."); return@launch }
-                androidx.appcompat.app.AlertDialog.Builder(this@MainActivity).setTitle(ch.name)
-                    .setItems(eps.map { it.name }.toTypedArray()) { _, i -> openPlayer(eps[i]) }
-                    .show()
-            } catch (e: Exception) { dialog(ch.name, getString(R.string.err_net)) }
-        }
+        val i = Intent(this, DetailsActivity::class.java)
+        i.putExtra("id", ch.streamId); i.putExtra("name", ch.name); i.putExtra("logo", ch.logo)
+        i.putExtra("url", ""); i.putExtra("demo", demo); i.putExtra("serial", true)
+        startActivity(i)
     }
 
     private var pinOk = false

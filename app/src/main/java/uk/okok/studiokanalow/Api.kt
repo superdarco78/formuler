@@ -214,6 +214,38 @@ object Api {
             out
         }
 
+    /** Szczegoly serialu: opis/obsada/ocena + odcinki pogrupowane w sezony. */
+    suspend fun seriesDetails(server: String, user: String, pass: String, seriesId: String): Pair<VodInfo?, List<Pair<String, List<Channel>>>> =
+        withContext(Dispatchers.IO) {
+            val url = "${baseUrl(server)}/player_api.php?username=$user&password=$pass&action=get_series_info&series_id=$seriesId"
+            val root = JSONObject(get(url))
+            val inf = root.optJSONObject("info")
+            fun t(k: String) = inf?.optString(k)?.takeIf { it.isNotEmpty() && it != "null" } ?: ""
+            val vi = inf?.let {
+                VodInfo(poster = t("cover"), plot = t("plot"), cast = t("cast"), genre = t("genre"),
+                    year = t("releaseDate").take(4).ifEmpty { t("year") }, rating = t("rating"),
+                    duration = t("episode_run_time").let { d -> if (d.isNotEmpty()) "$d min" else "" },
+                    trailer = t("youtube_trailer"))
+            }
+            val out = ArrayList<Pair<String, List<Channel>>>()
+            val eps = root.optJSONObject("episodes")
+            if (eps != null) {
+                for (sez in eps.keys().asSequence().toList().sortedBy { it.toIntOrNull() ?: 0 }) {
+                    val arr = eps.optJSONArray(sez) ?: continue
+                    val l = ArrayList<Channel>()
+                    for (i in 0 until arr.length()) {
+                        val o = arr.getJSONObject(i)
+                        val id = o.optString("id")
+                        val ext = o.optString("container_extension").ifEmpty { "mp4" }
+                        l.add(Channel(id, "Odcinek ${o.optString("episode_num")} — ${o.optString("title")}", null, null, i + 1,
+                            "${baseUrl(server)}/series/$user/$pass/$id.$ext"))
+                    }
+                    out.add("Sezon $sez" to l)
+                }
+            }
+            vi to out
+        }
+
     /** Szczegoly filmu (opis, obsada, ocena, zwiastun) - to, co wpisano w edytorze. */
     suspend fun vodInfo(server: String, user: String, pass: String, streamId: String): VodInfo? =
         withContext(Dispatchers.IO) {
