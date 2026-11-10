@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -14,10 +15,11 @@
         android:background="@color/panel">
 
         <TextView
+            android:id="@+id/tvTitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="@string/channels_title"
+            android:text="@string/tab_kanaly"
             android:textColor="@color/tx"
             android:textSize="20sp"
             android:textStyle="bold" />
@@ -26,21 +28,13 @@
             android:id="@+id/tvCount"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="@color/muted"
-            android:layout_marginEnd="14dp" />
-
-        <Button
-            android:id="@+id/btnLogout"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/btn_logout"
-            android:textColor="@color/tx"
-            android:backgroundTint="@color/panel2" />
+            android:textColor="@color/muted" />
     </LinearLayout>
 
     <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="0dp"
+        android:layout_weight="1">
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recycler"
@@ -48,6 +42,31 @@
             android:layout_height="match_parent"
             android:clipToPadding="false"
             android:paddingVertical="8dp" />
+
+        <LinearLayout
+            android:id="@+id/settingsPanel"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:padding="20dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tvVersion"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/tx"
+                android:textSize="16sp"
+                android:layout_marginBottom="18dp" />
+
+            <Button
+                android:id="@+id/btnLogout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/btn_logout"
+                android:textColor="@color/tx"
+                android:backgroundTint="@color/panel2" />
+        </LinearLayout>
 
         <ProgressBar
             android:id="@+id/progress"
@@ -64,4 +83,11 @@
             android:textColor="@color/muted"
             android:visibility="gone" />
     </FrameLayout>
+
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottomNav"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/panel"
+        app:menu="@menu/dolne_menu" />
 </LinearLayout>

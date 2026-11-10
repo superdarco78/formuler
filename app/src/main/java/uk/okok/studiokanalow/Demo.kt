@@ -18,4 +18,13 @@ object Demo {
         Channel("d4", "Demo 4 — Sintel", null, null, 4,
             "https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8")
     )
+
+    val films: List<Channel> = listOf(
+        Channel("f1", "Big Buck Bunny", null, null, 1,
+            "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"),
+        Channel("f2", "Tears of Steel", null, null, 2,
+            "https://test-streams.mux.dev/pts_shift/master.m3u8"),
+        Channel("f3", "Sintel", null, null, 3,
+            "https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8")
+    )
 }

@@ -90,4 +90,31 @@ object Api {
     fun liveStreamUrl(server: String, user: String, pass: String, streamId: String): String {
         return "${baseUrl(server)}/live/$user/$pass/$streamId.m3u8"
     }
+
+    /** Lista filmow (VOD). Kazdy film ma gotowy adres do odtwarzania w directUrl. */
+    suspend fun vodStreams(server: String, user: String, pass: String, categoryId: String?): List<Channel> =
+        withContext(Dispatchers.IO) {
+            var url = "${baseUrl(server)}/player_api.php?username=$user&password=$pass&action=get_vod_streams"
+            if (!categoryId.isNullOrEmpty()) url += "&category_id=$categoryId"
+            val arr = JSONArray(get(url))
+            val out = ArrayList<Channel>()
+            for (i in 0 until arr.length()) {
+                val o = arr.getJSONObject(i)
+                val id = o.optString("stream_id")
+                val ext = o.optString("container_extension").ifEmpty { "mp4" }
+                val poster = o.optString("stream_icon").takeIf { it.isNotEmpty() && it != "null" }
+                val movieUrl = "${baseUrl(server)}/movie/$user/$pass/$id.$ext"
+                out.add(
+                    Channel(
+                        streamId = id,
+                        name = o.optString("name"),
+                        logo = poster,
+                        categoryId = o.optString("category_id"),
+                        num = o.optInt("num", i + 1),
+                        directUrl = movieUrl
+                    )
+                )
+            }
+            out
+        }
 }

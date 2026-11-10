@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import kotlinx.coroutines.launch
 import uk.okok.studiokanalow.databinding.ActivityMainBinding
@@ -13,16 +14,19 @@ import uk.okok.studiokanalow.model.Channel
 class MainActivity : AppCompatActivity() {
 
     private lateinit var b: ActivityMainBinding
-    private lateinit var adapter: ChannelAdapter
+    private lateinit var channelAdapter: ChannelAdapter
+    private lateinit var tileAdapter: TileAdapter
+    private var demo = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         b = ActivityMainBinding.inflate(layoutInflater)
         setContentView(b.root)
 
-        adapter = ChannelAdapter { ch -> openPlayer(ch) }
-        b.recycler.layoutManager = LinearLayoutManager(this)
-        b.recycler.adapter = adapter
+        demo = intent.getBooleanExtra("demo", false)
+
+        channelAdapter = ChannelAdapter { ch -> openPlayer(ch) }
+        tileAdapter = TileAdapter { ch -> openPlayer(ch) }
 
         b.btnLogout.setOnClickListener {
             Session.clear(this)
@@ -30,39 +34,108 @@ class MainActivity : AppCompatActivity() {
             finish()
         }
 
-        if (intent.getBooleanExtra("demo", false)) {
-            adapter.submit(Demo.channels)
-            b.tvCount.text = "Tryb testowy: ${Demo.channels.size}"
-            b.progress.visibility = View.GONE
+        b.bottomNav.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.tab_kanaly -> { showKanaly(); true }
+                R.id.tab_filmy -> { showFilmy(); true }
+                R.id.tab_ustawienia -> { showUstawienia(); true }
+                else -> false
+            }
+        }
+        b.bottomNav.selectedItemId = R.id.tab_kanaly
+    }
+
+    // ----- zakladki -----
+
+    private fun showKanaly() {
+        b.tvTitle.text = getString(R.string.tab_kanaly)
+        b.settingsPanel.visibility = View.GONE
+        b.recycler.visibility = View.VISIBLE
+        b.recycler.layoutManager = LinearLayoutManager(this)
+        b.recycler.adapter = channelAdapter
+        if (demo) {
+            channelAdapter.submit(Demo.channels)
+            b.tvCount.text = "${Demo.channels.size}"
+            hideBusy()
         } else {
-            loadChannels()
+            load { Api.liveStreams(Session.server(this), Session.user(this), Session.pass(this), null) }
+                .also { /* handled in load */ }
         }
     }
 
-    private fun loadChannels() {
-        b.progress.visibility = View.VISIBLE
-        b.tvInfo.visibility = View.GONE
-        val server = Session.server(this)
-        val user = Session.user(this)
-        val pass = Session.pass(this)
+    private fun showFilmy() {
+        b.tvTitle.text = getString(R.string.tab_filmy)
+        b.settingsPanel.visibility = View.GONE
+        b.recycler.visibility = View.VISIBLE
+        b.recycler.layoutManager = GridLayoutManager(this, 3)
+        b.recycler.adapter = tileAdapter
+        if (demo) {
+            tileAdapter.submit(Demo.films)
+            b.tvCount.text = "${Demo.films.size}"
+            hideBusy()
+        } else {
+            loadTiles { Api.vodStreams(Session.server(this), Session.user(this), Session.pass(this), null) }
+        }
+    }
 
+    private fun showUstawienia() {
+        b.tvTitle.text = getString(R.string.tab_ustawienia)
+        b.recycler.visibility = View.GONE
+        b.progress.visibility = View.GONE
+        b.tvInfo.visibility = View.GONE
+        b.tvCount.text = ""
+        b.settingsPanel.visibility = View.VISIBLE
+        val vn = try {
+            packageManager.getPackageInfo(packageName, 0).versionName
+        } catch (e: Exception) { "" }
+        b.tvVersion.text = "${getString(R.string.sett_version)}: $vn" +
+                if (demo) "\n\nTryb testowy (demo)" else ""
+    }
+
+    // ----- ladowanie -----
+
+    private fun load(block: suspend () -> List<Channel>) {
+        showBusy()
         lifecycleScope.launch {
             try {
-                val list = Api.liveStreams(server, user, pass, null)
-                b.progress.visibility = View.GONE
-                if (list.isEmpty()) {
-                    b.tvInfo.text = "Brak kanałów na liście"
-                    b.tvInfo.visibility = View.VISIBLE
-                } else {
-                    adapter.submit(list)
-                    b.tvCount.text = "Kanały: ${list.size}"
-                }
+                val list = block()
+                hideBusy()
+                channelAdapter.submit(list)
+                b.tvCount.text = "${list.size}"
+                if (list.isEmpty()) info("Pusto")
             } catch (e: Exception) {
-                b.progress.visibility = View.GONE
-                b.tvInfo.text = getString(R.string.err_net)
-                b.tvInfo.visibility = View.VISIBLE
+                hideBusy(); info(getString(R.string.err_net))
             }
         }
+    }
+
+    private fun loadTiles(block: suspend () -> List<Channel>) {
+        showBusy()
+        lifecycleScope.launch {
+            try {
+                val list = block()
+                hideBusy()
+                tileAdapter.submit(list)
+                b.tvCount.text = "${list.size}"
+                if (list.isEmpty()) info("Pusto")
+            } catch (e: Exception) {
+                hideBusy(); info(getString(R.string.err_net))
+            }
+        }
+    }
+
+    private fun showBusy() {
+        b.progress.visibility = View.VISIBLE
+        b.tvInfo.visibility = View.GONE
+    }
+
+    private fun hideBusy() {
+        b.progress.visibility = View.GONE
+    }
+
+    private fun info(text: String) {
+        b.tvInfo.text = text
+        b.tvInfo.visibility = View.VISIBLE
     }
 
     private fun openPlayer(ch: Channel) {
