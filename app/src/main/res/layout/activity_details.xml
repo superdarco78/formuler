@@ -46,15 +46,32 @@
                 android:layout_marginTop="4dp"
                 android:textColor="@color/gold" />
 
-            <Button
-                android:id="@+id/btnWatch"
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="54dp"
-                android:layout_margin="16dp"
-                android:text="@string/det_watch"
-                android:textStyle="bold"
-                android:textColor="#FFFFFF"
-                android:backgroundTint="@color/accent" />
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_margin="16dp">
+
+                <Button
+                    android:id="@+id/btnWatch"
+                    android:layout_width="0dp"
+                    android:layout_height="54dp"
+                    android:layout_weight="1"
+                    android:text="@string/det_watch"
+                    android:textStyle="bold"
+                    android:textColor="#FFFFFF"
+                    android:backgroundTint="@color/accent" />
+
+                <Button
+                    android:id="@+id/btnFav"
+                    android:layout_width="54dp"
+                    android:layout_height="54dp"
+                    android:layout_marginStart="10dp"
+                    android:padding="0dp"
+                    android:textSize="22sp"
+                    android:textColor="#FFFFFF"
+                    android:backgroundTint="@color/panel2" />
+            </LinearLayout>
 
             <TextView
                 android:id="@+id/tvPlot"

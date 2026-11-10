@@ -9,6 +9,7 @@ import uk.okok.studiokanalow.model.Channel
 
 /** Kafle z okladkami - do Filmow/Seriali. */
 class TileAdapter(
+    private val widthDp: Int = 0,
     private val onClick: (Channel) -> Unit
 ) : RecyclerView.Adapter<TileAdapter.VH>() {
 
@@ -27,6 +28,13 @@ class TileAdapter(
 
     override fun onBindViewHolder(holder: VH, position: Int) {
         val ch = items[position]
+        if (widthDp > 0) {
+            val dens = holder.b.root.resources.displayMetrics.density
+            holder.b.root.layoutParams = RecyclerView.LayoutParams((widthDp * dens).toInt(), RecyclerView.LayoutParams.WRAP_CONTENT)
+            val lp = holder.b.ivPoster.layoutParams
+            lp.height = (widthDp * 1.5f * dens).toInt()
+            holder.b.ivPoster.layoutParams = lp
+        }
         holder.b.tvTitle.text = ch.name
         if (!ch.logo.isNullOrEmpty()) {
             holder.b.ivPoster.load(ch.logo) {

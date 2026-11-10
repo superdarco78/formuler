@@ -142,6 +142,60 @@ object Api {
             out
         }
 
+    private fun categories(server: String, user: String, pass: String, action: String): List<Category> {
+        val arr = JSONArray(get("${baseUrl(server)}/player_api.php?username=$user&password=$pass&action=$action"))
+        val out = ArrayList<Category>()
+        for (i in 0 until arr.length()) {
+            val o = arr.getJSONObject(i)
+            out.add(Category(o.optString("category_id"), o.optString("category_name")))
+        }
+        return out
+    }
+
+    suspend fun vodCategories(server: String, user: String, pass: String): List<Category> =
+        withContext(Dispatchers.IO) { categories(server, user, pass, "get_vod_categories") }
+
+    suspend fun seriesCategories(server: String, user: String, pass: String): List<Category> =
+        withContext(Dispatchers.IO) { categories(server, user, pass, "get_series_categories") }
+
+    /** Lista seriali (bez odcinkow). */
+    suspend fun seriesList(server: String, user: String, pass: String): List<Channel> =
+        withContext(Dispatchers.IO) {
+            val arr = JSONArray(get("${baseUrl(server)}/player_api.php?username=$user&password=$pass&action=get_series"))
+            val out = ArrayList<Channel>()
+            for (i in 0 until arr.length()) {
+                val o = arr.getJSONObject(i)
+                val cover = o.optString("cover").takeIf { it.isNotEmpty() && it != "null" }
+                out.add(Channel(o.optString("series_id"), o.optString("name"), cover,
+                    o.optString("category_id"), i + 1))
+            }
+            out
+        }
+
+    /** Odcinki serialu - kazdy ma gotowy adres w directUrl. */
+    suspend fun seriesEpisodes(server: String, user: String, pass: String, seriesId: String): List<Channel> =
+        withContext(Dispatchers.IO) {
+            val url = "${baseUrl(server)}/player_api.php?username=$user&password=$pass&action=get_series_info&series_id=$seriesId"
+            val eps = JSONObject(get(url)).optJSONObject("episodes")
+            val out = ArrayList<Channel>()
+            if (eps != null) {
+                val sezony = eps.keys().asSequence().toList().sortedBy { it.toIntOrNull() ?: 0 }
+                for (sez in sezony) {
+                    val arr = eps.optJSONArray(sez) ?: continue
+                    for (i in 0 until arr.length()) {
+                        val o = arr.getJSONObject(i)
+                        val id = o.optString("id")
+                        val ext = o.optString("container_extension").ifEmpty { "mp4" }
+                        val nr = o.optString("episode_num")
+                        val tytul = o.optString("title")
+                        out.add(Channel(id, "S$sez E$nr — $tytul", null, null, out.size + 1,
+                            "${baseUrl(server)}/series/$user/$pass/$id.$ext"))
+                    }
+                }
+            }
+            out
+        }
+
     /** Szczegoly filmu (opis, obsada, ocena, zwiastun) - to, co wpisano w edytorze. */
     suspend fun vodInfo(server: String, user: String, pass: String, streamId: String): VodInfo? =
         withContext(Dispatchers.IO) {

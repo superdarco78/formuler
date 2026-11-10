@@ -38,4 +38,6 @@
     <string name="det_details">Detale</string>
     <string name="det_none">Brak danych</string>
     <string name="det_open_trailer">Otwórz zwiastun</string>
+    <string name="tab_start">Start</string>
+    <string name="tab_ulubione">Ulubione</string>
 </resources>

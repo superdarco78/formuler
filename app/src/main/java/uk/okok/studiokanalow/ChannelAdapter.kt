@@ -8,7 +8,8 @@ import uk.okok.studiokanalow.databinding.ItemChannelBinding
 import uk.okok.studiokanalow.model.Channel
 
 class ChannelAdapter(
-    private val onClick: (Channel) -> Unit
+    private val onClick: (Channel) -> Unit,
+    private val onLong: ((Channel) -> Unit)? = null
 ) : RecyclerView.Adapter<ChannelAdapter.VH>() {
 
     private val items = ArrayList<Channel>()
@@ -39,6 +40,7 @@ class ChannelAdapter(
             holder.b.ivLogo.setImageResource(R.drawable.ic_tv)
         }
         holder.b.root.setOnClickListener { onClick(ch) }
+        if (onLong != null) holder.b.root.setOnLongClickListener { onLong.invoke(ch); true }
     }
 
     override fun getItemCount() = items.size

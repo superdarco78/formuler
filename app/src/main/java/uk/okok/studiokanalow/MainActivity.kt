@@ -1,25 +1,41 @@
 package uk.okok.studiokanalow
 
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import android.view.View
+import android.widget.Button
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.launch
 import uk.okok.studiokanalow.databinding.ActivityMainBinding
+import uk.okok.studiokanalow.model.Category
 import uk.okok.studiokanalow.model.Channel
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var b: ActivityMainBinding
     private lateinit var channelAdapter: ChannelAdapter
-    private lateinit var tileAdapter: TileAdapter
     private var demo = false
+    private var vodCache: List<Channel>? = null
+    private var vodCats: List<Category>? = null
+    private var serCache: List<Channel>? = null
+    private var serCats: List<Category>? = null
+    private var liveCats: List<Category>? = null
+    private var liveGroup = 0
+    private var favTab = 0
+    private var wersjaEkranu = 0
+
+    private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
+    private fun s() = Session.server(this)
+    private fun u() = Session.user(this)
+    private fun p() = Session.pass(this)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,85 +44,263 @@ class MainActivity : AppCompatActivity() {
 
         demo = intent.getBooleanExtra("demo", false)
 
-        channelAdapter = ChannelAdapter { ch -> openPlayer(ch) }
-        tileAdapter = TileAdapter { ch ->
-            if (b.bottomNav.selectedItemId == R.id.tab_filmy) openDetails(ch) else openPlayer(ch)
-        }
+        channelAdapter = ChannelAdapter({ ch -> openPlayer(ch) }, { ch -> przelaczUlubiony("live", ch) })
+        b.recycler.layoutManager = LinearLayoutManager(this)
+        b.recycler.adapter = channelAdapter
 
         zastosujWyglad()
-
-        b.bottomNav.setOnItemSelectedListener { item ->
-            when (item.itemId) {
-                R.id.tab_kanaly -> { showKanaly(); true }
-                R.id.tab_filmy -> { showFilmy(); true }
-                R.id.tab_seriale -> { showSeriale(); true }
-                R.id.tab_radio -> { showRadio(); true }
-                R.id.tab_ustawienia -> { showUstawienia(); true }
-                else -> false
-            }
-        }
-        b.bottomNav.selectedItemId = R.id.tab_kanaly
+        b.btnGear.setOnClickListener { showUstawienia() }
+        b.bottomNav.setOnItemSelectedListener { item -> pokaz(item.itemId); true }
+        b.bottomNav.setOnItemReselectedListener { item -> pokaz(item.itemId) }
+        b.bottomNav.selectedItemId = R.id.tab_start
 
         // Automatyczna aktualizacja (sprawdza raz na uruchomienie).
         if (!demo) lifecycleScope.launch { Updater.check(this@MainActivity) }
     }
 
+    private fun pokaz(id: Int) {
+        wersjaEkranu++
+        when (id) {
+            R.id.tab_start -> showStart()
+            R.id.tab_kanaly -> showKanaly()
+            R.id.tab_filmy -> showFilmy()
+            R.id.tab_seriale -> showSeriale()
+            R.id.tab_ulubione -> showUlubione()
+        }
+    }
+
+    // ----- uklad ekranow -----
+
+    private fun tryb(tytul: String, rzedy: Boolean, lista: Boolean) {
+        b.tvTitle.text = tytul
+        b.tvCount.text = ""
+        b.settingsPanel.visibility = View.GONE
+        b.progress.visibility = View.GONE
+        b.tvInfo.visibility = View.GONE
+        b.rowsScroll.visibility = if (rzedy) View.VISIBLE else View.GONE
+        b.tvPane.visibility = if (lista) View.VISIBLE else View.GONE
+        b.groupBar.visibility = View.GONE
+        b.rowsList.removeAllViews()
+    }
+
+    private fun dodajRzad(tytul: String, lista: List<Channel>, onClick: (Channel) -> Unit, szer: Int = 112) {
+        if (lista.isEmpty()) return
+        b.rowsList.addView(TextView(this).apply {
+            text = tytul
+            setTextColor(getColor(R.color.tx)); textSize = 19f
+            setPadding(dp(18), dp(18), dp(18), dp(8))
+        })
+        val rv = RecyclerView(this)
+        rv.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        rv.setPadding(dp(12), 0, dp(12), 0)
+        rv.clipToPadding = false
+        val ad = TileAdapter(szer, onClick)
+        ad.submit(lista)
+        rv.adapter = ad
+        b.rowsList.addView(rv, LinearLayout.LayoutParams(-1, -2))
+    }
+
+    private fun dodajBaner(tekst: String) {
+        b.rowsList.addView(TextView(this).apply {
+            text = tekst
+            setTextColor(Color.WHITE); textSize = 20f
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            setBackgroundResource(R.drawable.bg_baner)
+            gravity = android.view.Gravity.BOTTOM
+            setPadding(dp(18), dp(18), dp(18), dp(18))
+            val lp = LinearLayout.LayoutParams(-1, dp(130))
+            lp.setMargins(dp(14), dp(10), dp(14), dp(4))
+            layoutParams = lp
+        })
+    }
+
+    private fun grupuj(streams: List<Channel>, cats: List<Category>?, max: Int): List<Pair<String, List<Channel>>> {
+        val nazwy = LinkedHashMap<String, String>()
+        cats?.forEach { nazwy[it.id] = it.name }
+        val mapa = LinkedHashMap<String, MutableList<Channel>>()
+        for (c in streams) mapa.getOrPut(c.categoryId ?: "") { ArrayList() }.add(c)
+        val out = ArrayList<Pair<String, List<Channel>>>()
+        val kolejnosc = if (nazwy.isNotEmpty()) nazwy.keys.toList() + mapa.keys.filter { it !in nazwy } else mapa.keys.toList()
+        for (k in kolejnosc) {
+            val l = mapa[k] ?: continue
+            out.add((nazwy[k] ?: "Pozostałe") to l.take(max))
+            if (out.size >= 40) break
+        }
+        return out
+    }
+
     // ----- zakladki -----
 
+    private fun showStart() {
+        tryb(getString(R.string.app_name), true, false)
+        dodajBaner("Witaj w OK Player")
+        val last = try { Session.lastUrl(this) } catch (e: Exception) { null }
+        if (last != null && !demo) {
+            dodajRzad("Kontynuuj oglądanie",
+                listOf(Channel("last", Session.lastName(this).ifEmpty { "Ostatni kanał" }, null, null, 0, last)),
+                { ch -> openPlayer(ch) })
+        }
+        if (demo) {
+            dodajRzad("Filmy", Demo.films, { ch -> openDetails(ch) })
+            dodajRzad("Seriale", Demo.seriale, { ch -> openPlayer(ch) })
+            return
+        }
+        val wersja = wersjaEkranu
+        showBusy()
+        lifecycleScope.launch {
+            try {
+                val v = vodCache ?: Api.vodStreams(s(), u(), p(), null).also { vodCache = it }
+                val sr = serCache ?: try { Api.seriesList(s(), u(), p()).also { serCache = it } } catch (e: Exception) { emptyList() }
+                hideBusy()
+                if (wersja != wersjaEkranu) return@launch
+                dodajRzad("Nowo dodane filmy", v.takeLast(30).reversed(), { ch -> openDetails(ch) })
+                dodajRzad("Seriale", sr.take(30), { ch -> openSeries(ch) })
+            } catch (e: Exception) {
+                hideBusy(); info(getString(R.string.err_net))
+            }
+        }
+    }
+
     private fun showKanaly() {
-        b.tvTitle.text = getString(R.string.tab_kanaly)
-        b.settingsPanel.visibility = View.GONE
-        b.recycler.visibility = View.VISIBLE
-        b.recycler.layoutManager = LinearLayoutManager(this)
+        tryb(getString(R.string.tab_kanaly), false, true)
         b.recycler.adapter = channelAdapter
         if (demo) {
             channelAdapter.submit(Demo.channels)
             b.tvCount.text = "${Demo.channels.size}"
-            hideBusy()
-        } else {
-            load { Api.liveStreams(Session.server(this), Session.user(this), Session.pass(this), null) }
-                .also { /* handled in load */ }
+            return
+        }
+        val wersja = wersjaEkranu
+        showBusy()
+        lifecycleScope.launch {
+            try {
+                val cats = liveCats ?: Api.liveCategories(s(), u(), p()).also { liveCats = it }
+                if (wersja != wersjaEkranu) return@launch
+                budujGrupy(cats)
+                wczytajGrupe()
+            } catch (e: Exception) {
+                hideBusy(); info(getString(R.string.err_net))
+            }
+        }
+    }
+
+    private fun budujGrupy(cats: List<Category>) {
+        val bar = b.groupBarList
+        bar.removeAllViews()
+        if (cats.isEmpty()) { b.groupBar.visibility = View.GONE; return }
+        b.groupBar.visibility = View.VISIBLE
+        cats.forEachIndexed { i, c ->
+            bar.addView(Button(this).apply {
+                text = c.name
+                isAllCaps = false
+                setTextColor(Color.WHITE)
+                backgroundTintList = android.content.res.ColorStateList.valueOf(
+                    if (i == liveGroup) 0xFF4F7CFF.toInt() else 0xFF1F1F23.toInt())
+                setOnClickListener { liveGroup = i; budujGrupy(cats); wczytajGrupe() }
+            }, LinearLayout.LayoutParams(-2, -2).also { it.marginEnd = dp(6) })
+        }
+    }
+
+    private fun wczytajGrupe() {
+        val cats = liveCats ?: return
+        val id = cats.getOrNull(liveGroup)?.id
+        val wersja = wersjaEkranu
+        showBusy()
+        lifecycleScope.launch {
+            try {
+                val list = Api.liveStreams(s(), u(), p(), id)
+                hideBusy()
+                if (wersja != wersjaEkranu) return@launch
+                channelAdapter.submit(list)
+                b.tvCount.text = "${list.size}"
+                if (list.isEmpty()) info("Pusto")
+            } catch (e: Exception) {
+                hideBusy(); info(getString(R.string.err_net))
+            }
         }
     }
 
     private fun showFilmy() {
-        b.tvTitle.text = getString(R.string.tab_filmy)
-        b.settingsPanel.visibility = View.GONE
-        b.recycler.visibility = View.VISIBLE
-        b.recycler.layoutManager = GridLayoutManager(this, 3)
-        b.recycler.adapter = tileAdapter
-        if (demo) {
-            tileAdapter.submit(Demo.films)
-            b.tvCount.text = "${Demo.films.size}"
-            hideBusy()
-        } else {
-            loadTiles { Api.vodStreams(Session.server(this), Session.user(this), Session.pass(this), null) }
+        tryb(getString(R.string.tab_filmy), true, false)
+        if (demo) { dodajRzad("Filmy", Demo.films, { ch -> openDetails(ch) }); return }
+        val wersja = wersjaEkranu
+        showBusy()
+        lifecycleScope.launch {
+            try {
+                val v = vodCache ?: Api.vodStreams(s(), u(), p(), null).also { vodCache = it }
+                val c = vodCats ?: try { Api.vodCategories(s(), u(), p()).also { vodCats = it } } catch (e: Exception) { emptyList() }
+                hideBusy()
+                if (wersja != wersjaEkranu) return@launch
+                b.tvCount.text = "${v.size}"
+                for ((n, l) in grupuj(v, c, 30)) dodajRzad(n, l, { ch -> openDetails(ch) })
+                if (v.isEmpty()) info("Pusto")
+            } catch (e: Exception) {
+                hideBusy(); info(getString(R.string.err_net))
+            }
         }
     }
 
     private fun showSeriale() {
-        b.tvTitle.text = getString(R.string.tab_seriale)
-        b.settingsPanel.visibility = View.GONE
-        b.recycler.visibility = View.VISIBLE
-        b.recycler.layoutManager = GridLayoutManager(this, 3)
-        b.recycler.adapter = tileAdapter
-        if (demo) {
-            tileAdapter.submit(Demo.seriale); b.tvCount.text = "${Demo.seriale.size}"; hideBusy()
-        } else {
-            tileAdapter.submit(emptyList()); b.tvCount.text = ""; info(getString(R.string.empty_demo))
+        tryb(getString(R.string.tab_seriale), true, false)
+        if (demo) { dodajRzad("Seriale", Demo.seriale, { ch -> openPlayer(ch) }); return }
+        val wersja = wersjaEkranu
+        showBusy()
+        lifecycleScope.launch {
+            try {
+                val v = serCache ?: Api.seriesList(s(), u(), p()).also { serCache = it }
+                val c = serCats ?: try { Api.seriesCategories(s(), u(), p()).also { serCats = it } } catch (e: Exception) { emptyList() }
+                hideBusy()
+                if (wersja != wersjaEkranu) return@launch
+                b.tvCount.text = "${v.size}"
+                for ((n, l) in grupuj(v, c, 30)) dodajRzad(n, l, { ch -> openSeries(ch) })
+                if (v.isEmpty()) info("Pusto")
+            } catch (e: Exception) {
+                hideBusy(); info(getString(R.string.err_net))
+            }
         }
     }
 
-    private fun showRadio() {
-        b.tvTitle.text = getString(R.string.tab_radio)
-        b.settingsPanel.visibility = View.GONE
-        b.recycler.visibility = View.VISIBLE
-        b.recycler.layoutManager = LinearLayoutManager(this)
-        b.recycler.adapter = channelAdapter
-        if (demo) {
-            channelAdapter.submit(Demo.radio); b.tvCount.text = "${Demo.radio.size}"; hideBusy()
+    private fun showUlubione() {
+        tryb(getString(R.string.tab_ulubione), false, true)
+        b.groupBar.visibility = View.VISIBLE
+        val bar = b.groupBarList
+        bar.removeAllViews()
+        listOf("Telewizja na żywo", "Filmy").forEachIndexed { i, t ->
+            bar.addView(Button(this).apply {
+                text = t; isAllCaps = false; setTextColor(Color.WHITE)
+                backgroundTintList = android.content.res.ColorStateList.valueOf(
+                    if (i == favTab) 0xFF4F7CFF.toInt() else 0xFF1F1F23.toInt())
+                setOnClickListener { favTab = i; showUlubione() }
+            }, LinearLayout.LayoutParams(-2, -2).also { it.marginEnd = dp(6) })
+        }
+        val kind = if (favTab == 0) "live" else "vod"
+        val list = Session.favs(this, kind)
+        if (favTab == 0) {
+            b.recycler.adapter = channelAdapter
+            channelAdapter.submit(list)
         } else {
-            channelAdapter.submit(emptyList()); b.tvCount.text = ""; info(getString(R.string.empty_demo))
+            val ad = ChannelAdapter({ ch -> openDetails(ch) }, { ch -> przelaczUlubiony("vod", ch); showUlubione() })
+            b.recycler.adapter = ad
+            ad.submit(list)
+        }
+        b.tvCount.text = "${list.size}"
+        if (list.isEmpty()) info("Brak pozycji.\nPrzytrzymaj kanał lub dotknij gwiazdki przy filmie.")
+    }
+
+    private fun przelaczUlubiony(kind: String, ch: Channel) {
+        val dodany = Session.toggleFav(this, kind, ch)
+        android.widget.Toast.makeText(this,
+            if (dodany) "Dodano do ulubionych" else "Usunięto z ulubionych", android.widget.Toast.LENGTH_SHORT).show()
+    }
+
+    private fun openSeries(ch: Channel) {
+        lifecycleScope.launch {
+            try {
+                val eps = Api.seriesEpisodes(s(), u(), p(), ch.streamId)
+                if (eps.isEmpty()) { dialog(ch.name, "Brak odcinków."); return@launch }
+                androidx.appcompat.app.AlertDialog.Builder(this@MainActivity).setTitle(ch.name)
+                    .setItems(eps.map { it.name }.toTypedArray()) { _, i -> openPlayer(eps[i]) }
+                    .show()
+            } catch (e: Exception) { dialog(ch.name, getString(R.string.err_net)) }
         }
     }
 
@@ -114,7 +308,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun showUstawienia() {
         b.tvTitle.text = getString(R.string.tab_ustawienia)
-        b.recycler.visibility = View.GONE
+        b.tvPane.visibility = View.GONE
+        b.rowsScroll.visibility = View.GONE
+        b.groupBar.visibility = View.GONE
         b.progress.visibility = View.GONE
         b.tvInfo.visibility = View.GONE
         b.tvCount.text = ""
@@ -240,42 +436,10 @@ class MainActivity : AppCompatActivity() {
         androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Podaj PIN").setView(et)
             .setPositiveButton("OK") { _, _ ->
                 if (et.text.toString().trim() == pin) ok()
-                else { b.bottomNav.selectedItemId = R.id.tab_kanaly }
+                else { b.bottomNav.selectedItemId = R.id.tab_start }
             }
-            .setNegativeButton("Anuluj") { _, _ -> b.bottomNav.selectedItemId = R.id.tab_kanaly }
+            .setNegativeButton("Anuluj") { _, _ -> b.bottomNav.selectedItemId = R.id.tab_start }
             .show()
-    }
-
-    // ----- ladowanie -----
-
-    private fun load(block: suspend () -> List<Channel>) {
-        showBusy()
-        lifecycleScope.launch {
-            try {
-                val list = block()
-                hideBusy()
-                channelAdapter.submit(list)
-                b.tvCount.text = "${list.size}"
-                if (list.isEmpty()) info("Pusto")
-            } catch (e: Exception) {
-                hideBusy(); info(getString(R.string.err_net))
-            }
-        }
-    }
-
-    private fun loadTiles(block: suspend () -> List<Channel>) {
-        showBusy()
-        lifecycleScope.launch {
-            try {
-                val list = block()
-                hideBusy()
-                tileAdapter.submit(list)
-                b.tvCount.text = "${list.size}"
-                if (list.isEmpty()) info("Pusto")
-            } catch (e: Exception) {
-                hideBusy(); info(getString(R.string.err_net))
-            }
-        }
     }
 
     private fun showBusy() {
@@ -361,3 +525,4 @@ class MainActivity : AppCompatActivity() {
         startActivity(i)
     }
 }
+

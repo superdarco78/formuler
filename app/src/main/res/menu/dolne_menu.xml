@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/tab_start" android:icon="@drawable/ic_home" android:title="@string/tab_start" />
     <item android:id="@+id/tab_kanaly" android:icon="@drawable/ic_tv" android:title="@string/tab_kanaly" />
     <item android:id="@+id/tab_filmy" android:icon="@drawable/ic_movie" android:title="@string/tab_filmy" />
     <item android:id="@+id/tab_seriale" android:icon="@drawable/ic_series" android:title="@string/tab_seriale" />
-    <item android:id="@+id/tab_radio" android:icon="@drawable/ic_radio" android:title="@string/tab_radio" />
-    <item android:id="@+id/tab_ustawienia" android:icon="@drawable/ic_settings" android:title="@string/tab_ustawienia" />
+    <item android:id="@+id/tab_ulubione" android:icon="@drawable/ic_star" android:title="@string/tab_ulubione" />
 </menu>

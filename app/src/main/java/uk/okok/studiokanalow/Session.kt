@@ -2,6 +2,9 @@ package uk.okok.studiokanalow
 
 import android.content.Context
 import android.content.SharedPreferences
+import org.json.JSONArray
+import org.json.JSONObject
+import uk.okok.studiokanalow.model.Channel
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 
@@ -67,5 +70,35 @@ object Session {
     }
     fun clearHistory(ctx: Context) {
         prefs(ctx).edit().remove("last_url").remove("last_name").apply()
+    }
+
+    // ----- ulubione (kind = "live" albo "vod") -----
+    fun favs(ctx: Context, kind: String): List<Channel> {
+        val out = ArrayList<Channel>()
+        try {
+            val arr = JSONArray(opts(ctx).getString("fav_$kind", "[]"))
+            for (i in 0 until arr.length()) {
+                val o = arr.getJSONObject(i)
+                out.add(Channel(o.optString("id"), o.optString("name"),
+                    o.optString("logo").ifEmpty { null }, null, i + 1,
+                    o.optString("url").ifEmpty { null }))
+            }
+        } catch (e: Exception) { }
+        return out
+    }
+
+    fun isFav(ctx: Context, kind: String, id: String) = favs(ctx, kind).any { it.streamId == id }
+
+    /** Zwraca true, jesli pozycja zostala dodana, false jesli usunieta. */
+    fun toggleFav(ctx: Context, kind: String, ch: Channel): Boolean {
+        val l = favs(ctx, kind).toMutableList()
+        val idx = l.indexOfFirst { it.streamId == ch.streamId }
+        val dodano = idx < 0
+        if (dodano) l.add(ch) else l.removeAt(idx)
+        val arr = JSONArray()
+        for (c in l) arr.put(JSONObject().put("id", c.streamId).put("name", c.name)
+            .put("logo", c.logo ?: "").put("url", c.directUrl ?: ""))
+        opts(ctx).edit().putString("fav_$kind", arr.toString()).apply()
+        return dodano
     }
 }

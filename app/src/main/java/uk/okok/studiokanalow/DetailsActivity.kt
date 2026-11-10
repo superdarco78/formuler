@@ -38,6 +38,10 @@ class DetailsActivity : AppCompatActivity() {
             startActivity(i)
         }
         b.btnBack.setOnClickListener { finish() }
+        val fch = uk.okok.studiokanalow.model.Channel(id, name, logo, null, 0, url)
+        fun odswiezGwiazdke() { b.btnFav.text = if (Session.isFav(this, "vod", id)) "★" else "☆" }
+        odswiezGwiazdke()
+        b.btnFav.setOnClickListener { Session.toggleFav(this, "vod", fch); odswiezGwiazdke() }
 
         tabs = listOf(b.tabTrailer, b.tabCast, b.tabMedia, b.tabDetails)
         tabs.forEachIndexed { i, t -> t.setOnClickListener { tab = i; render() } }

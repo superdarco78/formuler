@@ -38,4 +38,6 @@
     <string name="det_details">Details</string>
     <string name="det_none">No data</string>
     <string name="det_open_trailer">Open trailer</string>
+    <string name="tab_start">Home</string>
+    <string name="tab_ulubione">Favorites</string>
 </resources>

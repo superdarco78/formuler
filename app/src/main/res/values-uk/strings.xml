@@ -38,4 +38,6 @@
     <string name="det_details">Деталі</string>
     <string name="det_none">Немає даних</string>
     <string name="det_open_trailer">Відкрити трейлер</string>
+    <string name="tab_start">Головна</string>
+    <string name="tab_ulubione">Обране</string>
 </resources>
