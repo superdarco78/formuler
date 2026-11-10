@@ -21,6 +21,9 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
@@ -138,15 +141,16 @@ class Ekrany(
         kont.addView(w)
     }
 
-    private fun pole(kont: LinearLayout, podpowiedz: String, wartosc: String = "", haslo: Boolean = false): TextInputLayout {
+    private fun pole(kont: LinearLayout, podpowiedz: String, wartosc: String = "", haslo: Boolean = false, maska: Boolean = false): TextInputLayout {
         val til = TextInputLayout(a, null, com.google.android.material.R.attr.textInputOutlinedStyle)
         til.hint = podpowiedz
         val et = TextInputEditText(til.context)
         et.setText(wartosc)
         et.setSingleLine(true)
         et.setTextColor(Color.WHITE)
-        if (haslo) et.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+        if (haslo || maska) et.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
         til.addView(et)
+        if (haslo || maska) til.endIconMode = TextInputLayout.END_ICON_PASSWORD_TOGGLE
         til.layoutParams = LinearLayout.LayoutParams(-1, -2).also { it.bottomMargin = dp(12) }
         kont.addView(til)
         return til
@@ -154,15 +158,17 @@ class Ekrany(
 
     private fun tx(t: TextInputLayout) = t.editText?.text?.toString()?.trim() ?: ""
 
-    private fun arkusz(tytul: String, pozycje: List<Pair<String, () -> Unit>>) {
+    private fun arkusz(tytul: String, pozycje: List<Pair<String, () -> Unit>>, zazn: Int = -1) {
         val bs = BottomSheetDialog(a)
         val v = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL; background = gora(karta); setPadding(0, dp(8), 0, dp(14)) }
         v.addView(TextView(a).apply { text = tytul; setTextColor(Color.WHITE); textSize = 18f; setPadding(dp(24), dp(18), dp(24), dp(14)) })
-        for ((n, f) in pozycje) v.addView(TextView(a).apply {
-            text = n; setTextColor(tekst); textSize = 16f; setPadding(dp(24), dp(16), dp(24), dp(16))
+        pozycje.forEachIndexed { idx, (n, f) -> v.addView(TextView(a).apply {
+            text = n; setTextColor(if (idx == zazn) Color.WHITE else tekst); textSize = 16f; setPadding(dp(24), dp(16), dp(24), dp(16))
+            if (idx == zazn) setTypeface(typeface, android.graphics.Typeface.BOLD)
             setOnClickListener { bs.dismiss(); f() }
-        })
-        bs.setContentView(v)
+        }) }
+        val sv = ScrollView(a); sv.setBackgroundColor(karta); sv.addView(v)
+        bs.setContentView(sv)
         bs.show()
     }
 
@@ -227,6 +233,8 @@ class Ekrany(
         ekran("Źródła treści", { l, _ -> lista = l }, { pas, _ ->
             pas.addView(przycisk("Odśwież") { przeladuj(); toast("Odświeżono"); odswiez() })
         }, { gora, _ ->
+            gora.addView(TextView(a).apply { text = "⇅"; setTextColor(Color.WHITE); textSize = 26f; setPadding(dp(14), 0, dp(14), 0)
+                setOnClickListener { kolejnosc { odswiez() } } })
             gora.addView(TextView(a).apply { text = "+"; setTextColor(Color.WHITE); textSize = 32f; setPadding(dp(14), 0, dp(14), 0)
                 setOnClickListener { menuDodaj { odswiez() } } })
         })
@@ -286,19 +294,19 @@ class Ekrany(
                     Session.save(a, o.optString("server"), o.optString("user"), o.optString("pass")); przeladuj(); po()
                 } else toast("To źródło nie ma loginu (MAC) — obsługa w następnej wersji")
             },
-            "Odśwież" to { o.put("updated", teraz()); Session.saveSources(a, arr); if (aktywne(o)) przeladuj(); po() },
-            "Zaktualizuj EPG" to { toast("Dane EPG pojawią się w następnej wersji") },
-            "Wyczyść EPG" to { toast("Brak pobranych danych EPG") },
-            (if (on) "Wyłącz" else "Włącz") to { o.put("enabled", !on); Session.saveSources(a, arr); po() },
-            "Edytuj" to { formularzPortal(i, po) },
-            "Usuń" to {
+            "↻   Odśwież" to { o.put("updated", teraz()); Session.saveSources(a, arr); if (aktywne(o)) przeladuj(); po() },
+            "≣   Zaktualizuj EPG" to { toast("Dane EPG pojawią się w następnej wersji") },
+            "≣   Wyczyść EPG" to { toast("Brak pobranych danych EPG") },
+            (if (on) "◉   Wyłącz" else "◎   Włącz") to { o.put("enabled", !on); Session.saveSources(a, arr); po() },
+            "✎   Edytuj" to { formularzPortal(i, po) },
+            "🗑   Usuń" to {
                 AlertDialog.Builder(a).setTitle("Usunąć źródło „${o.optString("name")}”?")
                     .setPositiveButton("Usuń") { _, _ ->
                         val n = JSONArray(); for (k in 0 until arr.length()) if (k != i) n.put(arr.getJSONObject(k))
                         Session.saveSources(a, n); po()
                     }.setNegativeButton("Anuluj", null).show()
             },
-            "Informacje" to {
+            "ⓘ   Informacje" to {
                 AlertDialog.Builder(a).setTitle(o.optString("name")).setMessage(
                     "Typ: ${o.optString("type")}\nSerwer: ${o.optString("server", o.optString("url", "-"))}\n" +
                         "Login: ${o.optString("user", "-")}\nPrzesunięcie EPG: ${o.optString("epg", "Brak")}\nWygasa: ${o.optString("expires", "-")}")
@@ -332,12 +340,12 @@ class Ekrany(
         val arr = zrodla()
         val stary = if (edytuj != null) arr.getJSONObject(edytuj) else null
         val zaaw = JSONObject(stary?.optJSONObject("zaaw")?.toString() ?: "{}")
-        ekran(if (stary == null) "Dodaj Portal (MAC & Xtream)" else "Edytuj źródło", { l, _ ->
+        ekran(if (stary == null) "Dodaj Portal (MAC & Xtream)" else "Edytuj portal", { l, _ ->
             val nazwa = pole(l, "Pseudonim portalu", stary?.optString("name") ?: "")
-            val url = pole(l, "Adres URL portalu", stary?.optString("server") ?: "")
+            val url = pole(l, "Adres URL portalu", stary?.optString("server") ?: "", false, true)
             var login = stary?.optString("user")?.isNotEmpty() ?: false
             val polaLogin = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL; visibility = if (login) View.VISIBLE else View.GONE }
-            val usr = pole(polaLogin, "Login", stary?.optString("user") ?: "")
+            val usr = pole(polaLogin, "Identyfikator użytkownika", stary?.optString("user") ?: "")
             val pas = pole(polaLogin, "Hasło", stary?.optString("pass") ?: "", true)
             przelacznik(l, "Wymagany login?", login) { login = it; polaLogin.visibility = if (it) View.VISIBLE else View.GONE }
             l.addView(polaLogin)
@@ -368,7 +376,8 @@ class Ekrany(
             }
         }, { pas, d ->
             nastepnyZamknij = { d.dismiss() }
-            pas.addView(przycisk("Połącz") { nastepny?.invoke() })
+            pas.addView(przycisk(if (stary == null) "Połącz" else "Aktualizuj") { nastepny?.invoke() })
+            if (stary != null) pas.addView(przycisk("Anuluj", false) { d.dismiss() })
         })
     }
 
@@ -522,9 +531,11 @@ class Ekrany(
     }
 
     fun jezyk(ustaw: (String) -> Unit) {
-        val kody = listOf("pl", "en", "de", "uk")
-        val akt = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales().toLanguageTags().take(2)
-        wybor("Język aplikacji", listOf("Polski", "English", "Deutsch", "Українська"), kody.indexOf(akt).coerceAtLeast(0), { ustaw(kody[it]) })
+        val jez = listOf("English" to "en", "Español" to "es", "Nederlands" to "nl", "Deutsch" to "de", "Türkçe" to "tr",
+            "Português" to "pt", "Svenska" to "sv", "Русский" to "ru", "Lietuvių kalba" to "lt", "Eesti Keel" to "et",
+            "Slovenčina" to "sk", "Norsk" to "nb", "Język polski" to "pl", "українська" to "uk")
+        val akt = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales().toLanguageTags().take(2).ifEmpty { "pl" }
+        arkusz("Język aplikacji", jez.map { (n, k) -> n to { ustaw(k) } }, jez.indexOfFirst { it.second == akt })
     }
 
     fun wyglad(nazwy: List<String>, biezacy: Int, ustaw: (Int) -> Unit) = wybor("Wygląd", nazwy, biezacy, ustaw)
@@ -535,6 +546,7 @@ class Ekrany(
             kody.indexOf(Session.opt(a, "audio_lang")).coerceAtLeast(0), { Session.setOpt(a, "audio_lang", kody[it]); po() }) { l ->
             l.addView(View(a), LinearLayout.LayoutParams(-1, dp(16)))
             przelacznik(l, "Napisy włączone (w tym samym języku)", Session.opt(a, "subs") == "1") { Session.setOpt(a, "subs", if (it) "1" else "0"); po() }
+            wiersz(l, "Napisy online", null, true) { napisyOnline() }
         }
     }
 
@@ -548,6 +560,8 @@ class Ekrany(
 
     fun epg() {
         ekran("Dane EPG", { l, _ ->
+            wiersz(l, "Przechowywanie danych EPG", (Session.opt(a, "epg_dni", "7")) + " dni", true) { przechowywanieEpg() }
+            l.addView(View(a), LinearLayout.LayoutParams(-1, dp(14)))
             val arr = zrodla()
             for (i in 0 until arr.length()) {
                 val o = arr.getJSONObject(i)
@@ -559,6 +573,80 @@ class Ekrany(
             }
             if (arr.length() == 0) l.addView(TextView(a).apply { text = "Brak źródeł."; setTextColor(szary); setPadding(dp(8), dp(20), 0, 0) })
         })
+    }
+
+
+    // ---------- zmiana kolejnosci zrodel ----------
+
+    private fun kolejnosc(po: () -> Unit) {
+        val arr = zrodla()
+        val lista = ArrayList<JSONObject>()
+        for (i in 0 until arr.length()) lista.add(arr.getJSONObject(i))
+        ekran("Źródła treści", { l, d ->
+            val rv = RecyclerView(a)
+            rv.layoutManager = LinearLayoutManager(a)
+            rv.isNestedScrollingEnabled = false
+            val ad = object : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+                override fun getItemCount() = lista.size
+                override fun onCreateViewHolder(p: android.view.ViewGroup, t: Int): RecyclerView.ViewHolder {
+                    val w = LinearLayout(a).apply {
+                        orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+                        background = zaokr(karta, 12); setPadding(dp(18), dp(18), dp(18), dp(18))
+                        layoutParams = RecyclerView.LayoutParams(-1, -2).also { it.bottomMargin = dp(10) }
+                    }
+                    return object : RecyclerView.ViewHolder(w) {}
+                }
+                override fun onBindViewHolder(h: RecyclerView.ViewHolder, i: Int) {
+                    val w = h.itemView as LinearLayout
+                    w.removeAllViews()
+                    val o = lista[i]
+                    val kol = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL }
+                    kol.addView(TextView(a).apply { text = o.optString("name"); setTextColor(Color.WHITE); textSize = 21f })
+                    kol.addView(TextView(a).apply { text = o.optString("type"); setTextColor(szary); textSize = 15f })
+                    w.addView(kol, LinearLayout.LayoutParams(0, -2, 1f))
+                    w.addView(TextView(a).apply { text = "═"; setTextColor(szary); textSize = 24f })
+                }
+            }
+            rv.adapter = ad
+            ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP or ItemTouchHelper.DOWN, 0) {
+                override fun onMove(r: RecyclerView, v: RecyclerView.ViewHolder, t: RecyclerView.ViewHolder): Boolean {
+                    java.util.Collections.swap(lista, v.bindingAdapterPosition, t.bindingAdapterPosition)
+                    ad.notifyItemMoved(v.bindingAdapterPosition, t.bindingAdapterPosition); return true
+                }
+                override fun onSwiped(v: RecyclerView.ViewHolder, dir: Int) {}
+            }).attachToRecyclerView(rv)
+            l.addView(rv)
+            l.addView(TextView(a).apply { text = "Przytrzymaj kartę i przeciągnij, aby zmienić kolejność."; setTextColor(szary); textSize = 14f; setPadding(dp(6), dp(8), 0, 0) })
+            nastepny = {
+                val n = JSONArray(); for (o in lista) n.put(o)
+                Session.saveSources(a, n); po(); d.dismiss()
+            }
+        }, null, { gora, d ->
+            gora.addView(TextView(a).apply { text = "✕"; setTextColor(Color.WHITE); textSize = 24f; setPadding(dp(14), 0, dp(14), 0); setOnClickListener { d.dismiss() } })
+            gora.addView(TextView(a).apply { text = "✓"; setTextColor(Color.WHITE); textSize = 26f; setPadding(dp(14), 0, dp(14), 0); setOnClickListener { nastepny?.invoke() } })
+        })
+    }
+
+    // ---------- napisy online ----------
+
+    fun napisyOnline() {
+        ekran("Napisy online", { l, _ ->
+            wiersz(l, "Zaloguj się", null, false) { toast("Napisy online pojawią się w następnej wersji") }
+            wiersz(l, "Wyczyść pamięć podręczną napisów", null, false) { toast("Pamięć podręczna napisów jest pusta") }
+            wiersz(l, "Preferowane języki", Session.opt(a, "sub_lang").ifEmpty { "polski" }, false) {
+                val nazwy = listOf("polski", "English", "Deutsch", "українська")
+                arkusz("Preferowane języki", nazwy.map { n -> n to { Session.setOpt(a, "sub_lang", n); toast("Zapisano: $n") } },
+                    nazwy.indexOf(Session.opt(a, "sub_lang").ifEmpty { "polski" }))
+            }
+        })
+    }
+
+    private fun przechowywanieEpg() {
+        val dni = (1..14).toList()
+        val akt = Session.opt(a, "epg_dni", "7").toIntOrNull() ?: 7
+        arkusz("Przechowywanie danych EPG", dni.map { d ->
+            (if (d == 1) "1 dzień" else "$d dni") to { Session.setOpt(a, "epg_dni", d.toString()); toast("Zapisano") }
+        }, dni.indexOf(akt))
     }
 
     // ---------- Opcje rodzicielskie ----------
