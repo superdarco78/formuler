@@ -46,6 +46,9 @@ class MainActivity : AppCompatActivity() {
             }
         }
         b.bottomNav.selectedItemId = R.id.tab_kanaly
+
+        // Automatyczna aktualizacja (sprawdza raz na uruchomienie).
+        if (!demo) lifecycleScope.launch { Updater.check(this@MainActivity) }
     }
 
     // ----- zakladki -----
