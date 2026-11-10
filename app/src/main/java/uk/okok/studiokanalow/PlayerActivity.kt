@@ -31,6 +31,16 @@ class PlayerActivity : AppCompatActivity() {
         val p = ExoPlayer.Builder(this)
             .setMediaSourceFactory(androidx.media3.exoplayer.source.DefaultMediaSourceFactory(http))
             .build()
+        val lang = Session.opt(this, "audio_lang")
+        if (lang.isNotEmpty()) {
+            p.trackSelectionParameters = p.trackSelectionParameters.buildUpon()
+                .setPreferredAudioLanguage(lang)
+                .setPreferredTextLanguage(if (Session.opt(this, "subs") == "1") lang else null)
+                .build()
+        }
+        b.playerView.resizeMode = if (Session.opt(this, "zoom") == "1")
+            androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+        else androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIT
         b.playerView.player = p
         p.setMediaItem(MediaItem.fromUri(url))
         p.prepare()

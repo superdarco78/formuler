@@ -44,64 +44,19 @@
             android:clipToPadding="false"
             android:paddingVertical="8dp" />
 
-        <LinearLayout
+        <ScrollView
             android:id="@+id/settingsPanel"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:padding="20dp"
             android:visibility="gone">
 
-            <TextView
-                android:id="@+id/tvVersion"
+            <LinearLayout
+                android:id="@+id/settingsList"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textColor="@color/tx"
-                android:textSize="16sp"
-                android:layout_marginBottom="18dp" />
-
-            <Button
-                android:id="@+id/btnLanguage"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/lang_button"
-                android:textColor="@color/tx"
-                android:backgroundTint="@color/panel2"
-                android:layout_marginBottom="12dp" />
-
-            <Button
-                android:id="@+id/btnSkin"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/skin_button"
-                android:textColor="@color/tx"
-                android:backgroundTint="@color/panel2"
-                android:layout_marginBottom="12dp" />
-
-            <Button
-                android:id="@+id/btnAutostart"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="@color/tx"
-                android:backgroundTint="@color/panel2"
-                android:layout_marginBottom="12dp" />
-
-            <Button
-                android:id="@+id/btnResume"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="@color/tx"
-                android:backgroundTint="@color/panel2"
-                android:layout_marginBottom="12dp" />
-
-            <Button
-                android:id="@+id/btnLogout"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/btn_logout"
-                android:textColor="@color/tx"
-                android:backgroundTint="@color/panel2" />
-        </LinearLayout>
+                android:orientation="vertical"
+                android:padding="14dp" />
+        </ScrollView>
 
         <ProgressBar
             android:id="@+id/progress"

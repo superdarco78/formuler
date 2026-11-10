@@ -3,6 +3,7 @@ package uk.okok.studiokanalow
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
@@ -32,17 +33,6 @@ class MainActivity : AppCompatActivity() {
             if (b.bottomNav.selectedItemId == R.id.tab_filmy) openDetails(ch) else openPlayer(ch)
         }
 
-        b.btnLogout.setOnClickListener {
-            Session.clear(this)
-            startActivity(Intent(this, LoginActivity::class.java))
-            finish()
-        }
-
-        b.btnLanguage.setOnClickListener { pokazWyborJezyka() }
-        b.btnSkin.setOnClickListener { pokazWyborWygladu() }
-        odswiezOpcjeStartu()
-        b.btnAutostart.setOnClickListener { Session.setAutostart(this, !Session.autostart(this)); odswiezOpcjeStartu() }
-        b.btnResume.setOnClickListener { Session.setResume(this, !Session.resume(this)); odswiezOpcjeStartu() }
         zastosujWyglad()
 
         b.bottomNav.setOnItemSelectedListener { item ->
@@ -91,12 +81,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun odswiezOpcjeStartu() {
-        val t = getString(R.string.yes); val n = getString(R.string.no)
-        b.btnAutostart.text = getString(R.string.opt_autostart) + ": " + (if (Session.autostart(this)) t else n)
-        b.btnResume.text = getString(R.string.opt_resume) + ": " + (if (Session.resume(this)) t else n)
-    }
-
     private fun showSeriale() {
         b.tvTitle.text = getString(R.string.tab_seriale)
         b.settingsPanel.visibility = View.GONE
@@ -123,18 +107,146 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private var pinOk = false
+
     private fun showUstawienia() {
         b.tvTitle.text = getString(R.string.tab_ustawienia)
         b.recycler.visibility = View.GONE
         b.progress.visibility = View.GONE
         b.tvInfo.visibility = View.GONE
         b.tvCount.text = ""
+        val pin = Session.opt(this, "pin")
+        if (pin.isNotEmpty() && !pinOk) {
+            b.settingsPanel.visibility = View.GONE
+            pytajOPin(pin) { pinOk = true; showUstawienia() }
+            return
+        }
         b.settingsPanel.visibility = View.VISIBLE
-        val vn = try {
-            packageManager.getPackageInfo(packageName, 0).versionName
-        } catch (e: Exception) { "" }
-        b.tvVersion.text = "${getString(R.string.sett_version)}: $vn" +
-                if (demo) "\n\nTryb testowy (demo)" else ""
+        budujUstawienia()
+    }
+
+    private fun tak(v: Boolean) = getString(if (v) R.string.yes else R.string.no)
+
+    private fun budujUstawienia() {
+        val l = b.settingsList
+        l.removeAllViews()
+        fun sekcja(t: String) = l.addView(TextView(this).apply {
+            text = t; setTextColor(getColor(R.color.muted)); textSize = 12f
+            setPadding(8, 28, 8, 8)
+        })
+        fun wiersz(t: String, sub: String? = null, akcja: () -> Unit) = l.addView(TextView(this).apply {
+            text = if (sub.isNullOrEmpty()) t else "$t
+$sub"
+            setTextColor(getColor(R.color.tx)); textSize = 16f
+            setBackgroundResource(R.drawable.bg_input)
+            setPadding(36, 30, 36, 30)
+            val lp = android.widget.LinearLayout.LayoutParams(-1, -2); lp.bottomMargin = 8
+            layoutParams = lp
+            setOnClickListener { akcja() }
+        })
+        val vn = try { packageManager.getPackageInfo(packageName, 0).versionName } catch (e: Exception) { "" }
+
+        sekcja("KONTO I TREŚCI")
+        wiersz("Konto i serwis", if (demo) "Tryb testowy (demo)" else Api.HOME) { dialog("Konto i serwis",
+            if (demo) "Tryb testowy — bez konta." else "Serwer: ${Api.HOME}
+Login: ${Session.user(this)}
+
+Konto i listy przypisujesz w panelu (edytor).") }
+        wiersz("Źródła treści", "Zarządzane w panelu") { dialog("Źródła treści", "Źródła (listy, dostawcy) ustawiasz w panelu edytora. Aplikacja pobiera je sama.") }
+        wiersz("Zarządzaj grupami", "Zarządzane w panelu") { dialog("Zarządzaj grupami", "Kolejność i nazwy grup ustawiasz w edytorze — aplikacja pokazuje je 1 do 1.") }
+        wiersz("Dane EPG", "Wkrótce") { dialog("Dane EPG", "Program telewizyjny pojawi się w jednej z następnych wersji (źródło wybierasz w edytorze).") }
+        wiersz("Wyczyść historię", "Ostatnio oglądany kanał") { Session.clearHistory(this); dialog("Historia", "Wyczyszczono.") }
+
+        sekcja("APLIKACJA")
+        wiersz(getString(R.string.lang_button), null) { pokazWyborJezyka() }
+        wiersz(getString(R.string.skin_button), null) { pokazWyborWygladu() }
+        wiersz("Dźwięk i napisy", "Język: " + Session.opt(this, "audio_lang").ifEmpty { "auto" } +
+            ", napisy: " + tak(Session.opt(this, "subs") == "1")) { pokazDzwiek() }
+        wiersz("Opcje odtwarzacza", "Start: " + tak(Session.autostart(this)) + ", wznawianie: " + tak(Session.resume(this)) +
+            ", powiększenie: " + tak(Session.opt(this, "zoom") == "1")) { pokazOpcjeOdtwarzacza() }
+        wiersz("Opcje rodzicielskie", if (Session.opt(this, "pin").isEmpty()) "PIN wyłączony" else "PIN włączony") { pokazPin() }
+
+        sekcja("DANE")
+        wiersz("Backup i przywracanie", "Wkrótce — ustawienia na serwerze") { dialog("Backup", "Kopia ustawień na serwerze pojawi się po dowiązaniu konta kodem.") }
+        wiersz("Zresetuj preferencje użytkownika", null) {
+            androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Zresetować preferencje?")
+                .setPositiveButton("Resetuj") { _, _ -> Session.clearOpts(this); pinOk = false; recreate() }
+                .setNegativeButton("Anuluj", null).show()
+        }
+
+        sekcja("INFORMACJE")
+        wiersz("Informacje", "Wersja $vn") { dialog("OK Player", "Wersja: $vn
+Kod: ${Device.code(this)}
+MAC: ${Device.mac(this)}") }
+        wiersz(getString(R.string.btn_logout), null) {
+            Session.clear(this)
+            startActivity(Intent(this, LoginActivity::class.java))
+            finish()
+        }
+    }
+
+    private fun dialog(t: String, m: String) {
+        androidx.appcompat.app.AlertDialog.Builder(this).setTitle(t).setMessage(m)
+            .setPositiveButton("OK", null).show()
+    }
+
+    private fun pokazDzwiek() {
+        val nazwy = arrayOf("Automatycznie", "Polski", "English", "Deutsch")
+        val kody = arrayOf("", "pl", "en", "de")
+        androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Język dźwięku")
+            .setItems(nazwy) { _, i ->
+                Session.setOpt(this, "audio_lang", kody[i])
+                androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Napisy")
+                    .setItems(arrayOf("Wyłączone", "Włączone (w tym samym języku)")) { _, j ->
+                        Session.setOpt(this, "subs", if (j == 1) "1" else "0"); budujUstawienia()
+                    }.show()
+            }.show()
+    }
+
+    private fun pokazOpcjeOdtwarzacza() {
+        val etykiety = arrayOf(
+            getString(R.string.opt_autostart) + ": " + tak(Session.autostart(this)),
+            getString(R.string.opt_resume) + ": " + tak(Session.resume(this)),
+            "Powiększenie obrazu (bez pasów): " + tak(Session.opt(this, "zoom") == "1"))
+        androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Opcje odtwarzacza")
+            .setItems(etykiety) { _, i ->
+                when (i) {
+                    0 -> Session.setAutostart(this, !Session.autostart(this))
+                    1 -> Session.setResume(this, !Session.resume(this))
+                    else -> Session.setOpt(this, "zoom", if (Session.opt(this, "zoom") == "1") "0" else "1")
+                }
+                budujUstawienia()
+            }.show()
+    }
+
+    private fun pokazPin() {
+        val ma = Session.opt(this, "pin").isNotEmpty()
+        val et = android.widget.EditText(this).apply {
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD
+            hint = "PIN (4 cyfry)"
+        }
+        val bld = androidx.appcompat.app.AlertDialog.Builder(this).setTitle("PIN do Ustawień").setView(et)
+            .setPositiveButton("Ustaw") { _, _ ->
+                val v = et.text.toString().trim()
+                if (v.length == 4) { Session.setOpt(this, "pin", v); pinOk = true; budujUstawienia() }
+            }
+            .setNegativeButton("Anuluj", null)
+        if (ma) bld.setNeutralButton("Wyłącz PIN") { _, _ -> Session.setOpt(this, "pin", ""); budujUstawienia() }
+        bld.show()
+    }
+
+    private fun pytajOPin(pin: String, ok: () -> Unit) {
+        val et = android.widget.EditText(this).apply {
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD
+            hint = "PIN"
+        }
+        androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Podaj PIN").setView(et)
+            .setPositiveButton("OK") { _, _ ->
+                if (et.text.toString().trim() == pin) ok()
+                else { b.bottomNav.selectedItemId = R.id.tab_kanaly }
+            }
+            .setNegativeButton("Anuluj") { _, _ -> b.bottomNav.selectedItemId = R.id.tab_kanaly }
+            .show()
     }
 
     // ----- ladowanie -----

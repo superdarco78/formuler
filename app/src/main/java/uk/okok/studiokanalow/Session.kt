@@ -58,4 +58,14 @@ object Session {
     fun setAutostart(ctx: Context, v: Boolean) = opts(ctx).edit().putBoolean("autostart", v).apply()
     fun resume(ctx: Context) = opts(ctx).getBoolean("resume", true)
     fun setResume(ctx: Context, v: Boolean) = opts(ctx).edit().putBoolean("resume", v).apply()
+
+    fun opt(ctx: Context, key: String, def: String = ""): String = opts(ctx).getString(key, def) ?: def
+    fun setOpt(ctx: Context, key: String, v: String) = opts(ctx).edit().putString(key, v).apply()
+    fun clearOpts(ctx: Context) {
+        opts(ctx).edit().clear().apply()
+        ctx.getSharedPreferences("wyglad", Context.MODE_PRIVATE).edit().clear().apply()
+    }
+    fun clearHistory(ctx: Context) {
+        prefs(ctx).edit().remove("last_url").remove("last_name").apply()
+    }
 }
