@@ -45,4 +45,16 @@ object Skorka {
         return android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM,
             intArrayOf(android.graphics.Color.HSVToColor(hsv), 0xFF07080B.toInt(), 0xFF000000.toInt()))
     }
+
+    /** Kolor przewodni plakatu bez zapisywania (ekran filmu). */
+    fun kolor(b: android.graphics.Bitmap): Int {
+        val m = android.graphics.Bitmap.createScaledBitmap(b, 24, 24, true)
+        var best = 0xFFF5A623.toInt(); var wynik = -1f; val hsv = FloatArray(3)
+        for (y in 0 until 24) for (x in 0 until 24) { val px = m.getPixel(x, y); android.graphics.Color.colorToHSV(px, hsv)
+            val w = hsv[1] * (if (hsv[2] < 0.25f) 0f else hsv[2]); if (w > wynik) { wynik = w; best = px } }
+        android.graphics.Color.colorToHSV(best, hsv); hsv[1] = hsv[1].coerceIn(0.45f, 0.85f); hsv[2] = hsv[2].coerceIn(0.75f, 0.95f)
+        return android.graphics.Color.HSVToColor(hsv)
+    }
+    fun przyciemnij(k: Int, v: Float, alfa: Int): Int { val hsv = FloatArray(3); android.graphics.Color.colorToHSV(k, hsv); hsv[2] = v; return android.graphics.Color.HSVToColor(alfa, hsv) }
+    fun jasny(k: Int): Boolean = (android.graphics.Color.red(k) * 299 + android.graphics.Color.green(k) * 587 + android.graphics.Color.blue(k) * 114) / 1000 > 165
 }

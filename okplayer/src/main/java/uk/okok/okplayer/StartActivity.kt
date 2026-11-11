@@ -301,7 +301,7 @@ class StartActivity : AppCompatActivity() {
                     // obrys cyfry jak w MyTvOnline: biala kreska, czarny srodek
                     paint.style = android.graphics.Paint.Style.STROKE; paint.strokeWidth = dp(2).toFloat(); setTextColor(Color.WHITE)
                 }
-                f.setOnClickListener { otworz(v) }
+                f.setOnClickListener { otworz(v, kol.getChildAt(0)) }
             }
         }
         k.addView(rv, LinearLayout.LayoutParams(-1, -2))
@@ -337,7 +337,7 @@ class StartActivity : AppCompatActivity() {
                 val poz = if (url.isEmpty()) 0 else Ust.pozycja(this@StartActivity, url); val dl = if (url.isEmpty()) 0 else Ust.dlugosc(this@StartActivity, url)
                 if (poz > 0) { pb.visibility = View.VISIBLE; pb.progress = if (dl > 0) (poz * 100 / dl).toInt().coerceIn(3, 100) else 10 } else pb.visibility = View.GONE
                 (w.getChildAt(1) as TextView).text = v.nazwa
-                w.setOnClickListener { otworz(v) }
+                w.setOnClickListener { otworz(v, fr) }
             }
         }
         k.addView(rv, LinearLayout.LayoutParams(-1, -2))
@@ -536,6 +536,17 @@ class StartActivity : AppCompatActivity() {
             foreground = GradientDrawable().apply { cornerRadius = dp(16).toFloat(); setColor(Color.TRANSPARENT); setStroke(dp(1), 0x55FFFFFF) } }
         val obrazy = List(2) { ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_CROP } }
         obrazy.forEach { karta.addView(it, FrameLayout.LayoutParams(-1, -1)) }
+        banerObrazy = obrazy
+        // 2.11: zywy baner - po 3 s na plakacie rusza zwiastun bez dzwieku
+        val zwiastunWidok = (layoutInflater.inflate(R.layout.mini_gracz, null) as androidx.media3.ui.PlayerView).apply {
+            useController = false; resizeMode = androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_ZOOM; alpha = 0f; setShutterBackgroundColor(Color.TRANSPARENT) }
+        karta.addView(zwiastunWidok, FrameLayout.LayoutParams(-1, -1))
+        var zwiastun: androidx.media3.exoplayer.ExoPlayer? = null
+        fun stopZwiastun() { zwiastunWidok.animate().cancel(); zwiastunWidok.alpha = 0f; zwiastunWidok.player = null; zwiastun?.release(); zwiastun = null }
+        stopBaner = { stopZwiastun() }
+        karta.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+            override fun onViewAttachedToWindow(v: View) {}
+            override fun onViewDetachedFromWindow(v: View) { stopZwiastun() } })
         karta.addView(View(this).apply { background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(0x00000000, 0x00000000, 0x66000000, 0xEE000000.toInt())) }, FrameLayout.LayoutParams(-1, -1))
         val dol = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL; setPadding(dp(18), 0, dp(18), dp(18)) }
         val tytul = tekst("", 30f, gruby = true).apply { gravity = Gravity.CENTER; maxLines = 2; ellipsize = android.text.TextUtils.TruncateAt.END; setShadowLayer(14f, 0f, 2f, Color.BLACK) }
@@ -551,7 +562,22 @@ class StartActivity : AppCompatActivity() {
         k.addView(karta, LinearLayout.LayoutParams(-1, (w * 1.38).toInt().coerceAtMost((resources.displayMetrics.heightPixels * 0.68).toInt())).apply { setMargins(dp(16), dp(14), dp(16), dp(6)) })
         var i = 0; var widoczny = 0
         fun pokazNr(n: Int, anim: Boolean) {
+            stopZwiastun()
             val v = l[n]; val nowy = obrazy[1 - widoczny]; val stary = obrazy[widoczny]
+            if (v.rodzaj == "f") karta.postDelayed({
+                if (i != n || !karta.isAttachedToWindow) return@postDelayed
+                lifecycleScope.launch {
+                    val u = withContext(Dispatchers.IO) { Dodatki.zwiastunItunes(v.nazwa) }
+                    if (u.isEmpty() || i != n || !karta.isAttachedToWindow) return@launch
+                    zwiastun = androidx.media3.exoplayer.ExoPlayer.Builder(this@StartActivity).build().apply {
+                        volume = 0f; repeatMode = androidx.media3.common.Player.REPEAT_MODE_ONE
+                        setMediaItem(androidx.media3.common.MediaItem.fromUri(u)); prepare(); playWhenReady = true
+                        addListener(object : androidx.media3.common.Player.Listener {
+                            override fun onRenderedFirstFrame() { zwiastunWidok.animate().alpha(1f).setDuration(900).start() } })
+                    }
+                    zwiastunWidok.player = zwiastun
+                }
+            }, 3000)
             nowy.alpha = 0f; nowy.scaleX = 1.06f; nowy.scaleY = 1.06f
             nowy.load(v.okladka) { allowHardware(false); listener(onSuccess = { _, r ->
                 (r.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap?.let { bm ->
@@ -567,13 +593,13 @@ class StartActivity : AppCompatActivity() {
             val rok = Regex("\\((\\d{4})\\)").find(v.nazwa)?.groupValues?.get(1)
             meta.text = listOfNotNull(if (v.rodzaj == "s") "Serial" else "Film", rok, nazwaKat(v.kat, if (v.rodzaj == "s") katS else katF).ifEmpty { null }?.take(28), v.ocena.takeIf { it > 0 }?.let { "★ " + String.format(java.util.Locale.US, "%.1f", it) }).joinToString("  •  ")
             ogladaj.text = if (v.rodzaj == "s") "▶   Odtwórz serial" else "▶   Odtwórz film"
-            ogladaj.setOnClickListener { otworz(v) }
+            ogladaj.setOnClickListener { otworz(v, karta) }
             lista.setOnClickListener { Ust.przelaczUlubiony(this, v.rodzaj, v.id, v.nazwa, v.okladka, v.ext, ""); android.widget.Toast.makeText(this, Jezyk.t("Dodano do Mojej listy"), android.widget.Toast.LENGTH_SHORT).show() }
         }
         pokazNr(0, false)
-        val zmiana = object : Runnable { override fun run() { if (!karta.isAttachedToWindow) return; i = (i + 1) % l.size; pokazNr(i, true); karta.postDelayed(this, 7000) } }
+        val zmiana = object : Runnable { override fun run() { if (!karta.isAttachedToWindow) return; i = (i + 1) % l.size; pokazNr(i, true); karta.postDelayed(this, if (zwiastun != null) 25000 else 9000) } }
         karta.postDelayed(zmiana, 7000)
-        karta.setOnClickListener { otworz(l[i]) }
+        karta.setOnClickListener { otworz(l[i], karta) }
     }
 
     /** Filtry pod banerem: szybkie przejscie do TV, filmow, seriali, radia, ulubionych. */
@@ -635,10 +661,16 @@ class StartActivity : AppCompatActivity() {
         banerCanvy.alpha = 0f; banerCanvy.translationY = -dp(16).toFloat(); banerCanvy.animate().alpha(1f).translationY(0f).setDuration(420).start()
     }
 
+    private var banerObrazy: List<ImageView>? = null
+    private var stopBaner: (() -> Unit)? = null
+    override fun onPause() { stopBaner?.invoke(); super.onPause() }
     private fun start() {
         val sv = ScrollView(this)
         val k = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(0, 0, 0, dp(16)) }
         sv.addView(k); tresc.addView(sv)
+        // 2.11: paralaksa - plakat w banerze przesuwa sie wolniej niz reszta przy przewijaniu
+        banerObrazy = null
+        sv.setOnScrollChangeListener { _, _, y, _, _ -> banerObrazy?.forEach { it.translationY = y * 0.35f } }
         if (filmy.isEmpty() && kanaly.isEmpty()) { k.addView(tekst("Ładuję listę…", 15f, SZARY).apply { setPadding(dp(16), dp(16), 0, 0) }); return }
         val pop = { l: List<Vod> -> l.filter { it.ocena > 0 }.sortedByDescending { it.ocena }.take(20).ifEmpty { l.takeLast(20).reversed() } }
         // Uklad Startu (Ustawienia -> Uklad Startu): kinowy (domyslny), ikony (jak IBO) albo klasyczny.
@@ -780,10 +812,14 @@ class StartActivity : AppCompatActivity() {
         ustaw()
     }
 
-    private fun otworz(v: Vod) {
-        startActivity(Intent(this, DetaleActivity::class.java).putExtra("id", v.id).putExtra("nazwa", v.nazwa)
-            .putExtra("okladka", v.okladka).putExtra("ext", v.ext).putExtra("rodzaj", v.rodzaj).putExtra("ocena", v.ocena))
-        overridePendingTransition(R.anim.wejscie_zoom, android.R.anim.fade_out)
+    private fun otworz(v: Vod, zrodlo: View? = null) {
+        val i = Intent(this, DetaleActivity::class.java).putExtra("id", v.id).putExtra("nazwa", v.nazwa)
+            .putExtra("okladka", v.okladka).putExtra("ext", v.ext).putExtra("rodzaj", v.rodzaj).putExtra("ocena", v.ocena)
+        // 2.11: plakat plynnie powieksza sie z miejsca, w ktorym go kliknieto, na caly ekran (jak w Apple TV)
+        if (zrodlo != null && zrodlo.width > 0) {
+            if (Pilot.czyTv(this).not()) zrodlo.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY)
+            startActivity(i, android.app.ActivityOptions.makeScaleUpAnimation(zrodlo, 0, 0, zrodlo.width, zrodlo.height).toBundle())
+        } else { startActivity(i); overridePendingTransition(R.anim.wejscie_zoom, android.R.anim.fade_out) }
     }
 
     /** Plakaty filmow/seriali. szer = -1 -> do siatki (dopasuj szerokosc). */
@@ -803,7 +839,7 @@ class StartActivity : AppCompatActivity() {
             val w = h.itemView as LinearLayout; val v = l[i]
             (w.getChildAt(0) as ImageView).apply { setImageDrawable(null); if (v.okladka != null) load(v.okladka) { canva("ok_gr_brak_plakatu").takeIf { it != 0 }?.let { error(it) } } else canva("ok_gr_brak_plakatu").takeIf { it != 0 }?.let { setImageResource(it) } }
             (w.getChildAt(1) as TextView).text = v.nazwa
-            w.setOnClickListener { otworz(v) }
+            w.setOnClickListener { otworz(v, w.getChildAt(0)) }
         }
     }
 

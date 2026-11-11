@@ -62,7 +62,7 @@ class DetaleActivity : AppCompatActivity() {
         val sv = ScrollView(this).apply { tloCanvy(Skorka.id(this@DetaleActivity, R.drawable.ok_gr_tlo_aplikacji)) }
         kol = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         sv.addView(kol)
-        val plakat = ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_CROP; intent.getStringExtra("okladka")?.let { load(it) } }
+        val plakat = ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_CROP }
         kol.addView(plakat, LinearLayout.LayoutParams(-1, dp(420)))
         kol.addView(tekst(nazwa, 24f, g = true).apply { gravity = Gravity.CENTER; setPadding(dp(16), dp(14), dp(16), dp(6)) })
         val meta = tekst("", 16f, 0xFFE6E6E6.toInt()).apply { gravity = Gravity.CENTER }
@@ -101,6 +101,23 @@ class DetaleActivity : AppCompatActivity() {
         kol.addView(sekcjaOdc)
         kol.addView(zakl); kol.addView(tabTresc)
         val f = FrameLayout(this)
+        // 2.11: rozmyty plakat w tle i kolor z plakatu (tlo, przycisk Ogladaj) - jak w Apple TV
+        val rozmyte = ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_CROP; alpha = 0.45f
+            if (android.os.Build.VERSION.SDK_INT >= 31) setRenderEffect(android.graphics.RenderEffect.createBlurEffect(80f, 80f, android.graphics.Shader.TileMode.CLAMP)) }
+        f.addView(rozmyte, FrameLayout.LayoutParams(-1, -1))
+        val nakladka = View(this).apply { background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(0x33000000, 0xCC000000.toInt(), Color.BLACK)) }
+        f.addView(nakladka, FrameLayout.LayoutParams(-1, -1))
+        sv.background = null
+        intent.getStringExtra("okladka")?.let { u ->
+            plakat.load(u) { allowHardware(false); listener(onSuccess = { _, r ->
+                (r.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap?.let { bm ->
+                    rozmyte.setImageBitmap(bm)
+                    val kol = Skorka.kolor(bm)
+                    nakladka.background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(Skorka.przyciemnij(kol, 0.45f, 0x66), 0xDD000000.toInt(), Color.BLACK))
+                    (ogladaj.background as? GradientDrawable)?.colors = intArrayOf(kol, kol)
+                    ogladaj.setTextColor(if (Skorka.jasny(kol)) Color.BLACK else Color.WHITE)
+                } }) }
+        }
         f.addView(sv)
         f.addView(tekst("‹", 26f).apply { setPadding(dp(22), dp(8), dp(22), dp(12)); background = tlo(0x99000000.toInt(), 24); setOnClickListener { finish() } },
             FrameLayout.LayoutParams(-2, -2).apply { setMargins(dp(14), dp(14), 0, 0) })
