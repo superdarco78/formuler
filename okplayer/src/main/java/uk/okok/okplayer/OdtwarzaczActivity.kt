@@ -320,14 +320,17 @@ class OdtwarzaczActivity : AppCompatActivity() {
             val rodzic = pr.parent as? android.view.ViewGroup
             if (poziomo && rodzic !== f) {
                 rodzic?.removeView(pr)
-                pr.setBackgroundColor(0xE6101010.toInt())
+                pr.setBackgroundColor(0xFF101010.toInt()); pr.isClickable = true
                 f.addView(pr, FrameLayout.LayoutParams((resources.displayMetrics.widthPixels * 0.5).toInt(), -1).apply { gravity = Gravity.END })
             } else if (!poziomo && rodzic === f) {
                 f.removeView(pr); pr.setBackgroundColor(Color.TRANSPARENT)
                 korzen.addView(pr, korzen.indexOfChild(listaTv), android.widget.LinearLayout.LayoutParams(-1, 0, 1f))
             }
             pr.visibility = if (przewodnikOtwarty) android.view.View.VISIBLE else android.view.View.GONE
+            if (poziomo && przewodnikOtwarty) pr.bringToFront()
         }
+        // Gdy program jest otwarty, przyciski na obrazie znikaja (nie nachodza na liste).
+        if (poziomo && przewodnikOtwarty) progNaObrazie?.visibility = android.view.View.GONE
         val c = androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)
         if (poziomo) c.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars()) else c.show(androidx.core.view.WindowInsetsCompat.Type.systemBars())
     }
