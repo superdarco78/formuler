@@ -1,4 +1,1 @@
-Okno aktualizacji|zwykły szary tekst z całą historią zmian|ładne okno: tylko zmiany tej wersji, każda z opisem „było” i „teraz”
-Aktor (np. Brad Pitt)|ekran wisiał na „Szukam filmów…”|filmy szukane po numerze IMDb aktora – szybko i dokładnie; gdy brak odpowiedzi, pokazuje komunikat zamiast wiecznego szukania
-Mini-okno|pasek na całą szerokość z opisem|mały kwadrat z samym obrazem nad aplikacją; dotknij = pełny ekran, ✕ = zamknij, przeciągnij = przesuń
-Kanał z listy|otwierał się w pionie z listą|od razu pełny ekran; Wstecz = mini-okno
+Przycisk okienka pod obrazem TV|okrągły przycisk ⧉ obok „Kanały”|usunięty – do małego okna przechodzisz przyciskiem Wstecz
