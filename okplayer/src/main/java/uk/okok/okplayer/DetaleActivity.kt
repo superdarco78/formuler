@@ -44,6 +44,7 @@ class DetaleActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Pilot.wlacz(this)
         val id = intent.getStringExtra("id") ?: ""
         val nazwa = intent.getStringExtra("nazwa") ?: ""
         val serial = intent.getStringExtra("rodzaj") == "s"

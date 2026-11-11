@@ -36,6 +36,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Pilot.wlacz(this)
         val f = FrameLayout(this).apply { setBackgroundColor(Color.BLACK) }
         widok = PlayerView(this).apply { useController = true; setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS); controllerShowTimeoutMs = 3000 }
         f.addView(widok, FrameLayout.LayoutParams(-1, -1))

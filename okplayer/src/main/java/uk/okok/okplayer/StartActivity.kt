@@ -59,6 +59,7 @@ class StartActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Pilot.wlacz(this)
         if (Ust.zalogowany(this)) ekranGlowny() else ekranLogowania()
         if (savedInstanceState == null) animacjaStartu()
         lifecycleScope.launch { Aktualizacja.sprawdz(this@StartActivity) }
@@ -143,6 +144,7 @@ class StartActivity : AppCompatActivity() {
                 else -> false
             }
         }
+        mini.setOnClickListener { miniKanal?.let { miniNaDuzy(it, true) } }  // OK na pilocie
         obszar.addView(mini, FrameLayout.LayoutParams(dp(208), dp(117)).apply { gravity = Gravity.BOTTOM or Gravity.END; setMargins(0, 0, dp(12), dp(12)) })
         gora2 = budujGornyGracz()
         root.addView(gora2, LinearLayout.LayoutParams(-1, -2))
@@ -635,7 +637,9 @@ class StartActivity : AppCompatActivity() {
             setShowPreviousButton(false); setShowNextButton(false); setShowRewindButton(false); setShowFastForwardButton(false)
             setFullscreenButtonClickListener { gornyKanal?.let { ch -> doPelnego(ch) } }
         }
-        k.addView(gornyWidok, LinearLayout.LayoutParams(-1, resources.displayMetrics.widthPixels * 9 / 16))
+        // Na telewizorze / w poziomie obraz zajmuje najwyzej ~45% wysokosci, zeby lista byla widoczna.
+        val dm = resources.displayMetrics
+        k.addView(gornyWidok, LinearLayout.LayoutParams(-1, minOf(dm.widthPixels * 9 / 16, (dm.heightPixels * 0.45).toInt())))
         gornyWidok.post { for (n in listOf(androidx.media3.ui.R.id.exo_progress, androidx.media3.ui.R.id.exo_position, androidx.media3.ui.R.id.exo_duration, androidx.media3.ui.R.id.exo_time)) gornyWidok.findViewById<View>(n)?.visibility = View.GONE }
         val p = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(14), dp(10), dp(14), dp(10)); setBackgroundColor(0xFF111111.toInt()) }
         gLogo = ImageView(this).apply { scaleType = ImageView.ScaleType.FIT_CENTER }

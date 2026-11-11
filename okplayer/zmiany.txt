@@ -1,3 +1,4 @@
-Program na pełnym ekranie|„☰ Program / archiwum” otwierał szare okienko z samą listą godzin i tytułów, często od następnego dnia, bez archiwum i opisów|otwiera ten sam pełny przewodnik co w pionie: dni do wyboru, godziny od–do, NA ŻYWO z paskiem, opisy i niebieskie „Archiwum” – jako panel na prawej połowie obrazu, TV gra obok
-Zamykanie programu|tylko przyciskiem „Zamknij”|Wstecz albo ponownie „☰ Program” chowa panel
-Opis filmu|„Ładuję…” mogło wisieć ponad 2 minuty|najwyżej 12 s na próbę, potem „Spróbuj ponownie”
+Pilot (dekoder Formuler, Android TV)|przy sterowaniu pilotem nie było widać, który element jest zaznaczony|zaznaczony kafelek, kanał, przycisk czy ikona ma białą ramkę i lekko się powiększa – strzałki i OK działają wszędzie
+Obraz TV na telewizorze|w poziomie obraz na górze zajmował prawie cały ekran i zasłaniał listę|obraz zajmuje najwyżej ok. połowę ekranu, pod nim widać listę kanałów
+Mały kwadrat|dało się otworzyć tylko palcem|OK na pilocie też otwiera pełny ekran
+Telefon|–|bez zmian – ramka pokazuje się tylko przy pilocie
