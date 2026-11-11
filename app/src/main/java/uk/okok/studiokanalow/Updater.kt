@@ -73,13 +73,32 @@ object Updater {
         }
     }
 
-    /** Otwiera plik APK w przegladarce/pobieraniu systemu - bez uprawnienia instalowania (uspokaja Play Protect). */
+    /** Pobiera APK do pamieci podrecznej i uruchamia systemowy instalator (aktualizacja na wierzch). */
     private fun pobierzIZainstaluj(act: Activity, url: String) {
         android.widget.Toast.makeText(act, "Pobieranie aktualizacji…", android.widget.Toast.LENGTH_LONG).show()
-        try {
-            act.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-        } catch (e: Exception) {
-            android.widget.Toast.makeText(act, "Nie udało się otworzyć pobierania", android.widget.Toast.LENGTH_LONG).show()
+        (act as? androidx.lifecycle.LifecycleOwner)?.lifecycleScope?.launch {
+            try {
+                val plik = withContext(Dispatchers.IO) {
+                    val f = java.io.File(act.cacheDir, "aktualizacja.apk")
+                    client.newCall(Request.Builder().url(url).build()).execute().use { r ->
+                        if (!r.isSuccessful) throw java.io.IOException("HTTP " + r.code)
+                        r.body!!.byteStream().use { i -> f.outputStream().use { o -> i.copyTo(o) } }
+                    }
+                    f
+                }
+                if (android.os.Build.VERSION.SDK_INT >= 26 && !act.packageManager.canRequestPackageInstalls()) {
+                    android.widget.Toast.makeText(act, "Zezwól tej aplikacji na instalowanie, potem wybierz aktualizację jeszcze raz", android.widget.Toast.LENGTH_LONG).show()
+                    act.startActivity(Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + act.packageName)))
+                    return@launch
+                }
+                val uri = androidx.core.content.FileProvider.getUriForFile(act, act.packageName + ".fileprovider", plik)
+                act.startActivity(Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(uri, "application/vnd.android.package-archive")
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+                })
+            } catch (e: Exception) {
+                android.widget.Toast.makeText(act, "Nie udało się pobrać aktualizacji", android.widget.Toast.LENGTH_LONG).show()
+            }
         }
     }
 }

@@ -63,8 +63,17 @@ class DetailsActivity : AppCompatActivity() {
             }
         } else if (!demo) {
             lifecycleScope.launch {
-                info = Api.vodInfo(Session.server(this@DetailsActivity), Session.user(this@DetailsActivity),
+                var vi = Api.vodInfo(Session.server(this@DetailsActivity), Session.user(this@DetailsActivity),
                     Session.pass(this@DetailsActivity), id)
+                if (vi == null || vi.plot.isEmpty() || (vi.poster.isEmpty() && logo.isNullOrEmpty())) {
+                    val it = try { Api.itunes(name) } catch (e: Exception) { null }
+                    if (it != null) {
+                        vi = if (vi == null) it else vi.copy(plot = vi.plot.ifEmpty { it.plot }, poster = vi.poster.ifEmpty { it.poster },
+                            genre = vi.genre.ifEmpty { it.genre }, year = vi.year.ifEmpty { it.year })
+                        rap("film id=" + id + " uzupelniono z bazy filmow")
+                    }
+                }
+                info = vi
                 info?.let { fill(it, logo) }
                 rap("film id=" + id + " opis=" + (info?.plot?.length ?: -1) + " obsada=" + (info?.cast?.length ?: -1) + " zwiastun=" + (info?.trailer?.length ?: -1))
                 render()
@@ -181,7 +190,7 @@ class DetailsActivity : AppCompatActivity() {
             1 -> v?.cast?.takeIf { it.isNotEmpty() } ?: none
             2 -> if (intent.getBooleanExtra("serial", false))
                     (if (sezony.isEmpty()) none else "Sezonów: ${sezony.size}\nOdcinków: ${sezony.sumOf { it.second.size }}")
-                else listOf((intent.getStringExtra("url") ?: "").substringAfterLast('.', "").uppercase(), v?.media ?: "").filter { x -> x.isNotEmpty() }.joinToString("\n").ifEmpty { none }
+                else listOf((intent.getStringExtra("url") ?: "").substringAfterLast('.', "").uppercase(), v?.media ?: "", Session.opt(this, "nosnik_" + (intent.getStringExtra("id") ?: ""))).filter { x -> x.isNotEmpty() }.joinToString("\n").ifEmpty { none }
             else -> v?.let {
                 listOfNotNull(
                     it.premiera.ifEmpty { it.year }.takeIf { x -> x.isNotEmpty() }?.let { x -> "Premiera: $x" },

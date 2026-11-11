@@ -69,6 +69,27 @@ class PlayerActivity : AppCompatActivity() {
             }
         } catch (e: Exception) { "sonda blad " + e.javaClass.simpleName + " " + (e.message ?: "").take(80) }
     }
+    /** Zapamietuje rozdzielczosc, kodek i dzwiek filmu (pokazywane potem w zakladce Nosnik). */
+    private fun zapiszNosnik(t: androidx.media3.common.Tracks) {
+        if (czyLiveUrl()) return
+        val id = Regex("/movie/[^/]+/[^/]+/(\\d+)").find(intent.getStringExtra("url") ?: "")?.groupValues?.get(1) ?: return
+        fun kodek(m: String?) = when {
+            m == null -> ""
+            m.contains("avc") -> "H.264"; m.contains("hevc") -> "H.265"; m.contains("av01") -> "AV1"; m.contains("vp9") -> "VP9"
+            m.contains("mp4a") -> "AAC"; m.contains("eac3") -> "E-AC-3"; m.contains("ac3") -> "AC-3"; m.contains("dts") -> "DTS"
+            m.contains("opus") -> "Opus"; m.contains("mpeg") -> "MP3"; else -> m.substringAfter('/')
+        }
+        val v = ArrayList<String>(); val au = ArrayList<String>()
+        for (g in t.groups) {
+            if (!g.isSelected) continue
+            val f = g.mediaTrackGroup.getFormat(0)
+            if (g.type == androidx.media3.common.C.TRACK_TYPE_VIDEO) v.add((if (f.width > 0) f.width.toString() + "×" + f.height else "") + " " + kodek(f.sampleMimeType))
+            else if (g.type == androidx.media3.common.C.TRACK_TYPE_AUDIO) au.add("Dźwięk " + kodek(f.sampleMimeType) + (if (f.channelCount > 0) " " + f.channelCount + " kan." else ""))
+        }
+        val s = (v + au).map { it.trim() }.filter { it.isNotEmpty() }.joinToString("\n")
+        if (s.isNotEmpty()) Session.setOpt(this, "nosnik_" + id, s)
+    }
+
     /** Jesli po 20 s nie ma obrazu - zglos stan i przelacz zrodlo. */
     private fun czuwajNad(p: androidx.media3.exoplayer.ExoPlayer) {
         czuwak?.cancel()
@@ -422,6 +443,7 @@ class PlayerActivity : AppCompatActivity() {
             override fun onTracksChanged(t: androidx.media3.common.Tracks) {
                 val o = t.groups.joinToString(",") { g -> g.mediaTrackGroup.getFormat(0).sampleMimeType.toString() + (if (g.isSelected) "+" else "-") + (if (g.isSupported) "ok" else "NIEOBSLUG") }
                 raport("sciezki " + o)
+                zapiszNosnik(t)
             }
         })
         player = p

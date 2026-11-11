@@ -274,6 +274,29 @@ object Api {
             vi to out
         }
 
+    /** Uzupelnienie brakujacych danych filmu z publicznej bazy (iTunes, bez klucza): okladka, opis, gatunek, rok. */
+    suspend fun itunes(tytul: String): VodInfo? = withContext(Dispatchers.IO) {
+        val rok = Regex("\\((\\d{4})\\)").find(tytul)?.groupValues?.get(1)?.toIntOrNull()
+        val czysty = tytul.replace(Regex("\\(\\d{4}\\)"), " ")
+            .replace(Regex("\\b(napisy|lektor|dubbing|pl|4k|hd|fhd|uhd)\\b", RegexOption.IGNORE_CASE), " ").replace(Regex("\\s+"), " ").trim()
+        if (czysty.length < 2) return@withContext null
+        fun n(x: String) = x.lowercase().replace(Regex("[^\\p{L}\\p{N}]"), "")
+        val url = "https://itunes.apple.com/search?term=" + java.net.URLEncoder.encode(czysty, "UTF-8") + "&media=movie&entity=movie&country=PL&limit=5"
+        val arr = JSONObject(get(url)).optJSONArray("results") ?: return@withContext null
+        for (i in 0 until arr.length()) {
+            val o = arr.getJSONObject(i)
+            val nazwa = o.optString("trackName")
+            val r = o.optString("releaseDate").take(4).toIntOrNull()
+            if (n(nazwa) != n(czysty) && !n(nazwa).contains(n(czysty)) && !n(czysty).contains(n(nazwa))) continue
+            if (rok != null && r != null && kotlin.math.abs(rok - r) > 1) continue
+            val plot = o.optString("longDescription").ifEmpty { o.optString("shortDescription") }
+            val okl = o.optString("artworkUrl100").replace("100x100bb", "600x900bb")
+            return@withContext VodInfo(poster = okl, plot = plot, cast = "", genre = o.optString("primaryGenreName"),
+                year = r?.toString() ?: "", rating = "", duration = "", trailer = "")
+        }
+        null
+    }
+
     /** Szczegoly filmu (opis, obsada, ocena, zwiastun) - to, co wpisano w edytorze. */
     suspend fun vodInfo(server: String, user: String, pass: String, streamId: String): VodInfo? =
         withContext(Dispatchers.IO) {
