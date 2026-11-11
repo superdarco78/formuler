@@ -324,10 +324,7 @@ class StartActivity : AppCompatActivity() {
         if (filmy.isEmpty() && kanaly.isEmpty()) { k.addView(tekst("Ładuję listę…", 15f, SZARY).apply { setPadding(dp(16), dp(16), 0, 0) }); return }
         val pop = { l: List<Vod> -> l.filter { it.ocena > 0 }.sortedByDescending { it.ocena }.take(20).ifEmpty { l.takeLast(20).reversed() } }
         // Kontynuuj ogladanie: ostatni kanal + filmy przerwane w polowie (z ulubionych i najnowszych)
-        Ust.ostatni(this)?.let { o ->
-            k.addView(naglowek("Kontynuuj oglądanie"))
-            k.addView(kafelKanalu(o), LinearLayout.LayoutParams(-1, dp(72)).apply { setMargins(dp(16), 0, dp(16), 0) })
-        }
+        rzadKanalow(k, "Ostatnio oglądane kanały", Ust.ostatnie(this).map { o -> kanaly.firstOrNull { it.id == o.id } ?: o })
         val ul = Ust.ulubione(this).filter { it[0] != "k" }.map { Vod(it[1], it[2], it[3].ifEmpty { null }, it[5], 0.0, it[4], it[0]) }
         rzadVod(k, "Ulubione", ul)
         rzadRanking(k, "Popularne filmy", pop(filmy), katF, false)

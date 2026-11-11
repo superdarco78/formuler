@@ -31,7 +31,14 @@ object Ust {
         val id = prefs(c).getString("ost_id", null) ?: return null
         return Kanal(id, prefs(c).getString("ost_nazwa", "") ?: "", prefs(c).getString("ost_logo", null), "", 0)
     }
-    fun zapiszOstatni(c: Context, k: Kanal) = prefs(c).edit().putString("ost_id", k.id).putString("ost_nazwa", k.nazwa).putString("ost_logo", k.logo).apply()
+    fun zapiszOstatni(c: Context, k: Kanal) {
+        // Ostatnio ogladane: do 15 kanalow, najnowszy pierwszy.
+        val l = ostatnie(c).filter { it.id != k.id }.toMutableList(); l.add(0, k)
+        prefs(c).edit().putString("ost_id", k.id).putString("ost_nazwa", k.nazwa).putString("ost_logo", k.logo)
+            .putString("ostatnie", l.take(15).joinToString("\n") { listOf(it.id, it.nazwa, it.logo ?: "", it.kat).joinToString("\u0001") }).apply()
+    }
+    fun ostatnie(c: Context): List<Kanal> = (prefs(c).getString("ostatnie", "") ?: "").split("\n").filter { it.isNotEmpty() }
+        .map { it.split("\u0001") }.filter { it.size >= 4 }.map { Kanal(it[0], it[1], it[2].ifEmpty { null }, it[3], 0) }
     fun pozycja(c: Context, url: String): Long = prefs(c).getLong("poz_" + url.hashCode(), 0)
     fun zapiszPozycje(c: Context, url: String, ms: Long) = prefs(c).edit().putLong("poz_" + url.hashCode(), ms).apply()
     fun dlugosc(c: Context, url: String): Long = prefs(c).getLong("dl_" + url.hashCode(), 0)

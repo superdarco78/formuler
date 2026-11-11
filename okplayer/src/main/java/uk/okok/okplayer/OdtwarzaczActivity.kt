@@ -45,6 +45,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         f.addView(napis, FrameLayout.LayoutParams(-2, -2).apply { gravity = Gravity.TOP or Gravity.START; setMargins(24, 24, 24, 24) })
         val przyciski = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.HORIZONTAL }
         fun prz(t: String, a: () -> Unit) = TextView(this).apply { text = t; setTextColor(Color.WHITE); textSize = 15f; setPadding(32, 18, 32, 18); setBackgroundColor(0x99000000.toInt()); isFocusable = true; setOnClickListener { a() } }
+        if (!intent.getBooleanExtra("vod", false)) przyciski.addView(prz("⏮ Od początku") { odPoczatku() }, android.widget.LinearLayout.LayoutParams(-2, -2).apply { marginEnd = 16 })
         przyciski.addView(prz("⚙ Opcje") { opcje() })
         if (!intent.getBooleanExtra("vod", false)) przyciski.addView(prz("☰ Program / archiwum") { program() }.also { progNaObrazie = it }, android.widget.LinearLayout.LayoutParams(-2, -2).apply { marginStart = 16 })
         widok.setControllerVisibilityListener(PlayerView.ControllerVisibilityListener { v -> przyciski.visibility = v })
@@ -103,6 +104,34 @@ class OdtwarzaczActivity : AppCompatActivity() {
     private var ramka: FrameLayout? = null
     private var progNaObrazie: TextView? = null
     private var archiwumGra = false
+    private var terazWpis: Wpis? = null
+
+    /** Od poczatku: biezaca audycja z archiwum od jej pierwszej minuty (czego nie ma MyTvOnline). */
+    private fun odPoczatku() {
+        val w = terazWpis; val ch = biezacy
+        if (w == null || ch == null) { pokazNapis("Brak programu dla tego kanału"); return }
+        if (!w.archiwum) { pokazNapis("Ten kanał nie ma archiwum"); return }
+        val u = Serwer.adresArchiwum(this, ch.id, w.copy(koniec = System.currentTimeMillis() / 1000))
+        intent.putExtra("url", u); proby = 0; trybNaZywo(false); graj(u); naArchiwum(w)
+        pokazNapis("⏮ Od początku: " + w.tytul)
+    }
+
+    /** Przesuniecie palcem po obrazie w gore / w dol = nastepny / poprzedni kanal (z nazwa kanalu na ekranie). */
+    private val gest by lazy {
+        android.view.GestureDetector(this, object : android.view.GestureDetector.SimpleOnGestureListener() {
+            override fun onFling(e1: android.view.MotionEvent?, e2: android.view.MotionEvent, vx: Float, vy: Float): Boolean {
+                if (e1 == null || intent.getBooleanExtra("vod", false) || archiwumGra) return false
+                val dy = e2.y - e1.y; val dx = e2.x - e1.x
+                if (Math.abs(dy) > 150 && Math.abs(dy) > Math.abs(dx) * 1.5f && Math.abs(vy) > 600) { zmien(if (dy < 0) 1 else -1); biezacy?.let { pokazNapis(it.nazwa) }; return true }
+                return false
+            }
+        })
+    }
+    override fun dispatchTouchEvent(ev: android.view.MotionEvent): Boolean {
+        val r = android.graphics.Rect(); widok.getGlobalVisibleRect(r)
+        if (r.contains(ev.rawX.toInt(), ev.rawY.toInt()) && gest.onTouchEvent(ev) && ev.actionMasked != android.view.MotionEvent.ACTION_DOWN) return true
+        return super.dispatchTouchEvent(ev)
+    }
 
     /** W panelu pod obrazem widac, co leci z archiwum, i jak wrocic na zywo. */
     private fun naArchiwum(w: Wpis) {
@@ -258,6 +287,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
             val t = System.currentTimeMillis() / 1000
             val fmt = java.text.SimpleDateFormat("HH:mm", java.util.Locale("pl"))
             val i = l.indexOfFirst { it.start <= t && it.koniec > t }
+            terazWpis = l.getOrNull(i)
             if (biezacy?.id != ch.id) return@launch
             if (i >= 0) {
                 terazTv.text = "Teraz: " + l[i].tytul

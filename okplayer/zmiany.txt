@@ -1,3 +1,5 @@
-Okno aktualizacji|zwykły szary tekst z historią kilku wersji|ładne okno: tylko zmiany tej wersji, każda z „Było” i „Teraz”
-Aktor (np. Brad Pitt)|wisiało „Szukam filmów…”|szukanie po numerze IMDb – szybko; gdy brak odpowiedzi, pokazuje komunikat
-Przycisk okienka pod obrazem TV|okrągły przycisk ⧉ obok „Kanały”|usunięty – do małego okna przechodzisz przyciskiem Wstecz
+⏮ Od początku (nowość)|audycję, która już trwa, można było oglądać tylko od teraz|przycisk „⏮ Od początku” na obrazie TV – włącza bieżącą audycję od pierwszej minuty (z archiwum)
+Przełączanie kanałów palcem (nowość)|kanał zmieniało się tylko z listy|przesuń palcem po obrazie w górę = następny kanał, w dół = poprzedni; nazwa kanału pokazuje się na obrazie
+Ostatnio oglądane kanały (nowość)|na Starcie był tylko jeden ostatni kanał|rząd do 15 ostatnio oglądanych kanałów z logo – jedno dotknięcie i grają
+Okno aktualizacji|szary tekst z historią kilku wersji|ładne okno: tylko zmiany tej wersji, każda z „Było” i „Teraz”
+Przycisk okienka pod obrazem|okrągły ⧉ obok „Kanały”|usunięty – małe okno przyciskiem Wstecz
