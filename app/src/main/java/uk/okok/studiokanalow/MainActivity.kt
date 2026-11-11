@@ -131,6 +131,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun pokaz(id: Int) {
+        if (id != R.id.tab_start) koniecAnimacjiStartu()
         wersjaEkranu++
         zastosujWyglad()
         when (id) {
@@ -263,7 +264,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showStart() {
-        if (Konfig.styl(this) == "smarters") { showStartSmarters(); return }
+        if (Konfig.styl(this) == "smarters") { showStartSmarters(); koniecAnimacjiStartu(); return }
         tryb(getString(R.string.app_name), true, false)
         dodajKomunikat()
         dodajBaner("Witaj w OK Player")
@@ -282,6 +283,7 @@ class MainActivity : AppCompatActivity() {
             dodajRzad("Popularne filmy", Demo.films, { ch -> openDetails(ch) }, 112, true)
             dodajRzad("Popularne seriale", Demo.seriale, { ch -> openPlayer(ch) }, 112, true)
             dodajRzad("Najnowsze kanały telewizyjne", Demo.channels, { ch -> openPlayer(ch) })
+            koniecAnimacjiStartu()
             return
         }
         val wersja = wersjaEkranu
@@ -296,6 +298,7 @@ class MainActivity : AppCompatActivity() {
                 val dkan = async { liveCache ?: try { Api.liveStreams(s(), u(), p(), null).also { liveCache = it } } catch (e: Exception) { emptyList() } }
                 val v = dv.await(); val vc = dvc.await(); val sr = dsr.await(); val sc = dsc.await(); val kan = dkan.await()
                 hideBusy()
+                koniecAnimacjiStartu()
                 if (wersja != wersjaEkranu) return@launch
                 if (Session.lastLogo(this@MainActivity) == null) kan.firstOrNull { it.name == Session.lastName(this@MainActivity) }?.logo?.let { lg ->
                     Session.lastUrl(this@MainActivity)?.let { lu -> Session.saveLast(this@MainActivity, lu, Session.lastName(this@MainActivity), lg) }
@@ -333,7 +336,7 @@ class MainActivity : AppCompatActivity() {
                 dodajRzad("Najnowsze kanały telewizyjne", kan.takeLast(30).reversed(), { ch -> openPlayer(ch) })
                 dodajRzad("Nowo dodane filmy", vf.takeLast(30).reversed(), { ch -> openDetails(ch) })
             } catch (e: Exception) {
-                hideBusy(); info(getString(R.string.err_net))
+                hideBusy(); koniecAnimacjiStartu(); info(getString(R.string.err_net))
             }
         }
     }
@@ -517,23 +520,68 @@ class MainActivity : AppCompatActivity() {
         b.tvTitle.setTextColor(Color.WHITE)
     }
 
-    /** Animacja startu (lustrzana do zamykania): ikona wkreca sie i rosnie, napis pojawia sie, ekran sie odslania. */
+    private var nakladkaStartu: android.view.View? = null
+    private var startAnimMs = 0L
+
+    /**
+     * Animacja startu: ikona wkreca sie i rosnie, napis wjezdza, ikona "oddycha" i swieci
+     * pasek ladowania - trwa tyle, ile laduje sie Start (min. 1,2 s, max 8 s), potem plynnie znika.
+     */
     private fun animacjaStartu() {
         val dekor = window.decorView as android.view.ViewGroup
-        val nakladka = android.widget.FrameLayout(this).apply { setBackgroundColor(0xFF000000.toInt()); isClickable = false }
+        val nakladka = android.widget.FrameLayout(this).apply {
+            background = android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM,
+                intArrayOf(0xFF0B1230.toInt(), 0xFF000000.toInt())); isClickable = true
+        }
         val srodek = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = android.view.Gravity.CENTER }
+        val poswiata = android.widget.FrameLayout(this)
+        val blask = android.view.View(this).apply {
+            background = android.graphics.drawable.GradientDrawable().apply { shape = android.graphics.drawable.GradientDrawable.OVAL
+                gradientType = android.graphics.drawable.GradientDrawable.RADIAL_GRADIENT; gradientRadius = dp(110).toFloat()
+                colors = intArrayOf(0x664F7BFF, 0x004F7BFF) }
+            alpha = 0f
+        }
+        poswiata.addView(blask, android.widget.FrameLayout.LayoutParams(dp(220), dp(220)).also { it.gravity = android.view.Gravity.CENTER })
         val ikona = android.widget.ImageView(this).apply { setImageResource(R.mipmap.ic_launcher_round) }
-        srodek.addView(ikona, LinearLayout.LayoutParams(dp(110), dp(110)))
-        val napis = TextView(this).apply { text = "OK Player"; setTextColor(Color.WHITE); textSize = 26f; setTypeface(typeface, android.graphics.Typeface.BOLD); gravity = android.view.Gravity.CENTER; setPadding(0, dp(16), 0, 0) }
+        poswiata.addView(ikona, android.widget.FrameLayout.LayoutParams(dp(112), dp(112)).also { it.gravity = android.view.Gravity.CENTER })
+        srodek.addView(poswiata, LinearLayout.LayoutParams(dp(220), dp(220)))
+        val napis = TextView(this).apply { text = "OK Player"; setTextColor(Color.WHITE); textSize = 28f; setTypeface(typeface, android.graphics.Typeface.BOLD); gravity = android.view.Gravity.CENTER; letterSpacing = 0.08f }
         srodek.addView(napis)
+        val pasekTlo = android.widget.FrameLayout(this).apply { background = android.graphics.drawable.GradientDrawable().apply { setColor(0x33FFFFFF); cornerRadius = dp(2).toFloat() } }
+        val pasek = android.view.View(this).apply { background = android.graphics.drawable.GradientDrawable().apply { setColor(0xFF4F7BFF.toInt()); cornerRadius = dp(2).toFloat() } }
+        pasekTlo.addView(pasek, android.widget.FrameLayout.LayoutParams(dp(60), -1))
+        srodek.addView(pasekTlo, LinearLayout.LayoutParams(dp(160), dp(4)).also { it.topMargin = dp(26) })
         nakladka.addView(srodek, android.widget.FrameLayout.LayoutParams(-1, -1))
         dekor.addView(nakladka, android.view.ViewGroup.LayoutParams(-1, -1))
+        nakladkaStartu = nakladka; startAnimMs = System.currentTimeMillis()
+
         ikona.scaleX = 0.2f; ikona.scaleY = 0.2f; ikona.alpha = 0f; ikona.rotation = -360f
-        napis.alpha = 0f; napis.translationY = dp(20).toFloat()
-        ikona.animate().scaleX(1f).scaleY(1f).alpha(1f).rotation(0f).setDuration(380)
-            .setInterpolator(android.view.animation.OvershootInterpolator(1.1f)).start()
-        napis.animate().alpha(1f).translationY(0f).setStartDelay(150).setDuration(250).start()
-        nakladka.animate().alpha(0f).setStartDelay(500).setDuration(250).withEndAction { dekor.removeView(nakladka) }.start()
+        napis.alpha = 0f; napis.translationY = dp(24).toFloat(); pasekTlo.alpha = 0f
+        ikona.animate().scaleX(1f).scaleY(1f).alpha(1f).rotation(0f).setDuration(700)
+            .setInterpolator(android.view.animation.OvershootInterpolator(1.2f)).withEndAction {
+                // "oddychanie" ikony i poswiaty, dopoki Start sie laduje
+                android.animation.ObjectAnimator.ofPropertyValuesHolder(ikona,
+                    android.animation.PropertyValuesHolder.ofFloat("scaleX", 1f, 1.08f),
+                    android.animation.PropertyValuesHolder.ofFloat("scaleY", 1f, 1.08f)).apply {
+                    duration = 700; repeatMode = android.animation.ValueAnimator.REVERSE; repeatCount = android.animation.ValueAnimator.INFINITE; start() }
+            }.start()
+        blask.animate().alpha(1f).setStartDelay(300).setDuration(600).start()
+        napis.animate().alpha(1f).translationY(0f).setStartDelay(400).setDuration(450).start()
+        pasekTlo.animate().alpha(1f).setStartDelay(600).setDuration(300).start()
+        android.animation.ObjectAnimator.ofFloat(pasek, "translationX", -dp(60).toFloat(), dp(160).toFloat()).apply {
+            duration = 900; repeatCount = android.animation.ValueAnimator.INFINITE; interpolator = android.view.animation.AccelerateDecelerateInterpolator(); start() }
+        // zabezpieczenie: najdluzej 8 s
+        nakladka.postDelayed({ koniecAnimacjiStartu() }, 8000)
+    }
+
+    /** Wywolywane, gdy Start jest gotowy: animacja znika plynnie (nie wczesniej niz po 1,2 s). */
+    private fun koniecAnimacjiStartu() {
+        val n = nakladkaStartu ?: return
+        nakladkaStartu = null
+        val zostalo = (1200 - (System.currentTimeMillis() - startAnimMs)).coerceAtLeast(0)
+        n.animate().alpha(0f).scaleX(1.06f).scaleY(1.06f).setStartDelay(zostalo).setDuration(380).withEndAction {
+            (n.parent as? android.view.ViewGroup)?.removeView(n)
+        }.start()
     }
 
     /** Okno wyjscia w stylu aplikacji (czarne tlo, jasny przycisk jak "Ogladaj"). */
