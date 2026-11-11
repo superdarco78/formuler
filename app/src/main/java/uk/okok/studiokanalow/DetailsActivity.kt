@@ -307,10 +307,15 @@ class DetailsActivity : AppCompatActivity() {
                         para.forEach { aktor ->
                             val k = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.VERTICAL; setPadding(dp(4), 0, dp(4), 0) }
                             val inic = aktor.split(" ").mapNotNull { it.firstOrNull()?.uppercaseChar() }.take(2).joinToString("")
-                            k.addView(tekst(inic, 40f, 0xFF8A8A8A.toInt(), true).apply {
-                                gravity = android.view.Gravity.CENTER
+                            val ramka = android.widget.FrameLayout(this).apply {
                                 background = android.graphics.drawable.GradientDrawable().apply { setColor(0xFF1E1E1E.toInt()); cornerRadius = dp(8).toFloat() }
-                            }, android.widget.LinearLayout.LayoutParams(-1, dp(220)))
+                                clipToOutline = true
+                            }
+                            ramka.addView(tekst(inic, 40f, 0xFF8A8A8A.toInt(), true).apply { gravity = android.view.Gravity.CENTER }, android.widget.FrameLayout.LayoutParams(-1, -1))
+                            val foto = android.widget.ImageView(this).apply { scaleType = android.widget.ImageView.ScaleType.CENTER_CROP }
+                            ramka.addView(foto, android.widget.FrameLayout.LayoutParams(-1, -1))
+                            lifecycleScope.launch { val u = Api.zdjecieAktora(aktor); if (u.isNotEmpty()) foto.load(u) }
+                            k.addView(ramka, android.widget.LinearLayout.LayoutParams(-1, dp(220)))
                             k.addView(tekst(aktor, 17f, 0xFFFFFFFF.toInt()).apply { setPadding(0, dp(6), 0, 0) })
                             rz.addView(k, android.widget.LinearLayout.LayoutParams(0, -2, 1f))
                         }

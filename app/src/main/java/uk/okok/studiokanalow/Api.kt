@@ -274,6 +274,28 @@ object Api {
             vi to out
         }
 
+    private val zdjeciaAktorow = java.util.concurrent.ConcurrentHashMap<String, String>()
+
+    /** Zdjecie aktora z publicznej wyszukiwarki IMDb (bez klucza). Pusty tekst = brak. */
+    suspend fun zdjecieAktora(nazwa: String): String = withContext(Dispatchers.IO) {
+        zdjeciaAktorow[nazwa]?.let { return@withContext it }
+        val wynik = try {
+            val q = nazwa.lowercase().trim().replace(Regex("\\s+"), "_")
+            val url = "https://v2.sg.media-imdb.com/suggestion/" + q.first().let { c -> if (c.isLetter()) c else 'x' } + "/" + java.net.URLEncoder.encode(q, "UTF-8") + ".json"
+            val arr = JSONObject(get(url)).optJSONArray("d")
+            var u = ""
+            if (arr != null) for (i in 0 until arr.length()) {
+                val o = arr.getJSONObject(i)
+                if (!o.optString("id").startsWith("nm")) continue
+                u = o.optJSONObject("i")?.optString("imageUrl") ?: ""
+                if (u.isNotEmpty()) { u = u.replace(Regex("\\._V1_.*\\.jpg$"), "._V1_UX400_.jpg"); break }
+            }
+            u
+        } catch (e: Exception) { "" }
+        zdjeciaAktorow[nazwa] = wynik
+        wynik
+    }
+
     /** Uzupelnienie brakujacych danych filmu z publicznej bazy (iTunes, bez klucza): okladka, opis, gatunek, rok. */
     suspend fun itunes(tytul: String): VodInfo? = withContext(Dispatchers.IO) {
         val rok = Regex("\\((\\d{4})\\)").find(tytul)?.groupValues?.get(1)?.toIntOrNull()
