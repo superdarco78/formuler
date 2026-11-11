@@ -1,3 +1,5 @@
-Strzałki przewijania 5 / 15 s|białe|fioletowe jak reszta przycisków
-Detale filmu|premiera, gatunek, reżyseria, scenariusz, muzyka, kraj, czas|do tego: tytuł oryginalny, wytwórnia, budżet, przychód (box office) i nagrody – z Wikidata
+Poprzedni kanał|nie było|przycisk „⇄ Poprzedni” na odtwarzaczu i klawisz LAST na pilocie – skok do kanału oglądanego przed chwilą
+Numer kanału z pilota|nie było|wpisz cyfry na pilocie (np. 1, 2) – po 1,5 s przełącza na ten numer w grupie
+Informacje o obrazie|nie było|Opcje → Informacje o obrazie: rozdzielczość (SD/HD/Full HD/4K), klatki, kodek, przepływność, dźwięk
+Dane filmu|–|tytuł oryginalny, wytwórnia, budżet, box office, nagrody; fioletowe strzałki przewijania (z 1.87)
 Małe okno i program|działa (1.80)|bez zmian

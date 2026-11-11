@@ -59,6 +59,13 @@ class OdtwarzaczActivity : AppCompatActivity() {
     private lateinit var widok: PlayerView
     private lateinit var napis: TextView
     private var grupa: List<Kanal> = emptyList()
+    /** Kanal ogladany przed obecnym (przycisk ⇄ i klawisz LAST na pilocie). */
+    private var poprzedni: Kanal? = null
+    private var cyfry = ""
+    private val wybierzNumer = Runnable {
+        val n = cyfry.toIntOrNull(); cyfry = ""
+        if (n != null && n in 1..grupa.size) przelacz(grupa[n - 1]) else pokazNapis("Brak kanału nr $n")
+    }
     private var biezacy: Kanal? = null
     private val limitEpg = kotlinx.coroutines.sync.Semaphore(4)
     private var proby = 0
@@ -107,6 +114,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         val przyciski = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.HORIZONTAL }
         fun prz(t: String, a: () -> Unit) = TextView(this).apply { text = t; setTextColor(Color.WHITE); textSize = 15f; setPadding(32, 18, 32, 18); setBackgroundColor(0x99000000.toInt()); isFocusable = true; setOnClickListener { a() } }
         if (!intent.getBooleanExtra("vod", false)) przyciski.addView(prz("⏮ Od początku") { odPoczatku() }, android.widget.LinearLayout.LayoutParams(-2, -2).apply { marginEnd = 16 })
+        if (!intent.getBooleanExtra("vod", false)) przyciski.addView(prz("⇄ Poprzedni") { poprzedni?.let { przelacz(it) } ?: pokazNapis("Brak poprzedniego kanału") }, android.widget.LinearLayout.LayoutParams(-2, -2).apply { marginEnd = 16 })
         przyciski.addView(prz("⚙ Opcje") { opcje() })
         if (!intent.getBooleanExtra("vod", false)) przyciski.addView(prz("☰ Program / archiwum") { program() }.also { progNaObrazie = it }, android.widget.LinearLayout.LayoutParams(-2, -2).apply { marginStart = 16 })
         widok.setControllerVisibilityListener(PlayerView.ControllerVisibilityListener { v -> przyciski.visibility = v })
@@ -467,6 +475,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
     }
 
     private fun przelacz(n: Kanal) {
+        biezacy?.takeIf { it.id != n.id }?.let { poprzedni = it }
         // Nowy kanal = zawsze na zywo: koniec archiwum i jego straznika.
         widok.removeCallbacks(straznik); warianty = emptyList(); wariant = 0
         biezacy = n; proby = 0
@@ -548,6 +557,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         val l = mutableListOf("Ścieżka dźwiękowa", "Napisy", "Format obrazu")
         if (vod) l.add("Prędkość odtwarzania")
         l.add("Wyłącznik czasowy")
+        l.add("Informacje o obrazie")
         androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Opcje").setItems(l.toTypedArray()) { _, i ->
             when (l[i]) {
                 "Ścieżka dźwiękowa" -> sciezki(p, androidx.media3.common.C.TRACK_TYPE_AUDIO)
@@ -555,6 +565,16 @@ class OdtwarzaczActivity : AppCompatActivity() {
                 "Format obrazu" -> {
                     val t = listOf("Dopasuj" to androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIT, "Powiększ (bez pasów)" to androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_ZOOM, "Rozciągnij" to androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FILL)
                     wybor("Format obrazu", t.map { it.first }, t.indexOfFirst { it.second == widok.resizeMode }) { k -> widok.resizeMode = t[k].second }
+                }
+                "Informacje o obrazie" -> {
+                    val v = p.videoFormat; val a = p.audioFormat
+                    val t = listOf(
+                        "Rozdzielczość: " + (v?.let { "${it.width} × ${it.height}" + (if (it.height >= 2000) " (4K)" else if (it.height >= 1000) " (Full HD)" else if (it.height >= 700) " (HD)" else " (SD)") } ?: "—"),
+                        "Klatki: " + (v?.frameRate?.takeIf { it > 0 }?.let { String.format(java.util.Locale.US, "%.0f fps", it) } ?: "—"),
+                        "Kodek obrazu: " + (v?.sampleMimeType?.substringAfter("/") ?: "—"),
+                        "Przepływność: " + (v?.bitrate?.takeIf { it > 0 }?.let { "${it / 1000} kb/s" } ?: "—"),
+                        "Dźwięk: " + (a?.let { (it.sampleMimeType?.substringAfter("/") ?: "") + (if (it.channelCount > 0) "  •  ${it.channelCount} kan." else "") + (it.language?.let { l -> "  •  " + java.util.Locale(l).getDisplayLanguage(Jezyk.loc) } ?: "") } ?: "—"))
+                    androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Informacje o obrazie").setMessage(t.joinToString("\n")).setPositiveButton("OK", null).show().also { Jezyk.okno(it) }
                 }
                 "Prędkość odtwarzania" -> { val pr = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f); wybor("Prędkość", pr.map { if (it == 1f) "Normalna" else "${it}x" }, pr.indexOf(p.playbackParameters.speed)) { k -> p.setPlaybackSpeed(pr[k]) } }
                 else -> {
@@ -612,6 +632,12 @@ class OdtwarzaczActivity : AppCompatActivity() {
         when (keyCode) {
             KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_CHANNEL_UP -> if (!intent.getBooleanExtra("vod", false)) { zmien(-1); return true }
             KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_CHANNEL_DOWN -> if (!intent.getBooleanExtra("vod", false)) { zmien(1); return true }
+            KeyEvent.KEYCODE_LAST_CHANNEL -> if (!intent.getBooleanExtra("vod", false)) { poprzedni?.let { przelacz(it) }; return true }
+        }
+        // Cyfry na pilocie: numer kanalu w grupie (po 1,5 s przelacza).
+        if (!intent.getBooleanExtra("vod", false) && keyCode in KeyEvent.KEYCODE_0..KeyEvent.KEYCODE_9 && cyfry.length < 4) {
+            cyfry += (keyCode - KeyEvent.KEYCODE_0).toString(); pokazNapis("Kanał nr " + cyfry + "…")
+            napis.removeCallbacks(wybierzNumer); napis.postDelayed(wybierzNumer, 1500); return true
         }
         return super.onKeyDown(keyCode, event)
     }
