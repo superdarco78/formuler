@@ -422,7 +422,8 @@ class OdtwarzaczActivity : AppCompatActivity() {
         super.onStart()
         // Serwer przepuszcza strumien przez siebie dla odtwarzaczy przedstawiajacych sie jak VLC (dostawca blokuje telefon).
         val vodTryb = intent.getBooleanExtra("vod", false)
-        if (vodTryb) WspolnyGracz.zwolnij(WspolnyGracz.wlasciciel)
+        // Film: inny niz grajacy - zaczynamy od nowa; ten sam (wraca z mini-okna) - gra dalej bez przerwy.
+        if (vodTryb && WspolnyGracz.url != intent.getStringExtra("url")) WspolnyGracz.zwolnij(WspolnyGracz.wlasciciel)
         WspolnyGracz.wlasciciel = "duzy"
         val p = WspolnyGracz.pobierz(this)
         widok.player = p; gracz = p
@@ -440,9 +441,9 @@ class OdtwarzaczActivity : AppCompatActivity() {
         }
         p.addListener(sluchacz!!)
         val url = intent.getStringExtra("url") ?: return
-        WspolnyGracz.graj(this, url)
-        // Filmy i odcinki: wznawianie od miejsca przerwania.
-        if (intent.getBooleanExtra("vod", false)) {
+        val nowy = WspolnyGracz.graj(this, url)
+        // Filmy i odcinki: wznawianie od miejsca przerwania (gdy film zaczyna sie od nowa).
+        if (nowy && intent.getBooleanExtra("vod", false)) {
             val poz = Ust.pozycja(this, url)
             if (poz > 30_000) { p.seekTo(poz); pokazNapis("Wznawiam od " + poz / 60000 + " min") }
         }
@@ -551,8 +552,16 @@ class OdtwarzaczActivity : AppCompatActivity() {
 
     /** Mini-odtwarzacz: TV gra dalej w malym pasku na dole aplikacji (nad zakladkami). */
     private fun doMini() {
+        if (intent.getBooleanExtra("vod", false)) {
+            // Film / odcinek do mini-okna: zapamietujemy adres i miejsce, film gra dalej w kwadracie.
+            val u = intent.getStringExtra("url") ?: ""
+            gracz?.let { g -> if (g.duration > 0) { Ust.zapiszPozycje(this, u, g.currentPosition); Ust.zapiszDlugosc(this, u, g.duration) } }
+            Ust.prefs(this).edit().putString("mini", listOf("vod", intent.getStringExtra("nazwa") ?: "", "", "", u).joinToString("\u0001")).apply()
+        } else
         biezacy?.let { Ust.prefs(this).edit().putString("mini", listOf(it.id, it.nazwa, it.logo ?: "", it.kat).joinToString("\u0001")).apply() }
         WspolnyGracz.wlasciciel = "mini"
+        // Mini-okno zyje na ekranie glownym aplikacji - film z opisu tez tam trafia.
+        if (intent.getBooleanExtra("vod", false)) startActivity(Intent(this, StartActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
         finish(); overridePendingTransition(0, android.R.anim.fade_out)
     }
 
@@ -569,6 +578,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
             requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT; return
         }
         if (!intent.getBooleanExtra("vod", false) && !archiwumGra && Ust.prefs(this).getBoolean("okienko", true)) { doMini(); return }
+        if (intent.getBooleanExtra("vod", false) && Ust.prefs(this).getBoolean("okienko", true) && gracz?.let { it.duration <= 0 || it.currentPosition < it.duration - 90_000 } == true) { doMini(); return }
         @Suppress("DEPRECATION") super.onBackPressed()
     }
 

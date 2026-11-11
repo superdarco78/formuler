@@ -175,9 +175,9 @@ class StartActivity : AppCompatActivity() {
         tresc.removeAllViews()
         // Wejscie w TV: obraz od razu na gorze (kanal z malego kwadratu albo ostatnio ogladany), pod nim lista - jak na zdjeciu.
         if (i == 1 && ::gora2.isInitialized && gora2.visibility != View.VISIBLE && kanaly.isNotEmpty()) {
-            val zMini = miniKanal; val ost = Ust.ostatni(this)
+            val zMini = miniKanal?.takeIf { miniFilm == null }; val ost = Ust.ostatni(this)
             val ch = zMini ?: ost?.let { o -> kanaly.firstOrNull { it.id == o.id } }
-            if (ch != null) {
+            if (ch != null && miniFilm == null) {
                 if (zMini != null) { Ust.prefs(this).edit().remove("mini").apply(); miniWidok.player = null; miniGracz = null; miniKanal = null; mini.visibility = View.GONE }
                 graj(kanaly.firstOrNull { it.id == ch.id } ?: ch)
                 listaKanalow(); return
@@ -525,6 +525,7 @@ class StartActivity : AppCompatActivity() {
     private lateinit var miniTeraz: TextView
     private var miniGracz: androidx.media3.exoplayer.ExoPlayer? = null
     private var miniKanal: Kanal? = null
+    private var miniFilm: String? = null
 
     private fun pokazMini() {
         if (!::mini.isInitialized) return
@@ -532,10 +533,16 @@ class StartActivity : AppCompatActivity() {
         if (z.size < 4) return
         val ch = Kanal(z[0], z[1], z[2].ifEmpty { null }, z[3], 0)
         miniKanal = ch; miniNazwa.text = ch.nazwa; miniTeraz.text = ""
+        miniFilm = if (ch.id == "vod") z.getOrNull(4) else null
         mini.visibility = View.VISIBLE
         WspolnyGracz.wlasciciel = "mini"
         miniGracz = WspolnyGracz.pobierz(this)
         miniWidok.player = miniGracz
+        if (miniFilm != null) {
+            // Film w mini-oknie: gra dalej od tego samego miejsca
+            if (WspolnyGracz.graj(this, miniFilm!!)) Ust.pozycja(this, miniFilm!!).takeIf { it > 0 }?.let { miniGracz?.seekTo(it) }
+            return
+        }
         WspolnyGracz.graj(this, Serwer.adresKanalu(this, ch.id))
         lifecycleScope.launch {
             val t = withContext(Dispatchers.IO) { Serwer.terazLeci(this@StartActivity, ch.id) }
@@ -547,6 +554,13 @@ class StartActivity : AppCompatActivity() {
 
     /** Z mini na duzy ekran plynnie: obraz nie jest zatrzymywany, duzy ekran przejmuje ten sam odtwarzacz. */
     private fun miniNaDuzy(ch: Kanal, pelny: Boolean) {
+        miniFilm?.let { u ->
+            Ust.prefs(this).edit().remove("mini").apply()
+            miniWidok.player = null; miniGracz = null; miniKanal = null; miniFilm = null; mini.visibility = View.GONE
+            WspolnyGracz.wlasciciel = "duzy"
+            startActivity(Intent(this, OdtwarzaczActivity::class.java).putExtra("url", u).putExtra("nazwa", ch.nazwa).putExtra("vod", true))
+            overridePendingTransition(android.R.anim.fade_in, 0); return
+        }
         Ust.prefs(this).edit().remove("mini").apply()
         if (::miniWidok.isInitialized) miniWidok.player = null
         miniGracz = null; miniKanal = null; mini.visibility = View.GONE
@@ -558,6 +572,8 @@ class StartActivity : AppCompatActivity() {
     }
 
     private fun zamknijMini() {
+        miniFilm?.let { u -> miniGracz?.let { g -> if (g.duration > 0) { Ust.zapiszPozycje(this, u, g.currentPosition); Ust.zapiszDlugosc(this, u, g.duration) } } }
+        miniFilm = null
         Ust.prefs(this).edit().remove("mini").apply()
         zatrzymajMini(); miniKanal = null
         if (::mini.isInitialized) mini.visibility = View.GONE

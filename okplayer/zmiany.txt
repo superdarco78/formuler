@@ -1,3 +1,5 @@
-Ekran aktora – dane|tylko zdjęcie i nazwisko|pod nazwiskiem „kim jest” (np. aktor i producent), data i miejsce urodzenia, a niżej biografia z Wikipedii – dotknij, żeby rozwinąć całą
-Ekran aktora – filmy|do 150 pozostałych filmów|najpierw jego filmy z Twojej listy (z okładkami, do kliknięcia), niżej wszystkie filmy, w których grał – do 300, z rokiem
-Opis filmu|„Ładuję…” ponad minutę|po 3 s opis z zapasowej bazy, potem pełny z serwera
+Film / odcinek → Wstecz|film się zamykał|film płynnie zmniejsza się do małego kwadratu w rogu i gra dalej, a Ty wracasz do aplikacji
+Dotknięcie kwadratu z filmem|–|film wraca na pełny ekran w tym samym miejscu, bez ładowania od nowa
+✕ na kwadracie z filmem|–|zamyka film i zapamiętuje, gdzie skończyłeś (Wznów)
+Koniec filmu|–|gdy zostało mniej niż 1,5 min, Wstecz zamyka film normalnie
+Aktor|tylko zdjęcie|dane, biografia z Wikipedii i wszystkie filmy, w których grał
