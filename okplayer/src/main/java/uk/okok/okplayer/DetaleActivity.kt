@@ -164,6 +164,8 @@ class DetaleActivity : AppCompatActivity() {
                         k.addView(f, LinearLayout.LayoutParams(-1, dp(220)))
                         k.addView(tekst(a, 16f).apply { setPadding(0, dp(6), 0, 0) })
                         role[a]?.let { k.addView(tekst(it, 14f, SZARY)) }
+                        k.isFocusable = true; k.isClickable = true
+                        k.setOnClickListener { startActivity(Intent(this, AktorActivity::class.java).putExtra("aktor", a).putExtra("rola", role[a] ?: "")) }
                         rz.addView(k, LinearLayout.LayoutParams(0, -2, 1f))
                     }
                     if (para.size == 1) rz.addView(android.view.View(this), LinearLayout.LayoutParams(0, 1, 1f))
