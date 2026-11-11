@@ -56,6 +56,7 @@ class StartActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (Ust.zalogowany(this)) ekranGlowny() else ekranLogowania()
+        if (savedInstanceState == null) animacjaStartu()
         lifecycleScope.launch { Aktualizacja.sprawdz(this@StartActivity) }
     }
 
@@ -314,12 +315,57 @@ class StartActivity : AppCompatActivity() {
         wiersz("Wyloguj", "Aplikacja pokaże nowy kod do edytora") { Ust.wyloguj(this); ekranLogowania() }
     }
 
+    /** Animacja otwarcia: ikona wkreca sie i rosnie, napis wjezdza, potem ekran plynnie sie odslania (ok. 1,3 s, nie blokuje). */
+    private fun animacjaStartu() {
+        val dekor = window.decorView as ViewGroup
+        val n = FrameLayout(this).apply { background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(0xFF2A0A1E.toInt(), Color.BLACK)) }
+        val sr = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER }
+        val ik = ImageView(this).apply { setImageResource(R.mipmap.ic_launcher) }
+        sr.addView(ik, LinearLayout.LayoutParams(dp(120), dp(120)))
+        val na = tekst("OK Player", 30f, gruby = true).apply { setPadding(0, dp(16), 0, 0); letterSpacing = 0.08f }
+        sr.addView(na)
+        n.addView(sr, FrameLayout.LayoutParams(-1, -1))
+        dekor.addView(n, ViewGroup.LayoutParams(-1, -1))
+        ik.scaleX = 0.2f; ik.scaleY = 0.2f; ik.alpha = 0f; ik.rotation = -360f
+        na.alpha = 0f; na.translationY = dp(24).toFloat()
+        ik.animate().scaleX(1f).scaleY(1f).alpha(1f).rotation(0f).setDuration(650).setInterpolator(android.view.animation.OvershootInterpolator(1.2f)).start()
+        na.animate().alpha(1f).translationY(0f).setStartDelay(300).setDuration(400).start()
+        n.animate().alpha(0f).scaleX(1.08f).scaleY(1.08f).setStartDelay(1000).setDuration(350).withEndAction { dekor.removeView(n) }.start()
+    }
+
+    /** Okno wyjscia w stylu aplikacji; Wyjdz = animacja zamkniecia i calkowite zamkniecie (znika z ostatnich aplikacji). */
+    private fun oknoWyjscia() {
+        val d = android.app.Dialog(this)
+        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL; setPadding(dp(24), dp(24), dp(24), dp(20)); background = tlo(KARTA, 18) }
+        val ik = ImageView(this).apply { setImageResource(R.mipmap.ic_launcher) }
+        box.addView(ik, LinearLayout.LayoutParams(dp(72), dp(72)).apply { bottomMargin = dp(14) })
+        box.addView(tekst("Zamknąć OK Player?", 21f, gruby = true).apply { gravity = Gravity.CENTER })
+        box.addView(tekst("Czy na pewno chcesz wyjść z aplikacji?", 16f, SZARY).apply { gravity = Gravity.CENTER; setPadding(0, dp(10), 0, dp(22)) })
+        fun przycisk(t: String, kolTla: Int, kolTekstu: Int, akcja: () -> Unit) = tekst(t, 17f, kolTekstu).apply {
+            gravity = Gravity.CENTER; setPadding(0, dp(14), 0, dp(14)); background = tlo(kolTla, 28); isFocusable = true; setOnClickListener { akcja() }
+        }
+        box.addView(przycisk("Wyjdź", 0xFFE6E6E6.toInt(), 0xFF111111.toInt()) {
+            ik.animate().rotation(360f).scaleX(0.2f).scaleY(0.2f).alpha(0f).setDuration(450).start()
+            box.animate().alpha(0f).scaleX(0.85f).scaleY(0.85f).setStartDelay(250).setDuration(300).start()
+            window.decorView.animate().alpha(0f).setStartDelay(250).setDuration(350).withEndAction {
+                d.dismiss(); finishAndRemoveTask()
+                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ android.os.Process.killProcess(android.os.Process.myPid()) }, 400)
+            }.start()
+        }, LinearLayout.LayoutParams(-1, -2))
+        box.addView(przycisk("Anuluj", 0xFF2A2A2A.toInt(), Color.WHITE) { d.dismiss() }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
+        d.setContentView(box)
+        d.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(Color.TRANSPARENT))
+        d.window?.setLayout((resources.displayMetrics.widthPixels * 0.86).toInt(), -2)
+        box.alpha = 0f; box.scaleX = 0.8f; box.scaleY = 0.8f; ik.rotation = -90f
+        d.show()
+        box.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(220).setInterpolator(android.view.animation.OvershootInterpolator(1.2f)).start()
+        ik.animate().rotation(0f).setDuration(400).start()
+    }
+
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
         if (Ust.zalogowany(this) && zakladka != 0) { pokaz(0); return }
-        androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Zamknąć OK Player?")
-            .setPositiveButton("Wyjdź") { _, _ -> finishAndRemoveTask() }
-            .setNegativeButton("Anuluj", null).show()
+        oknoWyjscia()
     }
 
     // ---------------- adaptery ----------------
