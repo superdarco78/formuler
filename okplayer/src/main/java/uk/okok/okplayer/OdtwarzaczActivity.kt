@@ -74,10 +74,10 @@ class OdtwarzaczActivity : AppCompatActivity() {
             val roz = android.content.res.ColorStateList.valueOf(0xFFFF3D5A.toInt())
             val fio = android.content.res.ColorStateList.valueOf(0xFFC85BFF.toInt())
             (widok.findViewById<android.view.View>(androidx.media3.ui.R.id.exo_play_pause) as? android.widget.ImageView)?.imageTintList = roz
-            for (n in listOf(androidx.media3.ui.R.id.exo_rew_with_amount, androidx.media3.ui.R.id.exo_ffwd_with_amount, androidx.media3.ui.R.id.exo_prev, androidx.media3.ui.R.id.exo_next, androidx.media3.ui.R.id.exo_settings))
+            for (n in listOf(androidx.media3.ui.R.id.exo_rew, androidx.media3.ui.R.id.exo_ffwd, androidx.media3.ui.R.id.exo_rew_with_amount, androidx.media3.ui.R.id.exo_ffwd_with_amount, androidx.media3.ui.R.id.exo_prev, androidx.media3.ui.R.id.exo_next, androidx.media3.ui.R.id.exo_settings))
                 (widok.findViewById<android.view.View>(n) as? android.widget.ImageView)?.imageTintList = fio
             for (n in listOf(androidx.media3.ui.R.id.exo_rew_with_amount, androidx.media3.ui.R.id.exo_ffwd_with_amount))
-                (widok.findViewById<android.view.View>(n) as? android.widget.TextView)?.setTextColor(0xFFC85BFF.toInt())
+                (widok.findViewById<android.view.View>(n) as? android.widget.TextView)?.let { tv -> tv.setTextColor(0xFFC85BFF.toInt()); tv.compoundDrawableTintList = fio; tv.backgroundTintList = fio; tv.foregroundTintList = fio }
             widok.findViewById<androidx.media3.ui.DefaultTimeBar>(androidx.media3.ui.R.id.exo_progress)?.apply {
                 setPlayedColor(0xFFFF3D5A.toInt()); setScrubberColor(0xFFC85BFF.toInt()); setBufferedColor(0x66FFFFFF); setUnplayedColor(0x33FFFFFF)
             }

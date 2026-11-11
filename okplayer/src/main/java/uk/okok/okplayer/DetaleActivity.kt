@@ -156,7 +156,7 @@ class DetaleActivity : AppCompatActivity() {
                 launch {
                     val w = withContext(Dispatchers.IO) { Dodatki.filmWiki(nazwa, serial) } ?: return@launch
                     var zm = false
-                    for (k in listOf("director", "genre", "country", "cast", "releasedate", "duration", "youtube_trailer", "tmdb_id", "writer", "composer")) if (w.optString(k).isNotEmpty() && t(k).isEmpty()) { i.put(k, w.optString(k)); zm = true }
+                    for (k in listOf("director", "genre", "country", "cast", "releasedate", "duration", "youtube_trailer", "tmdb_id", "writer", "composer", "studio", "awards", "budget", "boxoffice", "o_name")) if (w.optString(k).isNotEmpty() && t(k).isEmpty()) { i.put(k, w.optString(k)); zm = true }
                     // Obsada: najpierw ta z serwera, potem wszyscy pozostali aktorzy z Wikidata.
                     if (t("cast").isNotEmpty() && w.optString("cast").isNotEmpty()) {
                         val jest = t("cast").split(",").map { it.trim() }.filter { it.isNotEmpty() }
@@ -272,7 +272,7 @@ class DetaleActivity : AppCompatActivity() {
             }
             else -> {
                 val k = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; background = tlo(KARTA, 10); setPadding(dp(18), dp(18), dp(18), dp(18)) }
-                listOf("Premiera" to t("releasedate").ifEmpty { t("releaseDate") }, "Gatunek" to t("genre"), "Reżyseria" to t("director"), "Scenariusz" to t("writer"), "Muzyka" to t("composer"), "Kraj" to t("country"),
+                listOf("Premiera" to t("releasedate").ifEmpty { t("releaseDate") }, "Gatunek" to t("genre"), "Reżyseria" to t("director"), "Scenariusz" to t("writer"), "Muzyka" to t("composer"), "Tytuł oryginalny" to t("o_name"), "Wytwórnia" to t("studio"), "Budżet" to t("budget"), "Przychód (box office)" to t("boxoffice"), "Nagrody" to t("awards"), "Kraj" to t("country"),
                     "Czas" to czas(t("duration").ifEmpty { t("episode_run_time") }), "Ocena" to t("rating"), "Obsada" to t("cast"))
                     .filter { it.second.isNotEmpty() }.forEach { (a, b) -> k.addView(tekst("$a: $b", 15f, 0xFFDDDDDD.toInt()).apply { setPadding(0, dp(4), 0, dp(4)) }) }
                 if (t("plot").isNotEmpty()) k.addView(tekst(t("plot"), 15f, SZARY).apply { setPadding(0, dp(12), 0, 0) })

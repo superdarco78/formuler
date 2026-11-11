@@ -227,6 +227,9 @@ object Dodatki {
             val ob = sparql("SELECT ?aL (SAMPLE(?rl) AS ?rL) WHERE { $w p:P161 ?st. ?st ps:P161 ?a. ?a rdfs:label ?aL. FILTER(lang(?aL)=\"en\") OPTIONAL { ?st pq:P453 ?r. ?r rdfs:label ?rl. FILTER(lang(?rl) IN (\"$J\",\"en\")) } OPTIONAL { ?st pq:P4633 ?rn. BIND(STR(?rn) AS ?rl) } } GROUP BY ?aL LIMIT 80")
             val scen = lista("SELECT ?x WHERE { $w wdt:P58 ?r. ?r rdfs:label ?x. FILTER(lang(?x) IN (\"$J\",\"en\")) } LIMIT 4")
             val muz = lista("SELECT ?x WHERE { $w wdt:P86 ?r. ?r rdfs:label ?x. FILTER(lang(?x) IN (\"$J\",\"en\")) } LIMIT 3")
+            val studio = lista("SELECT ?x WHERE { $w wdt:P272 ?r. ?r rdfs:label ?x. FILTER(lang(?x) IN (\"$J\",\"en\")) } LIMIT 3")
+            val nagrody = lista("SELECT ?x WHERE { $w wdt:P166 ?r. ?r rdfs:label ?x. FILTER(lang(?x) IN (\"$J\",\"en\")) } LIMIT 6")
+            val kasa = sparql("SELECT ?b ?bo ?ot WHERE { OPTIONAL { $w wdt:P2130 ?b. } OPTIONAL { $w wdt:P2142 ?bo. } OPTIONAL { $w wdt:P1476 ?ot. } } LIMIT 1")
             val inne = sparql("SELECT ?d ?czas ?yt ?tm ?plw WHERE { OPTIONAL { $w wdt:P577 ?d. } OPTIONAL { $w wdt:P2047 ?czas. } OPTIONAL { $w wdt:P1651 ?yt. } OPTIONAL { $w wdt:P4947 ?tm. } OPTIONAL { $w wdt:P4983 ?tm. } OPTIONAL { ?plw schema:about $w; schema:isPartOf <https://$J.wikipedia.org/>. } } LIMIT 1")
             val o = JSONObject()
             if (rez.isNotEmpty()) o.put("director", rez.joinToString(", "))
@@ -234,6 +237,13 @@ object Dodatki {
             if (scen.isNotEmpty()) o.put("writer", scen.distinct().joinToString(", "))
             if (muz.isNotEmpty()) o.put("composer", muz.distinct().joinToString(", "))
             if (kraj.isNotEmpty()) o.put("country", kraj.joinToString(", "))
+            if (studio.isNotEmpty()) o.put("studio", studio.distinct().joinToString(", "))
+            if (nagrody.isNotEmpty()) o.put("awards", nagrody.distinct().joinToString(", "))
+            if (kasa.length() > 0) { val x = kasa.getJSONObject(0); fun v(k: String) = x.optJSONObject(k)?.optString("value") ?: ""
+                fun mln(t: String) = t.toDoubleOrNull()?.let { d -> if (d >= 1e6) String.format(java.util.Locale.US, "%.1f mln $", d / 1e6) else String.format(java.util.Locale.US, "%,.0f $", d) } ?: ""
+                mln(v("b")).takeIf { it.isNotEmpty() }?.let { o.put("budget", it) }
+                mln(v("bo")).takeIf { it.isNotEmpty() }?.let { o.put("boxoffice", it) }
+                v("ot").takeIf { it.isNotEmpty() }?.let { o.put("o_name", it) } }
             val nazwiska = ArrayList<String>(); val role = JSONObject()
             for (i in 0 until ob.length()) { val x = ob.getJSONObject(i); val a = x.optJSONObject("aL")?.optString("value") ?: continue; nazwiska.add(a); x.optJSONObject("rL")?.optString("value")?.takeIf { it.isNotEmpty() }?.let { role.put(a, it) } }
             if (nazwiska.isNotEmpty()) { o.put("cast", nazwiska.joinToString(", ")); o.put("_role", role) }

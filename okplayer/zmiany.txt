@@ -1,3 +1,3 @@
-Przyciski odtwarzacza|białe|w kolorach aplikacji: pauza różowa, przewijanie, poprzedni/następny i ustawienia fioletowe, pasek postępu różowo-fioletowy
-Nazwa w animacji ładowania|ucięta do 1–2 słów („W sercu”)|pełna nazwa filmu / kanału
+Strzałki przewijania 5 / 15 s|białe|fioletowe jak reszta przycisków
+Detale filmu|premiera, gatunek, reżyseria, scenariusz, muzyka, kraj, czas|do tego: tytuł oryginalny, wytwórnia, budżet, przychód (box office) i nagrody – z Wikidata
 Małe okno i program|działa (1.80)|bez zmian
