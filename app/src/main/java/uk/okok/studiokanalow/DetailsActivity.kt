@@ -123,7 +123,7 @@ class DetailsActivity : AppCompatActivity() {
                         setOnClickListener {
                             bs.dismiss()
                             startActivity(Intent(this@DetailsActivity, DetailsActivity::class.java)
-                                .putExtra("id", ch.streamId).putExtra("name", ch.name).putExtra("logo", ch.logo).putExtra("url", ch.directUrl ?: ""))
+                                .putExtra("id", ch.streamId).putExtra("name", ch.name).putExtra("logo", ch.logo).putExtra("url", Api.pelnyUrl(ch.directUrl, Session.server(this@DetailsActivity), Session.user(this@DetailsActivity), Session.pass(this@DetailsActivity)) ?: ""))
                         }
                     }
                     val img = android.widget.ImageView(this@DetailsActivity).apply { scaleType = android.widget.ImageView.ScaleType.CENTER_CROP; setBackgroundColor(0xFF1E1E1E.toInt()); if (!ch.logo.isNullOrEmpty()) load(ch.logo) else setImageResource(R.drawable.ic_movie) }

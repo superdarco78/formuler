@@ -97,6 +97,10 @@ object Api {
             out
         }
 
+    /** Filmy trzymaja krotki adres "vod:ID.ext" (mniej pamieci) - tu zamiana na pelny adres. */
+    fun pelnyUrl(u: String?, server: String, user: String, pass: String): String? =
+        if (u != null && u.startsWith("vod:")) "${baseUrl(server)}/movie/$user/$pass/${u.substring(4)}" else u
+
     /** Buduje adres strumienia na zywo. */
     fun liveStreamUrl(server: String, user: String, pass: String, streamId: String): String {
         return "${baseUrl(server)}/live/$user/$pass/$streamId.m3u8"
@@ -191,7 +195,7 @@ object Api {
                 val id = o.s("stream_id")
                 val ext = o.s("container_extension").ifEmpty { "mp4" }
                 out.add(Channel(id, o.s("name"), o.s("stream_icon").ifEmpty { null }, o.s("category_id"),
-                    o.s("num").toIntOrNull() ?: (out.size + 1), "$baza/movie/$user/$pass/$id.$ext",
+                    o.s("num").toIntOrNull() ?: (out.size + 1), "vod:$id.$ext",
                     o.s("rating_5based").toDoubleOrNull() ?: o.s("rating").toDoubleOrNull() ?: 0.0))
             }
             out

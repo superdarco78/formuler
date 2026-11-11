@@ -865,13 +865,13 @@ class MainActivity : AppCompatActivity() {
         i.putExtra("id", ch.streamId)
         i.putExtra("name", ch.name)
         i.putExtra("logo", ch.logo)
-        i.putExtra("url", ch.directUrl ?: "")
+        i.putExtra("url", Api.pelnyUrl(ch.directUrl, Session.server(this), Session.user(this), Session.pass(this)) ?: "")
         i.putExtra("demo", demo)
         startActivity(i)
     }
 
     private fun openPlayer(ch: Channel) {
-        val url = ch.directUrl ?: Api.liveStreamUrl(
+        val url = Api.pelnyUrl(ch.directUrl, Session.server(this), Session.user(this), Session.pass(this)) ?: Api.liveStreamUrl(
             Session.server(this), Session.user(this), Session.pass(this), ch.streamId
         )
         val i = Intent(this, PlayerActivity::class.java)
