@@ -1,4 +1,4 @@
-Start – duże okrągłe przyciski|tylko rzędy kafelków|pod zegarem 8 przycisków jak w IBO Player: Ulubione, Telewizja, Filmy, Seriale, Radio, Szukaj, Konto, Ustawienia (z animacją dotknięcia)
-Moje konto|nie było|przycisk Konto: status, ważne do, data założenia, połączenia (ile z ilu), typ, kod urządzenia, serwer, wersja aplikacji
-Zegar, data, pogoda|–|z 1.91; kontrola rodzicielska z 1.90
+Nowy Start – kinowy|rzędy kafelków|duży baner z plakatem na całą szerokość (sam zmienia się co 5 s z płynnym przejściem), zegar i pogoda na banerze, przyciski Oglądaj / Moja lista / Info, filtry Wszystko–TV–Filmy–Seriale–Radio–Ulubione, Top filmów i seriali dziś wyżej
+Układ Startu do wyboru|jeden układ|Ustawienia → Układ Startu: Kinowy (nowy), Ikony (zegar, pogoda, okrągłe menu jak IBO) albo Klasyczny (jak w 1.89)
+Moje konto, okrągłe menu|–|z 1.92 (w układzie Ikony)
 Małe okno i program|działa (1.80)|bez zmian

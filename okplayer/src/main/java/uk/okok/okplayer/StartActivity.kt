@@ -492,26 +492,101 @@ class StartActivity : AppCompatActivity() {
         }
     }
 
+    /** Duzy baner jak w Netflix / Apple TV: plakat na cala szerokosc, sam sie zmienia co 5 s, Ogladaj / Moja lista / Info. */
+    private fun baner(k: LinearLayout, l0: List<Vod>) {
+        val l = l0.filter { it.okladka?.startsWith("http") == true }.take(8)
+        if (l.isEmpty()) return
+        val w = resources.displayMetrics.widthPixels
+        val f = FrameLayout(this)
+        val obrazy = List(2) { ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_CROP } }
+        obrazy.forEach { f.addView(it, FrameLayout.LayoutParams(-1, -1)) }
+        f.addView(View(this).apply { background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(0x55000000, 0x00000000, 0x33000000, 0xEE000000.toInt(), Color.BLACK)) }, FrameLayout.LayoutParams(-1, -1))
+        // Gorny pasek na banerze: zegar i pogoda
+        val gora = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(16), dp(12), dp(16), 0) }
+        gora.addView(android.widget.TextClock(this).apply { format24Hour = "HH:mm"; format12Hour = "HH:mm"; textSize = 15f; setTextColor(Color.WHITE); setTypeface(typeface, android.graphics.Typeface.BOLD); setShadowLayer(8f, 0f, 0f, Color.BLACK) })
+        val pog = tekst(pogodaPamiec?.let { "  ·  " + it.third + " " + it.second + "  " + it.first } ?: "", 14f).apply { setShadowLayer(8f, 0f, 0f, Color.BLACK) }
+        gora.addView(pog)
+        f.addView(gora, FrameLayout.LayoutParams(-1, -2).apply { gravity = Gravity.TOP })
+        if (pogodaPamiec == null) lifecycleScope.launch { withContext(Dispatchers.IO) { Dodatki.pogoda() }?.let { p -> pogodaPamiec = p; pog.text = "  ·  " + p.third + " " + p.second + "  " + p.first } }
+        val dol = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(18), 0, dp(18), dp(16)) }
+        val znacznik = tekst("", 12f, 0xFFFF8AA0.toInt(), gruby = true).apply { letterSpacing = 0.15f }
+        val tytul = tekst("", 28f, gruby = true).apply { maxLines = 2; ellipsize = android.text.TextUtils.TruncateAt.END; setShadowLayer(12f, 0f, 2f, Color.BLACK) }
+        val meta = tekst("", 13f, 0xFFDDDDDD.toInt()).apply { setPadding(0, dp(2), 0, dp(12)) }
+        dol.addView(znacznik); dol.addView(tytul); dol.addView(meta)
+        val przyciski = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        fun prz(t: String, bialy: Boolean) = tekst(t, 15f, if (bialy) Color.BLACK else Color.WHITE, gruby = true).apply {
+            gravity = Gravity.CENTER; setPadding(dp(20), dp(10), dp(20), dp(10)); isFocusable = true
+            background = GradientDrawable().apply { cornerRadius = dp(24).toFloat(); setColor(if (bialy) Color.WHITE else 0x40FFFFFF) } }
+        val ogladaj = prz("▶  Oglądaj", true); val lista = prz("＋ Moja lista", false); val info = prz("ⓘ", false)
+        przyciski.addView(ogladaj); przyciski.addView(lista, LinearLayout.LayoutParams(-2, -2).apply { marginStart = dp(8) }); przyciski.addView(info, LinearLayout.LayoutParams(-2, -2).apply { marginStart = dp(8) })
+        dol.addView(przyciski)
+        val kropki = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(12), 0, 0) }
+        dol.addView(kropki)
+        f.addView(dol, FrameLayout.LayoutParams(-1, -2).apply { gravity = Gravity.BOTTOM })
+        k.addView(f, LinearLayout.LayoutParams(-1, (w * 1.15).toInt().coerceAtMost((resources.displayMetrics.heightPixels * 0.62).toInt())))
+        var i = 0; var widoczny = 0
+        fun pokazNr(n: Int, anim: Boolean) {
+            val v = l[n]; val nowy = obrazy[1 - widoczny]; val stary = obrazy[widoczny]
+            // Plynne przejscie: nowy plakat wychodzi z lekkiego powiekszenia, stary gasnie (oba pod napisami).
+            nowy.alpha = 0f; nowy.load(v.okladka); nowy.scaleX = 1.08f; nowy.scaleY = 1.08f
+            nowy.animate().alpha(1f).setDuration(if (anim) 700 else 0).start()
+            nowy.animate().scaleX(1f).scaleY(1f).setDuration(5200).start()
+            stary.animate().alpha(0f).setDuration(if (anim) 700 else 0).start()
+            widoczny = 1 - widoczny
+            znacznik.text = if (v.rodzaj == "s") "SERIAL · TOP" else "FILM · TOP"
+            tytul.text = v.nazwa
+            meta.text = listOfNotNull(nazwaKat(v.kat, if (v.rodzaj == "s") katS else katF).ifEmpty { null }, v.ocena.takeIf { it > 0 }?.let { "★ " + String.format(java.util.Locale.US, "%.1f", it) }).joinToString("  ·  ")
+            ogladaj.setOnClickListener { otworz(v) }; info.setOnClickListener { otworz(v) }
+            lista.setOnClickListener { Ust.przelaczUlubiony(this, v.rodzaj, v.id, v.nazwa, v.okladka, v.ext, ""); android.widget.Toast.makeText(this, Jezyk.t("Dodano do Ulubionych"), android.widget.Toast.LENGTH_SHORT).show() }
+            kropki.removeAllViews()
+            l.indices.forEach { j -> kropki.addView(View(this).apply { background = GradientDrawable().apply { cornerRadius = dp(2).toFloat(); setColor(if (j == n) Color.WHITE else 0x66FFFFFF) } },
+                LinearLayout.LayoutParams(if (j == n) dp(22) else dp(8), dp(4)).apply { marginEnd = dp(4) }) }
+        }
+        pokazNr(0, false)
+        val zmiana = object : Runnable { override fun run() { if (!f.isAttachedToWindow) return; i = (i + 1) % l.size; pokazNr(i, true); f.postDelayed(this, 5000) } }
+        f.postDelayed(zmiana, 5000)
+        f.setOnClickListener { otworz(l[i]) }
+    }
+
+    /** Filtry pod banerem: szybkie przejscie do TV, filmow, seriali, radia, ulubionych. */
+    private fun filtry(k: LinearLayout) {
+        val rz = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(dp(14), dp(10), dp(14), dp(2)) }
+        listOf("Wszystko" to 0, "TV" to 1, "Filmy" to 2, "Seriale" to 3, "Radio" to 7, "Ulubione" to 6).forEachIndexed { j, (t, z) ->
+            rz.addView(tekst(t, 14f, if (j == 0) Color.BLACK else Color.WHITE, gruby = j == 0).apply {
+                setPadding(dp(14), dp(7), dp(14), dp(7)); isFocusable = true
+                background = GradientDrawable().apply { cornerRadius = dp(18).toFloat(); setColor(if (j == 0) Color.WHITE else 0xFF24242C.toInt()) }
+                setOnClickListener { if (z != 0) pokaz(z) }
+            }, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(8) })
+        }
+        k.addView(android.widget.HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; addView(rz) })
+    }
+
     private fun start() {
         val sv = ScrollView(this)
         val k = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(0, 0, 0, dp(16)) }
         sv.addView(k); tresc.addView(sv)
         if (filmy.isEmpty() && kanaly.isEmpty()) { k.addView(tekst("Ładuję listę…", 15f, SZARY).apply { setPadding(dp(16), dp(16), 0, 0) }); return }
         val pop = { l: List<Vod> -> l.filter { it.ocena > 0 }.sortedByDescending { it.ocena }.take(20).ifEmpty { l.takeLast(20).reversed() } }
-        // Kontynuuj ogladanie: ostatni kanal + filmy przerwane w polowie (z ulubionych i najnowszych)
-        // Na samej gorze: zegar, data, pogoda i waznosc konta (jak w IBO Player), potem mecze.
-        k.addView(kartaZegara(), LinearLayout.LayoutParams(-1, -2).apply { setMargins(dp(12), dp(4), dp(12), dp(4)) })
-        k.addView(kafleMenu(), LinearLayout.LayoutParams(-1, -2).apply { setMargins(dp(8), dp(10), dp(8), dp(6)) })
-        // Na samej gorze: mecze i sport, ktore leca teraz
+        // Uklad Startu (Ustawienia -> Uklad Startu): kinowy (domyslny), ikony (jak IBO) albo klasyczny.
+        val uklad = Ust.prefs(this).getString("uklad", "kinowy")
+        if (uklad == "kinowy") {
+            baner(k, (pop(filmy).take(6) + pop(seriale).take(4)).shuffled(java.util.Random(System.currentTimeMillis() / 3_600_000)))
+            filtry(k)
+        }
+        if (uklad == "ikony") {
+            k.addView(kartaZegara(), LinearLayout.LayoutParams(-1, -2).apply { setMargins(dp(12), dp(4), dp(12), dp(4)) })
+            k.addView(kafleMenu(), LinearLayout.LayoutParams(-1, -2).apply { setMargins(dp(8), dp(10), dp(8), dp(6)) })
+        }
+        // Mecze i sport, ktore leca teraz
         rzadSportu(k)
+        if (uklad == "kinowy") { rzadRanking(k, "Top filmów dziś", pop(filmy), katF, false); rzadRanking(k, "Top seriali dziś", pop(seriale), katS, true) }
         rzadKanalow(k, "Ostatnio oglądane kanały", Ust.ostatnie(this).map { o -> kanaly.firstOrNull { it.id == o.id } ?: o })
         // Radio: stacje z grup z "radio" w nazwie
         val katRadio = kategorie.filter { it.nazwa.lowercase().contains("radio") }.map { it.id }.toSet()
         rzadKanalow(k, "📻 Radio", kanaly.filter { it.kat in katRadio }.take(40))
         val ul = Ust.ulubione(this).filter { it[0] != "k" }.map { Vod(it[1], it[2], it[3].ifEmpty { null }, it[5], 0.0, it[4], it[0]) }
         rzadVod(k, "Ulubione", ul)
-        rzadRanking(k, "Popularne filmy", pop(filmy), katF, false)
-        rzadRanking(k, "Popularne seriale", pop(seriale), katS, true)
+        if (uklad != "kinowy") { rzadRanking(k, "Popularne filmy", pop(filmy), katF, false); rzadRanking(k, "Popularne seriale", pop(seriale), katS, true) }
         rzadKanalow(k, "Najnowsze kanały telewizyjne", kanaly.takeLast(20).reversed())
         rzadVod(k, "Najnowsze VOD-y", filmy.takeLast(25).reversed())
         rzadVod(k, "Najnowsze seriale telewizyjne", seriale.takeLast(25).reversed())
@@ -957,6 +1032,12 @@ class StartActivity : AppCompatActivity() {
         wiersz("Sprawdź aktualizację", "Pobiera i instaluje nową wersję w tle") { lifecycleScope.launch { Aktualizacja.sprawdz(this@StartActivity, true) } }
         wiersz("Okienko TV (obraz w obrazie)", if (Ust.prefs(this).getBoolean("okienko", true)) "Włączone – po wyjściu do ekranu telefonu TV gra w okienku" else "Wyłączone") {
             Ust.prefs(this).edit().putBoolean("okienko", !Ust.prefs(this).getBoolean("okienko", true)).apply(); pokaz(4)
+        }
+        wiersz("Układ Startu", when (Ust.prefs(this).getString("uklad", "kinowy")) { "ikony" -> "Ikony (jak IBO Player)"; "klasyczny" -> "Klasyczny (jak w 1.89)"; else -> "Kinowy (duży baner, Top 10)" }) {
+            val o = listOf("kinowy" to "Kinowy – duży baner, Top 10 (nowy)", "ikony" to "Ikony – zegar, pogoda, okrągłe menu (jak IBO)", "klasyczny" to "Klasyczny – jak w wersji 1.89")
+            val ter = o.indexOfFirst { it.first == Ust.prefs(this).getString("uklad", "kinowy") }
+            androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Układ Startu").setSingleChoiceItems(o.map { it.second }.toTypedArray(), ter) { d, i -> Ust.prefs(this).edit().putString("uklad", o[i].first).apply(); d.dismiss(); pokaz(4) }
+                .setNegativeButton("Zamknij", null).show().also { Jezyk.okno(it) }
         }
         wiersz("Kontrola rodzicielska", if (pin().isEmpty()) "Wyłączona – ustaw PIN, żeby blokować grupy (np. dla dorosłych)" else "Włączona – zablokowanych grup: " + zablokowaneGrupy().size) { kontrolaRodzicielska() }
         wiersz("Odśwież listę", "Pobiera świeżą listę kanałów, filmów i seriali z serwera") { laduj() }
