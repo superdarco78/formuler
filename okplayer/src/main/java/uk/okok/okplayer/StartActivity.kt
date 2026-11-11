@@ -445,7 +445,7 @@ class StartActivity : AppCompatActivity() {
         if (lista.isEmpty()) {
             if (bladVod.isNotEmpty()) {
                 k.addView(tekst("Nie udało się pobrać listy.\n" + bladVod.take(120), 15f, SZARY).apply { setPadding(dp(16), dp(16), dp(16), dp(12)) })
-                k.addView(tekst("⟳  Spróbuj ponownie", 17f, 0xFF111111.toInt()).apply { gravity = Gravity.CENTER; background = tlo(0xFFE6E6E6.toInt(), 26); setPadding(0, dp(14), 0, dp(14)); setOnClickListener { bladVod = ""; ladujVod(); pokaz(zakladka) } },
+                k.addView(tekst("⟳  Spróbuj ponownie", 17f, Color.WHITE, gruby = true).apply { gravity = Gravity.CENTER; background = android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(0xFFFF3D5A.toInt(), 0xFFB52AD6.toInt())).apply { cornerRadius = dp(26).toFloat() }; setPadding(0, dp(14), 0, dp(14)); setOnClickListener { bladVod = ""; ladujVod(); pokaz(zakladka) } },
                     LinearLayout.LayoutParams(-1, -2).apply { setMargins(dp(16), 0, dp(16), 0) })
             } else k.addView(tekst("Ładuję " + (if (rodzaj == "f") "filmy" else "seriale") + "… (pierwszy raz może potrwać do minuty)", 15f, SZARY).apply { setPadding(dp(16), dp(16), dp(16), 0) })
             return
@@ -653,7 +653,7 @@ class StartActivity : AppCompatActivity() {
         gGodz = tekst("", 12f, SZARY).apply { maxLines = 1 }
         o.addView(gNazwa); o.addView(gTeraz); o.addView(gPasek, LinearLayout.LayoutParams(-1, dp(3)).apply { topMargin = dp(4); bottomMargin = dp(2) }); o.addView(gGodz)
         p.addView(o, LinearLayout.LayoutParams(0, -2, 1f))
-        p.addView(tekst("☰ Program", 14f, Color.BLACK).apply { setPadding(dp(14), dp(8), dp(14), dp(8)); background = tlo(0xFFE6E6E6.toInt(), 20); isFocusable = true
+        p.addView(tekst("☰ Program", 14f, Color.WHITE, gruby = true).apply { setPadding(dp(14), dp(8), dp(14), dp(8)); background = android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(0xFFFF3D5A.toInt(), 0xFFB52AD6.toInt())).apply { cornerRadius = dp(20).toFloat() }; isFocusable = true
             setOnClickListener { gornyKanal?.let { ch -> doProgramu(ch) } } })
         k.addView(p)
         return k
@@ -776,10 +776,10 @@ class StartActivity : AppCompatActivity() {
         box.addView(ik, LinearLayout.LayoutParams(dp(72), dp(72)).apply { bottomMargin = dp(14) })
         box.addView(tekst("Zamknąć OK Player?", 21f, gruby = true).apply { gravity = Gravity.CENTER })
         box.addView(tekst("Czy na pewno chcesz wyjść z aplikacji?", 16f, SZARY).apply { gravity = Gravity.CENTER; setPadding(0, dp(10), 0, dp(22)) })
-        fun przycisk(t: String, kolTla: Int, kolTekstu: Int, akcja: () -> Unit) = tekst(t, 17f, kolTekstu).apply {
-            gravity = Gravity.CENTER; setPadding(0, dp(14), 0, dp(14)); background = tlo(kolTla, 28); isFocusable = true; setOnClickListener { akcja() }
+        fun przycisk(t: String, kolTla: Int, kolTekstu: Int, akcja: () -> Unit) = tekst(t, 17f, kolTekstu, gruby = kolTla == 0).apply {
+            gravity = Gravity.CENTER; setPadding(0, dp(14), 0, dp(14)); background = if (kolTla == 0) android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(0xFFFF3D5A.toInt(), 0xFFB52AD6.toInt())).apply { cornerRadius = dp(28).toFloat() } else tlo(kolTla, 28).apply { setStroke(dp(1), 0xFF555555.toInt()) }; isFocusable = true; setOnClickListener { akcja() }
         }
-        box.addView(przycisk("Wyjdź", 0xFFE6E6E6.toInt(), 0xFF111111.toInt()) {
+        box.addView(przycisk("Wyjdź", 0, Color.WHITE) {
             ik.animate().rotation(360f).scaleX(0.2f).scaleY(0.2f).alpha(0f).setDuration(450).start()
             box.animate().alpha(0f).scaleX(0.85f).scaleY(0.85f).setStartDelay(250).setDuration(300).start()
             window.decorView.animate().alpha(0f).setStartDelay(250).setDuration(350).withEndAction {

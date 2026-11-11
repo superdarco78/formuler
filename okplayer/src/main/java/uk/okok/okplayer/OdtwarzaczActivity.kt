@@ -76,8 +76,8 @@ class OdtwarzaczActivity : AppCompatActivity() {
         opisy.setOnClickListener { if (archiwumGra) biezacy?.let { przelacz(it) } }
         pn.addView(opisy, android.widget.LinearLayout.LayoutParams(0, -2, 1f))
         przyciskProgram = TextView(this).apply {
-            text = "☰ Program"; setTextColor(Color.BLACK); textSize = 14f; setPadding(30, 18, 30, 18); isFocusable = true
-            background = android.graphics.drawable.GradientDrawable().apply { setColor(0xFFE6E6E6.toInt()); cornerRadius = 40f }
+            text = "☰ Program"; setTextColor(Color.WHITE); textSize = 14f; setTypeface(typeface, android.graphics.Typeface.BOLD); setPadding(30, 18, 30, 18); isFocusable = true
+            background = android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(0xFFFF3D5A.toInt(), 0xFFB52AD6.toInt())).apply { cornerRadius = 40f }
             setOnClickListener { if (przewodnikOtwarty) zamknijPrzewodnik() else otworzPrzewodnik() }
         }
         pn.addView(przyciskProgram)
