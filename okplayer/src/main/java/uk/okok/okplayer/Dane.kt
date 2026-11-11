@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit
 
 data class Kat(val id: String, val nazwa: String)
 data class Kanal(val id: String, val nazwa: String, val logo: String?, val kat: String, val nr: Int)
-data class Wpis(val tytul: String, val start: Long, val koniec: Long, val startTxt: String, val archiwum: Boolean)
+data class Wpis(val tytul: String, val start: Long, val koniec: Long, val startTxt: String, val archiwum: Boolean, val opis: String = "")
 /** Film albo serial (rodzaj "f" / "s"). ext = rozszerzenie pliku filmu. */
 data class Vod(val id: String, val nazwa: String, val okladka: String?, val kat: String, val ocena: Double, val ext: String, val rodzaj: String)
 
@@ -140,7 +140,7 @@ object Serwer {
         val arr = JSONObject(tekst(api(c, "get_simple_data_table") + "&stream_id=$id&okp=1")).optJSONArray("epg_listings")
         fun dek(x: String) = try { String(android.util.Base64.decode(x, android.util.Base64.DEFAULT), Charsets.UTF_8) } catch (e: Exception) { x }
         if (arr == null) emptyList() else (0 until arr.length()).map { i -> val o = arr.getJSONObject(i)
-            Wpis(dek(o.optString("title")), o.optString("start_timestamp").toLongOrNull() ?: 0, o.optString("stop_timestamp").toLongOrNull() ?: 0, o.optString("start"), o.optString("has_archive") == "1") }.sortedBy { it.start }
+            Wpis(dek(o.optString("title")), o.optString("start_timestamp").toLongOrNull() ?: 0, o.optString("stop_timestamp").toLongOrNull() ?: 0, o.optString("start"), o.optString("has_archive") == "1", dek(o.optString("description")).trim()) }.sortedBy { it.start }
     } catch (e: Exception) { emptyList() }
 
     /** "Teraz leci" dla kanalu (EPG), z pamiecia na 10 min. */

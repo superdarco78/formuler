@@ -174,18 +174,43 @@ class OdtwarzaczActivity : AppCompatActivity() {
         for (w in wpisy.filter { dz.format(java.util.Date(it.start * 1000)) == dzien }) {
             val teraz = w.start <= t && w.koniec > t
             val archiwum = w.archiwum && w.koniec <= t
+            val szary = 0xFF9A9A9A.toInt()
+            val minelo = w.koniec <= t
             val r = android.widget.LinearLayout(this).apply {
                 orientation = android.widget.LinearLayout.HORIZONTAL; setPadding(32, 22, 32, 22); isFocusable = true
                 setBackgroundColor(if (teraz) 0xFF2A2A2A.toInt() else Color.TRANSPARENT)
-                addView(TextView(this@OdtwarzaczActivity).apply { text = godz.format(java.util.Date(w.start * 1000)); setTextColor(if (teraz) Color.WHITE else 0xFF9A9A9A.toInt()); textSize = 15f; minWidth = 150 })
                 addView(TextView(this@OdtwarzaczActivity).apply {
-                    text = w.tytul + (if (teraz) "   ● TERAZ" else if (archiwum) "   ⏪" else "")
-                    setTextColor(if (w.koniec <= t && !archiwum) 0xFF777777.toInt() else Color.WHITE); textSize = 15f
-                }, android.widget.LinearLayout.LayoutParams(0, -2, 1f))
+                    text = godz.format(java.util.Date(w.start * 1000)) + "\n" + godz.format(java.util.Date(w.koniec * 1000))
+                    setTextColor(if (teraz) Color.WHITE else szary); textSize = 14f; minWidth = 150
+                })
+                val prawa = android.widget.LinearLayout(this@OdtwarzaczActivity).apply { orientation = android.widget.LinearLayout.VERTICAL }
+                prawa.addView(TextView(this@OdtwarzaczActivity).apply {
+                    text = w.tytul; textSize = 16f; setTypeface(typeface, if (teraz) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
+                    setTextColor(if (minelo && !archiwum) 0xFF777777.toInt() else Color.WHITE)
+                })
+                val znak = when { teraz -> "● NA ŻYWO  •  jeszcze " + ((w.koniec - t) / 60) + " min"; archiwum -> "⏪ Archiwum – dotknij, aby obejrzeć"; minelo -> "Bez archiwum"; else -> "Wkrótce  •  " + ((w.koniec - w.start) / 60) + " min" }
+                prawa.addView(TextView(this@OdtwarzaczActivity).apply {
+                    text = znak; textSize = 13f
+                    setTextColor(when { teraz -> 0xFFE0245E.toInt(); archiwum -> 0xFF4FC3F7.toInt(); else -> szary })
+                }, android.widget.LinearLayout.LayoutParams(-2, -2).apply { topMargin = 4 })
+                if (teraz) prawa.addView(android.widget.ProgressBar(this@OdtwarzaczActivity, null, android.R.attr.progressBarStyleHorizontal).apply {
+                    max = 100; progress = ((t - w.start) * 100 / (w.koniec - w.start).coerceAtLeast(1)).toInt()
+                    progressTintList = android.content.res.ColorStateList.valueOf(0xFFE0245E.toInt()); progressBackgroundTintList = android.content.res.ColorStateList.valueOf(0xFF444444.toInt())
+                }, android.widget.LinearLayout.LayoutParams(-1, 10).apply { topMargin = 8 })
+                if (w.opis.isNotEmpty()) prawa.addView(TextView(this@OdtwarzaczActivity).apply {
+                    text = w.opis; textSize = 13f; setTextColor(0xFFBDBDBD.toInt()); maxLines = 2; ellipsize = android.text.TextUtils.TruncateAt.END
+                }, android.widget.LinearLayout.LayoutParams(-1, -2).apply { topMargin = 6 })
+                addView(prawa, android.widget.LinearLayout.LayoutParams(0, -2, 1f))
+                setOnLongClickListener {
+                    androidx.appcompat.app.AlertDialog.Builder(this@OdtwarzaczActivity).setTitle(w.tytul)
+                        .setMessage(godz.format(java.util.Date(w.start * 1000)) + "–" + godz.format(java.util.Date(w.koniec * 1000)) + "\n\n" + w.opis.ifEmpty { "Brak opisu" })
+                        .setPositiveButton(if (archiwum) "⏪ Obejrzyj" else if (teraz) "▶ Na żywo" else "OK") { _, _ -> if (archiwum || teraz) performClick() }
+                        .setNegativeButton("Zamknij", null).show(); true
+                }
                 setOnClickListener {
                     when {
                         archiwum -> { val u = Serwer.adresArchiwum(this@OdtwarzaczActivity, biezacy!!.id, w); intent.putExtra("url", u); pokazNapis("Archiwum: " + w.tytul); proby = 0; trybNaZywo(false); graj(u); naArchiwum(w) }
-                        teraz -> { val u = Serwer.adresKanalu(this@OdtwarzaczActivity, biezacy!!.id); intent.putExtra("url", u); pokazNapis("Na żywo"); graj(u) }
+                        teraz -> { biezacy?.let { przelacz(it) } }
                         else -> pokazNapis(if (w.start > t) "Audycja jeszcze się nie zaczęła" else "Ta audycja nie ma archiwum")
                     }
                 }
