@@ -247,7 +247,8 @@ class OdtwarzaczActivity : AppCompatActivity() {
         val t = System.currentTimeMillis() / 1000
         val godz = java.text.SimpleDateFormat("HH:mm", Jezyk.loc)
         var terazView: android.view.View? = null
-        for (w in wpisy.filter { dz.format(java.util.Date(it.start * 1000)) == dzien }) {
+        // Tylko archiwum tego kanalu: audycje, ktore mozna obejrzec, i ta, ktora leci teraz (bez przyszlych).
+        for (w in wpisy.filter { dz.format(java.util.Date(it.start * 1000)) == dzien && it.start <= t && (it.archiwum || it.koniec > t) }) {
             val teraz = w.start <= t && w.koniec > t
             val archiwum = w.archiwum && w.koniec <= t
             val szary = 0xFF9A9A9A.toInt()

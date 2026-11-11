@@ -19,7 +19,9 @@ object WspolnyGracz {
     fun pobierz(c: Context): ExoPlayer = gracz ?: run {
         // Serwer przepuszcza strumien przez siebie dla odtwarzaczy przedstawiajacych sie jak VLC (dostawca blokuje telefon).
         val http = DefaultHttpDataSource.Factory().setUserAgent("VLC/3.0.20 LibVLC/3.0.20").setAllowCrossProtocolRedirects(true)
-        ExoPlayer.Builder(c.applicationContext).setMediaSourceFactory(DefaultMediaSourceFactory(http)).build().also { gracz = it }
+        val ekstraktory = androidx.media3.extractor.DefaultExtractorsFactory()
+            .setTsExtractorFlags(androidx.media3.extractor.ts.DefaultTsPayloadReaderFactory.FLAG_DETECT_ACCESS_UNITS)
+        ExoPlayer.Builder(c.applicationContext).setMediaSourceFactory(DefaultMediaSourceFactory(http, ekstraktory)).build().also { gracz = it }
     }
 
     /** Gra adres; jesli juz go gra - nic nie zmienia (plynnie). Zwraca true, gdy zaczal od nowa. */
@@ -27,6 +29,8 @@ object WspolnyGracz {
         val p = pobierz(c)
         if (!odNowa && u == url && p.playbackState != androidx.media3.common.Player.STATE_IDLE && p.playbackState != androidx.media3.common.Player.STATE_ENDED) { p.playWhenReady = true; return false }
         url = u
+        // Pelne zatrzymanie przed nowym strumieniem: dekoder startuje od czystego obrazu (bez zielonych klockow).
+        p.stop(); p.clearMediaItems()
         p.setMediaItem(MediaItem.fromUri(u)); p.prepare(); p.playWhenReady = true
         return true
     }

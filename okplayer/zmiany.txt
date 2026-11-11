@@ -1,3 +1,2 @@
-Archiwum w podglądzie TV (w pionie)|po wybraniu audycji obraz przeskakiwał na pełny ekran|archiwum gra w obrazie na górze, a program zostaje pod spodem – można od razu wybrać inną audycję; pełny ekran przyciskiem ⛶
-Archiwum na pełnym ekranie|–|bez zmian: program z boku chowa się, obraz na całość
-Przyciski|białe/szare|w kolorach OK Player (różowo-fioletowe)
+Program TV|pokazywał też przyszłe audycje („Wkrótce”) i audycje bez archiwum|tylko archiwum tego kanału: audycje, które da się obejrzeć, i ta, która leci teraz
+Obraz po zmianie kanału / archiwum|czasem zielone, kolorowe klocki zamiast obrazu|przed nowym obrazem odtwarzacz zatrzymuje się całkiem i startuje od czystej klatki
