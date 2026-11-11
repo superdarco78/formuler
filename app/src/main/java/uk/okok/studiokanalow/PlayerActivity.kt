@@ -452,6 +452,8 @@ class PlayerActivity : AppCompatActivity() {
             if (u2 != url) raport("przekierowanie na " + (try { android.net.Uri.parse(u2).host } catch (e: Exception) { "?" }))
             rozwiazany = u2
             p.setMediaItem(MediaItem.fromUri(u2))
+            val wzn = if (czyLiveUrl()) 0L else try { Session.pozycja(this@PlayerActivity, url) } catch (e: Exception) { 0L }
+            if (wzn > 0) { p.seekTo(wzn); android.widget.Toast.makeText(this@PlayerActivity, "Wznawiam od " + (wzn / 60000) + " min", android.widget.Toast.LENGTH_SHORT).show() }
             p.prepare()
             czuwajNad(p)
             p.playWhenReady = true
@@ -460,6 +462,11 @@ class PlayerActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
+        player?.let { pl ->
+            val url = intent.getStringExtra("url")
+            if (url != null && !czyLiveUrl() && !intent.getBooleanExtra("demo", false) && pl.duration > 0)
+                try { Session.zapiszPozycje(this, url, intent.getStringExtra("name") ?: "", intent.getStringExtra("logo"), pl.currentPosition, pl.duration) } catch (e: Exception) { }
+        }
         player?.release()
         player = null
     }

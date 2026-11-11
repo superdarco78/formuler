@@ -49,6 +49,27 @@ object Session {
         prefs(ctx).edit().clear().apply()
     }
 
+    // ----- kontynuuj ogladanie filmow/odcinkow (pozycja jak w MyTvOnline) -----
+    fun zapiszPozycje(ctx: Context, url: String, name: String, logo: String?, poz: Long, dl: Long) {
+        val arr = try { org.json.JSONArray(prefs(ctx).getString("kontynuuj", "[]")) } catch (e: Exception) { org.json.JSONArray() }
+        val nowa = org.json.JSONArray()
+        val koniec = dl > 0 && poz > dl - 90_000
+        if (!koniec && poz > 30_000) nowa.put(org.json.JSONObject().put("url", url).put("name", name).put("logo", logo ?: "").put("poz", poz).put("dl", dl))
+        for (i in 0 until arr.length()) { val o = arr.getJSONObject(i); if (o.optString("url") != url && nowa.length() < 20) nowa.put(o) }
+        prefs(ctx).edit().putString("kontynuuj", nowa.toString()).apply()
+    }
+    fun pozycja(ctx: Context, url: String): Long {
+        val arr = try { org.json.JSONArray(prefs(ctx).getString("kontynuuj", "[]")) } catch (e: Exception) { return 0 }
+        for (i in 0 until arr.length()) { val o = arr.getJSONObject(i); if (o.optString("url") == url) return o.optLong("poz") }
+        return 0
+    }
+    /** Lista do rzedu "Kontynuuj ogladanie": (url, nazwa, logo, procent). */
+    fun kontynuuj(ctx: Context): List<Array<Any>> {
+        val arr = try { org.json.JSONArray(prefs(ctx).getString("kontynuuj", "[]")) } catch (e: Exception) { return emptyList() }
+        return (0 until arr.length()).map { i -> val o = arr.getJSONObject(i)
+            arrayOf(o.optString("url"), o.optString("name"), o.optString("logo"), if (o.optLong("dl") > 0) (o.optLong("poz") * 100 / o.optLong("dl")).toInt() else 0) }
+    }
+
     // ----- ostatni kanal i opcje startu -----
     fun saveLast(ctx: Context, url: String, name: String, logo: String? = null) {
         val e = prefs(ctx).edit().putString("last_url", url).putString("last_name", name)

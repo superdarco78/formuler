@@ -38,7 +38,7 @@ class DetailsActivity : AppCompatActivity() {
         b.btnWatch.setOnClickListener {
             if (serial) { pokazSezony(name, demo); return@setOnClickListener }
             val i = Intent(this, PlayerActivity::class.java)
-            i.putExtra("url", url); i.putExtra("name", name); i.putExtra("demo", demo)
+            i.putExtra("url", url); i.putExtra("name", name); i.putExtra("demo", demo); i.putExtra("logo", logo ?: info?.poster)
             startActivity(i)
         }
         b.btnBack.setOnClickListener { finish() }
@@ -161,7 +161,7 @@ class DetailsActivity : AppCompatActivity() {
                     setOnClickListener {
                         bs.dismiss()
                         startActivity(Intent(this@DetailsActivity, PlayerActivity::class.java)
-                            .putExtra("url", e.directUrl ?: "").putExtra("name", "$tytul — ${e.name}").putExtra("demo", demo))
+                            .putExtra("url", e.directUrl ?: "").putExtra("name", "$tytul — ${e.name}").putExtra("demo", demo).putExtra("logo", e.logo ?: intent.getStringExtra("logo")))
                     }
                 }
                 val img = android.widget.ImageView(this).apply { scaleType = android.widget.ImageView.ScaleType.CENTER_CROP; setBackgroundColor(0xFF1B2236.toInt()); if (!e.logo.isNullOrEmpty()) load(e.logo) else setImageResource(R.drawable.ic_movie) }

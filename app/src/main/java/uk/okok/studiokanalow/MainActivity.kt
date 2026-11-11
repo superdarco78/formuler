@@ -267,11 +267,15 @@ class MainActivity : AppCompatActivity() {
         dodajKomunikat()
         dodajBaner("Witaj w OK Player")
         val last = try { Session.lastUrl(this) } catch (e: Exception) { null }
-        if (last != null && !demo) {
-            dodajRzad("Kontynuuj oglądanie",
-                listOf(Channel("last", Session.lastName(this).ifEmpty { "Ostatni kanał" },
-                    Session.lastLogo(this) ?: liveCache?.firstOrNull { it.name == Session.lastName(this) }?.logo, null, 0, last)),
-                { ch -> openPlayer(ch) })
+        if (!demo) {
+            val wiersze = ArrayList<Channel>()
+            if (last != null) wiersze.add(Channel("last", Session.lastName(this).ifEmpty { "Ostatni kanał" },
+                Session.lastLogo(this) ?: liveCache?.firstOrNull { it.name == Session.lastName(this) }?.logo, null, 0, last))
+            Session.kontynuuj(this).forEach { a ->
+                val u = a[0] as String
+                if (u != last) wiersze.add(Channel("k" + wiersze.size, (a[1] as String) + "  •  " + a[3] + "%", (a[2] as String).ifEmpty { null }, null, 0, u))
+            }
+            if (wiersze.isNotEmpty()) dodajRzad("Kontynuuj oglądanie", wiersze, { ch -> openPlayer(ch.copy(name = ch.name.substringBefore("  •  "))) })
         }
         if (demo) {
             dodajRzad("Popularne filmy", Demo.films, { ch -> openDetails(ch) }, 112, true)
