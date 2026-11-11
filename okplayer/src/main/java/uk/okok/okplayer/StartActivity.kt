@@ -528,7 +528,8 @@ class StartActivity : AppCompatActivity() {
     private fun baner(k: LinearLayout, l0: List<Vod>) {
         // 2.07: baner jak w Netflixie - duza karta z plakatem, tytul i gatunki na srodku, pod spodem szeroki bialy "Odtworz" i szary "Moja lista";
         // tlo calej aplikacji bierze kolor z plakatu.
-        val l = l0.filter { it.okladka?.startsWith("http") == true }.take(8)
+        // 2.11: na banerze nr 1 zawsze pierwszy, reszta losowo przy kazdym wejsciu
+        val l = l0.filter { it.okladka?.startsWith("http") == true }.take(12).let { if (it.size > 1) listOf(it[0]) + it.drop(1).shuffled() else it }
         if (l.isEmpty()) return
         val w = resources.displayMetrics.widthPixels - dp(32)
         val karta = FrameLayout(this).apply { clipToOutline = true; isFocusable = true
@@ -578,7 +579,7 @@ class StartActivity : AppCompatActivity() {
                     zwiastunWidok.player = zwiastun
                 }
             }, 3000)
-            nowy.alpha = 0f; nowy.scaleX = 1.06f; nowy.scaleY = 1.06f
+            nowy.alpha = 0f; nowy.scaleX = 1f; nowy.scaleY = 1f; nowy.translationX = 0f
             nowy.load(v.okladka) { allowHardware(false); listener(onSuccess = { _, r ->
                 (r.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap?.let { bm ->
                     val kol = Skorka.zPlakatu(this@StartActivity, bm)
@@ -586,7 +587,11 @@ class StartActivity : AppCompatActivity() {
                     glowny?.background = Skorka.tloZAkcentem(kol)
                 } }) }
             nowy.animate().alpha(1f).setDuration(if (anim) 700 else 0).start()
-            nowy.animate().scaleX(1f).scaleY(1f).setDuration(6000).start()
+            // 2.11: plakat banera powoli sie przybliza i przesuwa (efekt filmowy)
+            android.animation.AnimatorSet().apply {
+                playTogether(android.animation.ObjectAnimator.ofFloat(nowy, "scaleX", 1.0f, 1.18f), android.animation.ObjectAnimator.ofFloat(nowy, "scaleY", 1.0f, 1.18f),
+                    android.animation.ObjectAnimator.ofFloat(nowy, View.TRANSLATION_X, 0f, (if (n % 2 == 0) -1 else 1) * dp(18).toFloat()))
+                duration = 12000; interpolator = android.view.animation.LinearInterpolator(); start() }
             stary.animate().alpha(0f).setDuration(if (anim) 700 else 0).start()
             widoczny = 1 - widoczny
             tytul.text = v.nazwa.replace(Regex("\\s*\\(\\d{4}\\).*$"), "")

@@ -105,7 +105,7 @@ class DetaleActivity : AppCompatActivity() {
         val rozmyte = ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_CROP; alpha = 0.45f
             if (android.os.Build.VERSION.SDK_INT >= 31) setRenderEffect(android.graphics.RenderEffect.createBlurEffect(80f, 80f, android.graphics.Shader.TileMode.CLAMP)) }
         f.addView(rozmyte, FrameLayout.LayoutParams(-1, -1))
-        val nakladka = View(this).apply { background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(0x33000000, 0xCC000000.toInt(), Color.BLACK)) }
+        val nakladka = android.view.View(this).apply { background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(0x33000000, 0xCC000000.toInt(), Color.BLACK)) }
         f.addView(nakladka, FrameLayout.LayoutParams(-1, -1))
         sv.background = null
         intent.getStringExtra("okladka")?.let { u ->

@@ -1,5 +1,5 @@
 Wejście w film|ekran filmu wjeżdżał ze środka ekranu|plakat płynnie powiększa się z miejsca kliknięcia na cały ekran (jak Apple TV)
-Baner na górze|stał w miejscu przy przewijaniu|paralaksa – plakat przesuwa się wolniej niż reszta, efekt głębi
+Baner na górze|stał w miejscu, zawsze te same filmy po kolei|paralaksa przy przewijaniu, plakat powoli się przybliża i przesuwa, nr 1 pierwszy, reszta losowo
 Żywy baner|tylko zdjęcie plakatu|po 3 s na banerze filmu sam rusza zwiastun bez dźwięku
 Ekran filmu|ciemne stałe tło i jeden kolor przycisku|rozmyty plakat w tle, tło i przycisk Oglądaj w kolorze plakatu
 Jeden uniwersalny wygląd|kilka skórek do wyboru|bez wariantów – jeden spójny wygląd jak Netflix (grafit, biel, bursztyn) w całej aplikacji
