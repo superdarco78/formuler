@@ -138,13 +138,21 @@ class PlayerActivity : AppCompatActivity() {
                 b.playerView.overlayFrameLayout?.addView(bt, lp)
             }
         }
-        if (Kontekst.kanaly.isNotEmpty() && !intent.getBooleanExtra("demo", false)) {
-            val ad = ChannelAdapter({ ch -> zmienKanal(ch) }, null, true)
-            b.rvKanaly.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
-            b.rvKanaly.adapter = ad
-            ad.submit(Kontekst.kanaly)
-            val nr = Kontekst.kanaly.indexOfFirst { c -> (intent.getStringExtra("url") ?: "").contains("/" + c.streamId + ".") }
-            if (nr > 0) b.rvKanaly.scrollToPosition(nr)
+        if (!intent.getBooleanExtra("demo", false) && !intent.getBooleanExtra("archiwum", false)) {
+            if (Kontekst.kanaly.isNotEmpty()) ustawListeKanalow()
+            else {
+                b.rvKanaly.visibility = android.view.View.GONE
+                lifecycleScope.launch {
+                    val l = try { Api.liveStreams(Session.server(this@PlayerActivity), Session.user(this@PlayerActivity), Session.pass(this@PlayerActivity), null) } catch (e: Exception) { emptyList() }
+                    raport("lista kanalow " + l.size)
+                    if (l.isNotEmpty()) {
+                        Kontekst.kanaly = l
+                        ustawListeKanalow()
+                        val lg = l.firstOrNull { it.streamId == biezacyId }?.logo
+                        if (!lg.isNullOrEmpty()) { biezaceLogo = lg; b.ivLogo.load(lg) }
+                    }
+                }
+            }
         } else b.rvKanaly.visibility = android.view.View.GONE
         b.playerView.setFullscreenButtonClickListener { pelny ->
             requestedOrientation = if (pelny) android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
@@ -152,6 +160,16 @@ class PlayerActivity : AppCompatActivity() {
         // Odtwarzacz otwiera sie w pionie (obraz u gory, lista kanalow pod spodem); pelny ekran dopiero po przycisku.
         requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
         uloz(resources.configuration.orientation)
+    }
+
+    private fun ustawListeKanalow() {
+        val ad = ChannelAdapter({ ch -> zmienKanal(ch) }, null, true)
+        b.rvKanaly.visibility = android.view.View.VISIBLE
+        b.rvKanaly.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
+        b.rvKanaly.adapter = ad
+        ad.submit(Kontekst.kanaly)
+        val nr = Kontekst.kanaly.indexOfFirst { c -> c.streamId == biezacyId }
+        if (nr > 0) b.rvKanaly.scrollToPosition(nr)
     }
 
     /** Przelacza kanal w tym samym odtwarzaczu (jak w MyTVOnline+). */
