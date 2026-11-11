@@ -57,16 +57,16 @@ class AktorActivity : AppCompatActivity() {
         val dane = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(0, 0, 0, dp(8)) }
         kol.addView(dane)
         lifecycleScope.launch {
-            val b = withContext(Dispatchers.IO) { Dodatki.bio(nazwa) }
+            val b = withContext(Dispatchers.IO) { bioZPamieci(nazwa) }
             b["Kim jest"]?.let { opis.addView(tekst(it, 14f, 0xFFBDBDBD.toInt()).apply { setPadding(0, dp(6), 0, 0) }, 1) }
-            for (k in listOf("Urodzony", "Miejsce urodzenia", "Zmarł")) b[k]?.let { v ->
+            for (k in listOf("Urodzony", "Miejsce urodzenia", "Zmarł", "Wzrost", "Małżonkowie", "Dzieci", "Nagrody")) b[k]?.let { v ->
                 dane.addView(LinearLayout(this@AktorActivity).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(4), 0, dp(4))
                     addView(tekst(k, 14f, SZARY), LinearLayout.LayoutParams(dp(150), -2)); addView(tekst(v, 14f), LinearLayout.LayoutParams(0, -2, 1f)) })
             }
             b["bio"]?.let { bio ->
-                val t = tekst(bio, 15f, 0xFFDDDDDD.toInt()).apply { setPadding(0, dp(10), 0, dp(4)); maxLines = 5; ellipsize = android.text.TextUtils.TruncateAt.END; setLineSpacing(0f, 1.15f) }
+                val t = tekst(bio, 15f, 0xFFDDDDDD.toInt()).apply { setPadding(0, dp(10), 0, dp(4)); maxLines = 8; ellipsize = android.text.TextUtils.TruncateAt.END; setLineSpacing(0f, 1.15f) }
                 var rozw = false
-                t.setOnClickListener { rozw = !rozw; t.maxLines = if (rozw) Int.MAX_VALUE else 5 }
+                t.setOnClickListener { rozw = !rozw; t.maxLines = if (rozw) Int.MAX_VALUE else 8 }
                 dane.addView(tekst("Biografia", 18f, g = true).apply { setPadding(0, dp(12), 0, 0) })
                 dane.addView(t)
                 dane.addView(tekst("Więcej / Mniej", 13f, SZARY).apply { setOnClickListener { t.performClick() } })
@@ -82,7 +82,7 @@ class AktorActivity : AppCompatActivity() {
         }
         lifecycleScope.launch {
             val wynik = withContext(Dispatchers.IO) { kotlinx.coroutines.withTimeoutOrNull(45_000) {
-                val fg = Dodatki.filmografia(nazwa)
+                val fg = filmyZPamieci(nazwa)
                 val klucze = HashMap<String, Int>()
                 fg.forEachIndexed { i, f -> listOf(f.first, f.second).map { Dodatki.klucz(it) }.filter { it.length >= 2 }.forEach { k -> klucze.putIfAbsent(k, i) } }
                 val trafione = HashSet<Int>()
@@ -121,6 +121,24 @@ class AktorActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    // Pamiec na telefonie (14 dni): drugi raz ten sam aktor otwiera sie od razu.
+    private fun plikAktora(n: String, r: String) = java.io.File(java.io.File(filesDir, "aktorzy").apply { mkdirs() }, r + "_" + n.hashCode() + ".json")
+    private fun swiezy(f: java.io.File) = f.exists() && System.currentTimeMillis() - f.lastModified() < 14 * 86_400_000L
+    private fun bioZPamieci(n: String): Map<String, String> {
+        val f = plikAktora(n, "bio")
+        if (swiezy(f)) try { val o = org.json.JSONObject(f.readText()); return o.keys().asSequence().associateWith { o.optString(it) } } catch (_: Exception) {}
+        val b = Dodatki.bio(n)
+        if (b.isNotEmpty()) try { f.writeText(org.json.JSONObject(b as Map<*, *>).toString()) } catch (_: Exception) {}
+        return b
+    }
+    private fun filmyZPamieci(n: String): List<Triple<String, String, Int>> {
+        val f = plikAktora(n, "filmy")
+        if (swiezy(f)) try { val a = org.json.JSONArray(f.readText()); return (0 until a.length()).map { val x = a.getJSONArray(it); Triple(x.optString(0), x.optString(1), x.optInt(2)) } } catch (_: Exception) {}
+        val l = Dodatki.filmografia(n)
+        if (l.isNotEmpty()) try { f.writeText(org.json.JSONArray(l.map { org.json.JSONArray(listOf(it.first, it.second, it.third)) }).toString()) } catch (_: Exception) {}
+        return l
     }
 
     private fun plakat(v: Vod): LinearLayout {

@@ -129,7 +129,26 @@ object Dodatki {
                     val j = JSONObject(tekst("$host/api/rest_v1/page/summary/$tytul"))
                     j.optString("extract").takeIf { it.isNotEmpty() }?.let { out["bio"] = it }
                     j.optString("description").takeIf { it.isNotEmpty() }?.let { out["Kim jest"] = it }
+                    // Pelna biografia: caly artykul z Wikipedii (zwykly tekst, do ok. 8000 znakow)
+                    try {
+                        val q = JSONObject(tekst("$host/w/api.php?action=query&prop=extracts&explaintext=1&exsectionformat=plain&format=json&titles=$tytul"))
+                        val strony = q.optJSONObject("query")?.optJSONObject("pages")
+                        val tx = strony?.keys()?.asSequence()?.firstOrNull()?.let { strony.optJSONObject(it)?.optString("extract") } ?: ""
+                        if (tx.length > (out["bio"]?.length ?: 0)) out["bio"] = tx.replace(Regex("\n{3,}"), "\n\n").take(8000)
+                    } catch (_: Exception) { }
                 }
+            }
+            // Dodatkowe dane: wzrost, malzonkowie, dzieci, nagrody
+            val d = sparql("SELECT ?wz (GROUP_CONCAT(DISTINCT ?mzL; separator=\", \") AS ?mz) (COUNT(DISTINCT ?dz) AS ?ldz) (GROUP_CONCAT(DISTINCT ?ngL; separator=\", \") AS ?ng) WHERE { $ktos " +
+                "OPTIONAL { ?a wdt:P2048 ?wz. } OPTIONAL { ?a wdt:P26 ?m. ?m rdfs:label ?mzL. FILTER(lang(?mzL)=\"en\") } OPTIONAL { ?a wdt:P40 ?dz. } " +
+                "OPTIONAL { ?a wdt:P166 ?n. ?n rdfs:label ?ngL. FILTER(lang(?ngL)=\"pl\") } } GROUP BY ?wz LIMIT 1")
+            if (d.length() > 0) {
+                val o2 = d.getJSONObject(0)
+                fun w(k: String) = o2.optJSONObject(k)?.optString("value") ?: ""
+                w("wz").toDoubleOrNull()?.let { m -> out["Wzrost"] = if (m < 3) "${Math.round(m * 100)} cm" else "${Math.round(m)} cm" }
+                w("mz").takeIf { it.isNotEmpty() }?.let { out["Małżonkowie"] = it }
+                w("ldz").toIntOrNull()?.takeIf { it > 0 }?.let { out["Dzieci"] = it.toString() }
+                w("ng").takeIf { it.isNotEmpty() }?.let { out["Nagrody"] = it.split(", ").take(8).joinToString(", ") }
             }
         } catch (_: Exception) { }
         return out

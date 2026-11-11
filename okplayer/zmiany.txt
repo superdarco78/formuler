@@ -1,2 +1,3 @@
-Filmy aktora|„Szukam filmów…” trwało bardzo długo albo bez końca|szybsze wyszukiwanie filmografii (prostsze zapytanie, dłuższy czas na odpowiedź) – pod biografią najpierw jego filmy z Twojej listy, niżej wszystkie pozostałe
-Mecze na Starcie|zwykłe karty|plakietki lig i drużyny w dwóch linijkach, zawsze na górze
+Biografia aktora|krótki opis (kilka zdań)|cały artykuł z Wikipedii (8 linijek, dotknij – rozwija się całość)
+Dane aktora|urodzony, miejsce|dodatkowo: wzrost, małżonkowie, liczba dzieci, nagrody
+Szybkość ekranu aktora|każde otwarcie szukało wszystkiego od nowa|dane i filmy zapamiętane w telefonie na 14 dni – drugi raz otwiera się od razu; lista filmów do porównania trzymana w pamięci

@@ -254,7 +254,16 @@ object Pamiec {
         t.renameTo(File(c.filesDir, "$n.json")); Unit
     } catch (e: Exception) { }
 
-    fun vod(c: Context, n: String): List<Vod>? = try {
+    /** Lista filmow/seriali trzymana tez w pamieci - drugi odczyt jest natychmiastowy. */
+    private val vodPamiec = HashMap<String, Pair<Long, List<Vod>>>()
+    fun vod(c: Context, n: String): List<Vod>? {
+        val f = File(c.filesDir, "$n.json"); if (!f.exists()) return null
+        synchronized(vodPamiec) { vodPamiec[n]?.let { if (it.first == f.lastModified()) return it.second } }
+        val l = vodZPliku(c, n) ?: return null
+        synchronized(vodPamiec) { vodPamiec[n] = f.lastModified() to l }
+        return l
+    }
+    private fun vodZPliku(c: Context, n: String): List<Vod>? = try {
         val f = File(c.filesDir, "$n.json"); if (!f.exists()) null else {
             val out = ArrayList<Vod>()
             android.util.JsonReader(f.bufferedReader()).use { r ->
