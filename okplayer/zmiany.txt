@@ -1,4 +1,3 @@
-Zwiastun filmu|przy nowych filmach wisiało „Szukam zwiastuna…”|gdy serwer i Wikipedia go nie mają: zwiastun z iTunes (odtwarza się od razu), a gdy i tam brak – przycisk „Zwiastun na YouTube”; tło z plakatem
-Animacja ładowania|ikona aplikacji, ucięta nazwa|plakat filmu / logo kanału i pełna nazwa (z 1.83)
-Obsada|kilku aktorów|pełna obsada, reżyser ze zdjęciem, scenariusz, muzyka (z 1.82)
+Przyciski odtwarzacza|białe (pauza, przewijanie 5/15 s, poprzedni/następny, pasek)|w kolorach aplikacji: pauza różowa, przewijanie i ustawienia fioletowe, pasek postępu różowo-fioletowy
+Zwiastun filmu|wisiało „Szukam zwiastuna…”|zwiastun z iTunes albo przycisk „Zwiastun na YouTube” (z 1.84)
 Małe okno i program|działa (1.80)|bez zmian

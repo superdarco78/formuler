@@ -69,6 +69,20 @@ class OdtwarzaczActivity : AppCompatActivity() {
         Jezyk.wlacz(this)
         val f = FrameLayout(this).apply { setBackgroundColor(Color.BLACK) }
         widok = PlayerView(this).apply { useController = true; setShowBuffering(PlayerView.SHOW_BUFFERING_NEVER); controllerShowTimeoutMs = 3000 }
+        // Przyciski odtwarzacza w kolorach aplikacji (rozowy / fiolet) zamiast bialych.
+        run {
+            val roz = android.content.res.ColorStateList.valueOf(0xFFFF3D5A.toInt())
+            val fio = android.content.res.ColorStateList.valueOf(0xFFC85BFF.toInt())
+            (widok.findViewById<android.view.View>(androidx.media3.ui.R.id.exo_play_pause) as? android.widget.ImageView)?.imageTintList = roz
+            for (n in listOf(androidx.media3.ui.R.id.exo_rew_with_amount, androidx.media3.ui.R.id.exo_ffwd_with_amount, androidx.media3.ui.R.id.exo_prev, androidx.media3.ui.R.id.exo_next, androidx.media3.ui.R.id.exo_settings))
+                (widok.findViewById<android.view.View>(n) as? android.widget.ImageView)?.imageTintList = fio
+            for (n in listOf(androidx.media3.ui.R.id.exo_rew_with_amount, androidx.media3.ui.R.id.exo_ffwd_with_amount))
+                (widok.findViewById<android.view.View>(n) as? android.widget.TextView)?.setTextColor(0xFFC85BFF.toInt())
+            widok.findViewById<androidx.media3.ui.DefaultTimeBar>(androidx.media3.ui.R.id.exo_progress)?.apply {
+                setPlayedColor(0xFFFF3D5A.toInt()); setScrubberColor(0xFFC85BFF.toInt()); setBufferedColor(0x66FFFFFF); setUnplayedColor(0x33FFFFFF)
+            }
+            widok.findViewById<TextView>(androidx.media3.ui.R.id.exo_position)?.setTextColor(0xFFFF3D5A.toInt())
+        }
         f.addView(widok, FrameLayout.LayoutParams(-1, -1))
         // Animacja przy wlaczaniu kanalu / filmu: logo pulsuje, wokol kreci sie kolorowy pierscien, pod spodem nazwa.
         ladowanie = FrameLayout(this).apply { setBackgroundColor(0xCC000000.toInt()); isClickable = false }
