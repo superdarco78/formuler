@@ -200,10 +200,98 @@ class PlayerActivity : AppCompatActivity() {
             b.playerView.overlayFrameLayout?.addView(statusTv, lp)
             status("Ładowanie…")
         }
+        // Przycisk opcji odtwarzacza (jak w MyTvOnline): dzwiek, napisy, format obrazu, predkosc, wylacznik czasowy.
+        run {
+            val bt = android.widget.TextView(this).apply {
+                text = "⚙  Opcje"; setTextColor(0xFFFFFFFF.toInt()); textSize = 15f
+                setPadding(36, 20, 36, 20); setBackgroundColor(0x99000000.toInt())
+                setOnClickListener { opcjeOdtwarzacza() }
+            }
+            val lp = android.widget.FrameLayout.LayoutParams(-2, -2)
+            lp.gravity = android.view.Gravity.TOP or android.view.Gravity.START; lp.setMargins(24, 80, 0, 0)
+            b.playerView.overlayFrameLayout?.addView(bt, lp)
+        }
         val fp = (intent.getStringExtra("url") ?: "")
         // Filmy i seriale od razu na pelnym ekranie (poziomo); kanaly na zywo w pionie z lista kanalow.
         requestedOrientation = if (fp.contains("/movie/") || fp.contains("/series/")) android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
         uloz(if (fp.contains("/movie/") || fp.contains("/series/")) android.content.res.Configuration.ORIENTATION_LANDSCAPE else resources.configuration.orientation)
+    }
+
+    private var wylacznik: android.os.CountDownTimer? = null
+
+    private fun wybor(tytul: String, opcje: List<String>, zaznaczona: Int, akcja: (Int) -> Unit) {
+        androidx.appcompat.app.AlertDialog.Builder(this).setTitle(tytul)
+            .setSingleChoiceItems(opcje.toTypedArray(), zaznaczona) { d, i -> akcja(i); d.dismiss() }
+            .setNegativeButton("Zamknij", null).show()
+    }
+
+    private fun opcjeOdtwarzacza() {
+        val p = player ?: return
+        val live = czyLiveUrl()
+        val lista = mutableListOf("Ścieżka dźwiękowa", "Napisy", "Format obrazu")
+        if (!live) lista.add("Prędkość odtwarzania")
+        lista.add("Wyłącznik czasowy" + (if (wylacznik != null) " (włączony)" else ""))
+        androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Opcje odtwarzacza")
+            .setItems(lista.toTypedArray()) { _, i ->
+                when (lista[i].substringBefore(" (")) {
+                    "Ścieżka dźwiękowa" -> sciezki(p, androidx.media3.common.C.TRACK_TYPE_AUDIO)
+                    "Napisy" -> sciezki(p, androidx.media3.common.C.TRACK_TYPE_TEXT)
+                    "Format obrazu" -> {
+                        val tryby = listOf("Dopasuj" to androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIT,
+                            "Powiększ (bez pasów)" to androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_ZOOM,
+                            "Rozciągnij" to androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FILL)
+                        wybor("Format obrazu", tryby.map { it.first }, tryby.indexOfFirst { it.second == b.playerView.resizeMode }) { k ->
+                            b.playerView.resizeMode = tryby[k].second
+                            Session.setOpt(this, "zoom", if (tryby[k].second == androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_ZOOM) "1" else "0")
+                        }
+                    }
+                    "Prędkość odtwarzania" -> {
+                        val pr = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f)
+                        wybor("Prędkość", pr.map { (if (it == 1f) "Normalna" else "${it}x") }, pr.indexOf(p.playbackParameters.speed)) { k -> p.setPlaybackSpeed(pr[k]) }
+                    }
+                    "Wyłącznik czasowy" -> {
+                        val min = listOf(0, 15, 30, 45, 60, 90, 120)
+                        wybor("Wyłącznik czasowy", min.map { if (it == 0) "Wyłączony" else "$it min" }, -1) { k ->
+                            wylacznik?.cancel(); wylacznik = null
+                            if (min[k] > 0) {
+                                wylacznik = object : android.os.CountDownTimer(min[k] * 60_000L, 60_000L) {
+                                    override fun onTick(ms: Long) {}
+                                    override fun onFinish() { player?.pause(); finish() }
+                                }.start()
+                                android.widget.Toast.makeText(this, "Odtwarzanie zatrzyma się za ${min[k]} min", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                }
+            }.show()
+    }
+
+    /** Wybor sciezki dzwieku albo napisow z tego, co jest w strumieniu. */
+    private fun sciezki(p: ExoPlayer, typ: Int) {
+        val grupy = p.currentTracks.groups.filter { it.type == typ }
+        val nazwy = ArrayList<String>(); val wyb = ArrayList<Pair<Int, Int>>()
+        var akt = -1
+        if (typ == androidx.media3.common.C.TRACK_TYPE_TEXT) { nazwy.add("Wyłączone"); wyb.add(-1 to -1) }
+        grupy.forEachIndexed { gi, g ->
+            for (t in 0 until g.length) {
+                val f = g.getTrackFormat(t)
+                val jez = f.language?.let { java.util.Locale(it).getDisplayLanguage(java.util.Locale("pl")).replaceFirstChar { c -> c.uppercase() } } ?: "Ścieżka ${nazwy.size + 1}"
+                val opis = listOfNotNull(jez, f.label, f.sampleMimeType?.substringAfter("/")?.uppercase(), if (f.channelCount > 0) "${f.channelCount} kan." else null).distinct().joinToString(" • ")
+                if (g.isTrackSelected(t)) akt = nazwy.size
+                nazwy.add(opis); wyb.add(gi to t)
+            }
+        }
+        if (akt == -1 && typ == androidx.media3.common.C.TRACK_TYPE_TEXT) akt = 0
+        if (nazwy.isEmpty() || (typ == androidx.media3.common.C.TRACK_TYPE_TEXT && nazwy.size == 1)) {
+            android.widget.Toast.makeText(this, if (typ == androidx.media3.common.C.TRACK_TYPE_AUDIO) "Brak innych ścieżek dźwięku" else "Brak napisów w tym strumieniu", android.widget.Toast.LENGTH_SHORT).show(); return
+        }
+        wybor(if (typ == androidx.media3.common.C.TRACK_TYPE_AUDIO) "Ścieżka dźwiękowa" else "Napisy", nazwy, akt) { k ->
+            val (gi, t) = wyb[k]
+            val bld = p.trackSelectionParameters.buildUpon()
+            if (gi < 0) bld.setTrackTypeDisabled(typ, true)
+            else bld.setTrackTypeDisabled(typ, false).setOverrideForType(androidx.media3.common.TrackSelectionOverride(grupy[gi].mediaTrackGroup, t))
+            p.trackSelectionParameters = bld.build()
+        }
     }
 
     private fun ustawListeKanalow() {
@@ -459,6 +547,8 @@ class PlayerActivity : AppCompatActivity() {
             p.playWhenReady = true
         }
     }
+
+    override fun onDestroy() { wylacznik?.cancel(); super.onDestroy() }
 
     override fun onStop() {
         super.onStop()

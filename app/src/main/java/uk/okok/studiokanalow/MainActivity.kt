@@ -16,6 +16,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.async
 import uk.okok.studiokanalow.databinding.ActivityMainBinding
 import uk.okok.studiokanalow.model.Category
 import uk.okok.studiokanalow.model.Channel
@@ -25,6 +26,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var b: ActivityMainBinding
     private lateinit var channelAdapter: ChannelAdapter
     private var demo = false
+    private var zPamieci = false
+    private var pamiecWczytana = false
     private var vodCache: List<Channel>? = null
     private var vodCats: List<Category>? = null
     private var serCache: List<Channel>? = null
@@ -88,7 +91,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         b = ActivityMainBinding.inflate(layoutInflater)
         setContentView(b.root)
-        if (savedInstanceState == null) animacjaStartu()
+        if (savedInstanceState == null) { animacjaStartu(); raportZawieszenia() }
 
         demo = intent.getBooleanExtra("demo", false)
 
@@ -130,6 +133,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun pokaz(id: Int) {
+        if (id != R.id.tab_start) koniecAnimacjiStartu()
         wersjaEkranu++
         zastosujWyglad()
         when (id) {
@@ -262,7 +266,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showStart() {
-        if (Konfig.styl(this) == "smarters") { showStartSmarters(); return }
+        if (Konfig.styl(this) == "smarters") { showStartSmarters(); koniecAnimacjiStartu(); return }
         tryb(getString(R.string.app_name), true, false)
         dodajKomunikat()
         dodajBaner("Witaj w OK Player")
@@ -281,56 +285,84 @@ class MainActivity : AppCompatActivity() {
             dodajRzad("Popularne filmy", Demo.films, { ch -> openDetails(ch) }, 112, true)
             dodajRzad("Popularne seriale", Demo.seriale, { ch -> openPlayer(ch) }, 112, true)
             dodajRzad("Najnowsze kanały telewizyjne", Demo.channels, { ch -> openPlayer(ch) })
+            koniecAnimacjiStartu()
             return
         }
         val wersja = wersjaEkranu
         showBusy()
         lifecycleScope.launch {
             try {
+                // Listy z poprzedniego uruchomienia (czytane w tle, nie blokuja ekranu) - Start od razu gotowy.
+                if (vodCache == null && !pamiecWczytana) {
+                    pamiecWczytana = true
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        val ctx = this@MainActivity
+                        val v0 = Session.wczytajKanaly(ctx, "vod")
+                        if (v0 != null) {
+                            vodCache = v0; serCache = Session.wczytajKanaly(ctx, "ser"); liveCache = Session.wczytajKanaly(ctx, "live")
+                            vodCats = Session.wczytajKategorie(ctx, "vod"); serCats = Session.wczytajKategorie(ctx, "ser"); zPamieci = true
+                        }
+                    }
+                }
+                // Po kolei (nie naraz): przy duzej liscie naraz zapychalo pamiec i aplikacja "nie odpowiadala".
+                // Szybkosc daje pamiec list na dysku - za drugim razem Start jest od razu.
                 val v = vodCache ?: Api.vodStreams(s(), u(), p(), null).also { vodCache = it }
                 val vc = vodCats ?: try { Api.vodCategories(s(), u(), p()).also { vodCats = it } } catch (e: Exception) { emptyList() }
                 val sr = serCache ?: try { Api.seriesList(s(), u(), p()).also { serCache = it } } catch (e: Exception) { emptyList() }
                 val sc = serCats ?: try { Api.seriesCategories(s(), u(), p()).also { serCats = it } } catch (e: Exception) { emptyList() }
                 val kan = liveCache ?: try { Api.liveStreams(s(), u(), p(), null).also { liveCache = it } } catch (e: Exception) { emptyList() }
+                if (!zPamieci) launch(kotlinx.coroutines.Dispatchers.IO) { zapiszListy() } else { zPamieci = false; odswiezWTle() }
                 hideBusy()
+                koniecAnimacjiStartu()
                 if (wersja != wersjaEkranu) return@launch
                 if (Session.lastLogo(this@MainActivity) == null) kan.firstOrNull { it.name == Session.lastName(this@MainActivity) }?.logo?.let { lg ->
                     Session.lastUrl(this@MainActivity)?.let { lu -> Session.saveLast(this@MainActivity, lu, Session.lastName(this@MainActivity), lg) }
                 }
-                fun ok(l: List<Channel>, c: List<Category>, r: String): List<Channel> {
-                    val dozw = Filtr.kategorie(this@MainActivity, r, c).map { it.id }.toSet()
-                    return if (c.isEmpty()) l else l.filter { it.categoryId in dozw }
+                // Liczenie rzedow w tle (duze listy) - ekran nie zamarza.
+                val rzedy = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                    fun ok(l: List<Channel>, c: List<Category>, r: String): List<Channel> {
+                        val dozw = Filtr.kategorie(this@MainActivity, r, c).map { it.id }.toSet()
+                        return if (c.isEmpty()) l else l.filter { it.categoryId in dozw }
+                    }
+                    val vf = ok(v, vc, "vod"); val sf = ok(sr, sc, "ser")
+                    val out = ArrayList<Triple<String, List<Channel>, Int>>()  // 0 film, 1 serial, 2 kanal
+                    out.add(Triple("Popularne filmy", if (vf.any { it.rating > 0 }) vf.sortedByDescending { it.rating }.take(10) else vf.takeLast(10).reversed(), 10))
+                    out.add(Triple("Popularne seriale", if (sf.any { it.rating > 0 }) sf.sortedByDescending { it.rating }.take(10) else sf.takeLast(10).reversed(), 11))
+                    val serwisy = listOf(
+                        "Netflix" to Regex("netflix", RegexOption.IGNORE_CASE),
+                        "HBO Max" to Regex("\\bhbo|\\bmax\\b", RegexOption.IGNORE_CASE),
+                        "Disney+" to Regex("disney", RegexOption.IGNORE_CASE),
+                        "Amazon Prime Video" to Regex("amazon|prime video|\\bprime\\b", RegexOption.IGNORE_CASE),
+                        "Apple TV+" to Regex("apple", RegexOption.IGNORE_CASE),
+                        "SkyShowtime" to Regex("skyshowtime|sky showtime", RegexOption.IGNORE_CASE),
+                        "Canal+" to Regex("canal", RegexOption.IGNORE_CASE),
+                        "Player" to Regex("\\bplayer\\b", RegexOption.IGNORE_CASE),
+                        "Polsat Box Go" to Regex("polsat ?box|polsat go", RegexOption.IGNORE_CASE),
+                        "Paramount+" to Regex("paramount", RegexOption.IGNORE_CASE)
+                    )
+                    for ((nazwa, wz) in serwisy) {
+                        val idF = vc.filter { wz.containsMatchIn(it.name) }.map { it.id }.toSet()
+                        val idS = sc.filter { wz.containsMatchIn(it.name) }.map { it.id }.toSet()
+                        if (idF.isNotEmpty()) vf.filter { it.categoryId in idF }.takeLast(30).reversed().takeIf { it.isNotEmpty() }?.let { out.add(Triple("$nazwa — filmy", it, 0)) }
+                        if (idS.isNotEmpty()) sf.filter { it.categoryId in idS }.takeLast(30).reversed().takeIf { it.isNotEmpty() }?.let { out.add(Triple("$nazwa — seriale", it, 1)) }
+                    }
+                    out.add(Triple("Najnowsze kanały telewizyjne", kan.takeLast(30).reversed(), 2))
+                    out.add(Triple("Nowo dodane filmy", vf.takeLast(30).reversed(), 0))
+                    out
                 }
-                val vf = ok(v, vc, "vod"); val sf = ok(sr, sc, "ser")
-                val pop = if (vf.any { it.rating > 0 }) vf.sortedByDescending { it.rating }.take(10) else vf.takeLast(10).reversed()
-                val pops = if (sf.any { it.rating > 0 }) sf.sortedByDescending { it.rating }.take(10) else sf.takeLast(10).reversed()
-                dodajRzad("Popularne filmy", pop, { ch -> openDetails(ch) }, 130, true)
-                dodajRzad("Popularne seriale", pops, { ch -> openSeries(ch) }, 130, true)
-                // Rzedy serwisow (jak w MyTvOnline): filmy i seriale z kategorii o nazwie serwisu.
-                val serwisy = listOf(
-                    "Netflix" to Regex("netflix", RegexOption.IGNORE_CASE),
-                    "HBO Max" to Regex("\\bhbo|\\bmax\\b", RegexOption.IGNORE_CASE),
-                    "Disney+" to Regex("disney", RegexOption.IGNORE_CASE),
-                    "Amazon Prime Video" to Regex("amazon|prime video|\\bprime\\b", RegexOption.IGNORE_CASE),
-                    "Apple TV+" to Regex("apple", RegexOption.IGNORE_CASE),
-                    "SkyShowtime" to Regex("skyshowtime|sky showtime", RegexOption.IGNORE_CASE),
-                    "Canal+" to Regex("canal", RegexOption.IGNORE_CASE),
-                    "Player" to Regex("\\bplayer\\b", RegexOption.IGNORE_CASE),
-                    "Polsat Box Go" to Regex("polsat ?box|polsat go", RegexOption.IGNORE_CASE),
-                    "Paramount+" to Regex("paramount", RegexOption.IGNORE_CASE)
-                )
-                for ((nazwa, wz) in serwisy) {
-                    val idF = vc.filter { wz.containsMatchIn(it.name) }.map { it.id }.toSet()
-                    val idS = sc.filter { wz.containsMatchIn(it.name) }.map { it.id }.toSet()
-                    val filmy = vf.filter { it.categoryId in idF }.takeLast(30).reversed()
-                    val seriale = sf.filter { it.categoryId in idS }.takeLast(30).reversed()
-                    if (filmy.isNotEmpty()) dodajRzad("$nazwa — filmy", filmy, { ch -> openDetails(ch) })
-                    if (seriale.isNotEmpty()) dodajRzad("$nazwa — seriale", seriale, { ch -> openSeries(ch) })
+                if (wersja != wersjaEkranu) return@launch
+                for ((tytul, lista, typ) in rzedy) {
+                    if (lista.isEmpty()) continue
+                    when (typ) {
+                        10 -> dodajRzad(tytul, lista, { ch -> openDetails(ch) }, 130, true)
+                        11 -> dodajRzad(tytul, lista, { ch -> openSeries(ch) }, 130, true)
+                        0 -> dodajRzad(tytul, lista, { ch -> openDetails(ch) })
+                        1 -> dodajRzad(tytul, lista, { ch -> openSeries(ch) })
+                        else -> dodajRzad(tytul, lista, { ch -> openPlayer(ch) })
+                    }
                 }
-                dodajRzad("Najnowsze kanały telewizyjne", kan.takeLast(30).reversed(), { ch -> openPlayer(ch) })
-                dodajRzad("Nowo dodane filmy", vf.takeLast(30).reversed(), { ch -> openDetails(ch) })
             } catch (e: Exception) {
-                hideBusy(); info(getString(R.string.err_net))
+                hideBusy(); koniecAnimacjiStartu(); info(getString(R.string.err_net))
             }
         }
     }
@@ -514,23 +546,114 @@ class MainActivity : AppCompatActivity() {
         b.tvTitle.setTextColor(Color.WHITE)
     }
 
-    /** Animacja startu (lustrzana do zamykania): ikona wkreca sie i rosnie, napis pojawia sie, ekran sie odslania. */
+    private fun zapiszListy() {
+        vodCache?.let { Session.zapiszKanaly(this, "vod", it) }; serCache?.let { Session.zapiszKanaly(this, "ser", it) }
+        liveCache?.let { Session.zapiszKanaly(this, "live", it) }
+        vodCats?.let { Session.zapiszKategorie(this, "vod", it) }; serCats?.let { Session.zapiszKategorie(this, "ser", it) }
+    }
+
+    /** Pobiera swieze listy w tle (Start juz pokazany z pamieci) i zapisuje je na nastepny raz. */
+    private fun odswiezWTle() {
+        lifecycleScope.launch {
+            try {
+                Api.vodStreams(s(), u(), p(), null).takeIf { it.isNotEmpty() }?.let { vodCache = it }
+                try { Api.vodCategories(s(), u(), p()) } catch (e: Exception) { null }?.takeIf { it.isNotEmpty() }?.let { vodCats = it }
+                try { Api.seriesList(s(), u(), p()) } catch (e: Exception) { null }?.takeIf { it.isNotEmpty() }?.let { serCache = it }
+                try { Api.seriesCategories(s(), u(), p()) } catch (e: Exception) { null }?.takeIf { it.isNotEmpty() }?.let { serCats = it }
+                try { Api.liveStreams(s(), u(), p(), null) } catch (e: Exception) { null }?.takeIf { it.isNotEmpty() }?.let { liveCache = it }
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { zapiszListy() }
+            } catch (e: Exception) { }
+        }
+    }
+
+    /**
+     * Diagnostyka: jesli poprzednio Android pokazal "nie odpowiada", pokazuje miejsce w kodzie,
+     * gdzie aplikacja stala (z raportu systemu) - do zrzutu ekranu dla Claude.
+     */
+    private fun raportZawieszenia() {
+        if (android.os.Build.VERSION.SDK_INT < 30) return
+        try {
+            val am = getSystemService(android.app.ActivityManager::class.java)
+            val wyj = am.getHistoricalProcessExitReasons(packageName, 0, 5)
+            val anr = wyj.firstOrNull { it.reason == android.app.ApplicationExitInfo.REASON_ANR } ?: return
+            val pref = getSharedPreferences("diag", MODE_PRIVATE)
+            if (pref.getLong("anr_ts", 0) == anr.timestamp) return
+            pref.edit().putLong("anr_ts", anr.timestamp).apply()
+            val slad = anr.traceInputStream?.bufferedReader()?.use { it.readText() } ?: anr.description ?: "brak"
+            val i = slad.indexOf("\"main\"")
+            val main = (if (i >= 0) slad.substring(i) else slad).lines().take(40)
+                .filter { it.contains("at ") || it.contains("main") || it.contains("uk.okok") }
+                .joinToString("\n").take(2500)
+            lifecycleScope.launch { try { Api.raportuj(Device.id(this@MainActivity), "ANR " + main.take(1500)) } catch (_: Exception) {} }
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Raport zawieszenia (zrób zrzut ekranu dla Claude)")
+                .setMessage(java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale("pl")).format(java.util.Date(anr.timestamp)) + "\n" + main)
+                .setPositiveButton("OK", null).show()
+        } catch (e: Exception) { }
+    }
+
+    private var nakladkaStartu: android.view.View? = null
+    private var startAnimMs = 0L
+
+    /**
+     * Animacja startu: ikona wkreca sie i rosnie, napis wjezdza, ikona "oddycha" i swieci
+     * pasek ladowania - trwa tyle, ile laduje sie Start (min. 1,2 s, max 8 s), potem plynnie znika.
+     */
     private fun animacjaStartu() {
         val dekor = window.decorView as android.view.ViewGroup
-        val nakladka = android.widget.FrameLayout(this).apply { setBackgroundColor(0xFF000000.toInt()); isClickable = true }
+        val nakladka = android.widget.FrameLayout(this).apply {
+            background = android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM,
+                intArrayOf(0xFF0B1230.toInt(), 0xFF000000.toInt())); isClickable = true
+        }
         val srodek = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = android.view.Gravity.CENTER }
+        val poswiata = android.widget.FrameLayout(this)
+        val blask = android.view.View(this).apply {
+            background = android.graphics.drawable.GradientDrawable().apply { shape = android.graphics.drawable.GradientDrawable.OVAL
+                gradientType = android.graphics.drawable.GradientDrawable.RADIAL_GRADIENT; gradientRadius = dp(110).toFloat()
+                colors = intArrayOf(0x664F7BFF, 0x004F7BFF) }
+            alpha = 0f
+        }
+        poswiata.addView(blask, android.widget.FrameLayout.LayoutParams(dp(220), dp(220)).also { it.gravity = android.view.Gravity.CENTER })
         val ikona = android.widget.ImageView(this).apply { setImageResource(R.mipmap.ic_launcher_round) }
-        srodek.addView(ikona, LinearLayout.LayoutParams(dp(110), dp(110)))
-        val napis = TextView(this).apply { text = "OK Player"; setTextColor(Color.WHITE); textSize = 26f; setTypeface(typeface, android.graphics.Typeface.BOLD); gravity = android.view.Gravity.CENTER; setPadding(0, dp(16), 0, 0) }
+        poswiata.addView(ikona, android.widget.FrameLayout.LayoutParams(dp(112), dp(112)).also { it.gravity = android.view.Gravity.CENTER })
+        srodek.addView(poswiata, LinearLayout.LayoutParams(dp(220), dp(220)))
+        val napis = TextView(this).apply { text = "OK Player"; setTextColor(Color.WHITE); textSize = 28f; setTypeface(typeface, android.graphics.Typeface.BOLD); gravity = android.view.Gravity.CENTER; letterSpacing = 0.08f }
         srodek.addView(napis)
+        val pasekTlo = android.widget.FrameLayout(this).apply { background = android.graphics.drawable.GradientDrawable().apply { setColor(0x33FFFFFF); cornerRadius = dp(2).toFloat() } }
+        val pasek = android.view.View(this).apply { background = android.graphics.drawable.GradientDrawable().apply { setColor(0xFF4F7BFF.toInt()); cornerRadius = dp(2).toFloat() } }
+        pasekTlo.addView(pasek, android.widget.FrameLayout.LayoutParams(dp(60), -1))
+        srodek.addView(pasekTlo, LinearLayout.LayoutParams(dp(160), dp(4)).also { it.topMargin = dp(26) })
         nakladka.addView(srodek, android.widget.FrameLayout.LayoutParams(-1, -1))
         dekor.addView(nakladka, android.view.ViewGroup.LayoutParams(-1, -1))
+        nakladkaStartu = nakladka; startAnimMs = System.currentTimeMillis()
+
         ikona.scaleX = 0.2f; ikona.scaleY = 0.2f; ikona.alpha = 0f; ikona.rotation = -360f
-        napis.alpha = 0f; napis.translationY = dp(20).toFloat()
-        ikona.animate().scaleX(1f).scaleY(1f).alpha(1f).rotation(0f).setDuration(650)
-            .setInterpolator(android.view.animation.OvershootInterpolator(1.1f)).start()
-        napis.animate().alpha(1f).translationY(0f).setStartDelay(350).setDuration(400).start()
-        nakladka.animate().alpha(0f).setStartDelay(1300).setDuration(400).withEndAction { dekor.removeView(nakladka) }.start()
+        napis.alpha = 0f; napis.translationY = dp(24).toFloat(); pasekTlo.alpha = 0f
+        ikona.animate().scaleX(1f).scaleY(1f).alpha(1f).rotation(0f).setDuration(700)
+            .setInterpolator(android.view.animation.OvershootInterpolator(1.2f)).withEndAction {
+                // "oddychanie" ikony i poswiaty, dopoki Start sie laduje
+                android.animation.ObjectAnimator.ofPropertyValuesHolder(ikona,
+                    android.animation.PropertyValuesHolder.ofFloat("scaleX", 1f, 1.08f),
+                    android.animation.PropertyValuesHolder.ofFloat("scaleY", 1f, 1.08f)).apply {
+                    duration = 700; repeatMode = android.animation.ValueAnimator.REVERSE; repeatCount = android.animation.ValueAnimator.INFINITE; start() }
+            }.start()
+        blask.animate().alpha(1f).setStartDelay(300).setDuration(600).start()
+        napis.animate().alpha(1f).translationY(0f).setStartDelay(400).setDuration(450).start()
+        pasekTlo.animate().alpha(1f).setStartDelay(600).setDuration(300).start()
+        android.animation.ObjectAnimator.ofFloat(pasek, "translationX", -dp(60).toFloat(), dp(160).toFloat()).apply {
+            duration = 900; repeatCount = android.animation.ValueAnimator.INFINITE; interpolator = android.view.animation.AccelerateDecelerateInterpolator(); start() }
+        // zabezpieczenie: najdluzej 8 s
+        nakladka.postDelayed({ koniecAnimacjiStartu() }, 5000)
+    }
+
+    /** Wywolywane, gdy Start jest gotowy: animacja znika plynnie (nie wczesniej niz po 1,2 s). */
+    private fun koniecAnimacjiStartu() {
+        val n = nakladkaStartu ?: return
+        nakladkaStartu = null
+        val zostalo = (1200 - (System.currentTimeMillis() - startAnimMs)).coerceAtLeast(0)
+        n.animate().alpha(0f).scaleX(1.06f).scaleY(1.06f).setStartDelay(zostalo).setDuration(380).withEndAction {
+            (n.parent as? android.view.ViewGroup)?.removeView(n)
+        }.start()
     }
 
     /** Okno wyjscia w stylu aplikacji (czarne tlo, jasny przycisk jak "Ogladaj"). */
@@ -768,13 +891,13 @@ class MainActivity : AppCompatActivity() {
         i.putExtra("id", ch.streamId)
         i.putExtra("name", ch.name)
         i.putExtra("logo", ch.logo)
-        i.putExtra("url", ch.directUrl ?: "")
+        i.putExtra("url", Api.pelnyUrl(ch.directUrl, Session.server(this), Session.user(this), Session.pass(this)) ?: "")
         i.putExtra("demo", demo)
         startActivity(i)
     }
 
     private fun openPlayer(ch: Channel) {
-        val url = ch.directUrl ?: Api.liveStreamUrl(
+        val url = Api.pelnyUrl(ch.directUrl, Session.server(this), Session.user(this), Session.pass(this)) ?: Api.liveStreamUrl(
             Session.server(this), Session.user(this), Session.pass(this), ch.streamId
         )
         val i = Intent(this, PlayerActivity::class.java)

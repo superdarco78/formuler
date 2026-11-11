@@ -76,6 +76,17 @@ class DetailsActivity : AppCompatActivity() {
                 }
                 info = vi
                 info?.let { fill(it, logo) }
+                render()
+                // Uzupelnienie z Wikidata: zwiastun i role aktorow (a gdy lista nie ma obsady - cala obsada).
+                val wf = Api.wikiFilm(vi?.tmdb ?: "", name)
+                if (wf != null) {
+                    role = wf.obsada.filter { it.second.isNotEmpty() }.toMap()
+                    val v0 = info
+                    if (v0 != null) info = v0.copy(trailer = v0.trailer.ifEmpty { wf.youtube },
+                        cast = v0.cast.ifEmpty { wf.obsada.joinToString(", ") { it.first } })
+                    else if (wf.obsada.isNotEmpty()) info = VodInfo("", "", wf.obsada.joinToString(", ") { it.first }, "", "", "", "", wf.youtube)
+                    rap("wikidata zwiastun=" + wf.youtube.isNotEmpty() + " obsada=" + wf.obsada.size + " role=" + role.size)
+                }
                 rap("film id=" + id + " opis=" + (info?.plot?.length ?: -1) + " obsada=" + (info?.cast?.length ?: -1) + " zwiastun=" + (info?.trailer?.length ?: -1))
                 render()
             }
@@ -112,7 +123,7 @@ class DetailsActivity : AppCompatActivity() {
                         setOnClickListener {
                             bs.dismiss()
                             startActivity(Intent(this@DetailsActivity, DetailsActivity::class.java)
-                                .putExtra("id", ch.streamId).putExtra("name", ch.name).putExtra("logo", ch.logo).putExtra("url", ch.directUrl ?: ""))
+                                .putExtra("id", ch.streamId).putExtra("name", ch.name).putExtra("logo", ch.logo).putExtra("url", Api.pelnyUrl(ch.directUrl, Session.server(this@DetailsActivity), Session.user(this@DetailsActivity), Session.pass(this@DetailsActivity)) ?: ""))
                         }
                     }
                     val img = android.widget.ImageView(this@DetailsActivity).apply { scaleType = android.widget.ImageView.ScaleType.CENTER_CROP; setBackgroundColor(0xFF1E1E1E.toInt()); if (!ch.logo.isNullOrEmpty()) load(ch.logo) else setImageResource(R.drawable.ic_movie) }
@@ -281,6 +292,7 @@ class DetailsActivity : AppCompatActivity() {
         }
     }
 
+    private var role: Map<String, String> = emptyMap()
     private var zwiastunId: String? = null
     private var zwiastunSzukany = false
 
@@ -401,6 +413,7 @@ class DetailsActivity : AppCompatActivity() {
                             lifecycleScope.launch { val u = Api.zdjecieAktora(aktor); if (u.isNotEmpty()) foto.load(u) }
                             k.addView(ramka, android.widget.LinearLayout.LayoutParams(-1, dp(220)))
                             k.addView(tekst(aktor, 17f, 0xFFFFFFFF.toInt()).apply { setPadding(0, dp(6), 0, 0) })
+                            role[aktor]?.let { r -> k.addView(tekst(r, 15f, 0xFFA6A6A6.toInt())) }
                             k.setOnClickListener { filmyAktora(aktor) }
                             rz.addView(k, android.widget.LinearLayout.LayoutParams(0, -2, 1f))
                         }
@@ -447,7 +460,11 @@ class DetailsActivity : AppCompatActivity() {
                     karta.addView(android.view.View(this).apply { setBackgroundColor(0xFF3A3A3A.toInt()) },
                         android.widget.LinearLayout.LayoutParams(-1, dp(1)).apply { topMargin = dp(16); bottomMargin = dp(16) })
                     karta.addView(tekst("Obsada:", 16f, 0xFFA6A6A6.toInt()).apply { setPadding(0, 0, 0, dp(10)) })
-                    obsada.forEach { karta.addView(tekst(it, 17f, 0xFFFFFFFF.toInt()).apply { setPadding(0, dp(3), 0, dp(3)) }) }
+                    obsada.forEach { a ->
+                        val sb = android.text.SpannableStringBuilder(a)
+                        role[a]?.let { r -> val st = sb.length; sb.append("  •  $r"); sb.setSpan(android.text.style.ForegroundColorSpan(0xFFA6A6A6.toInt()), st, sb.length, 0) }
+                        karta.addView(tekst(sb, 17f, 0xFFFFFFFF.toInt()).apply { setPadding(0, dp(3), 0, dp(3)) })
+                    }
                 }
                 kontener.addView(karta, android.widget.LinearLayout.LayoutParams(-1, -2).apply { setMargins(dp(12), 0, dp(12), dp(24)) })
             }
