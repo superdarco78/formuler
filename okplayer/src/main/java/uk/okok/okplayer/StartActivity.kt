@@ -876,6 +876,24 @@ class StartActivity : AppCompatActivity() {
             .setInterpolator(android.view.animation.OvershootInterpolator(1.4f)).withEndAction {
                 // Puls po wyladowaniu
                 ik.animate().scaleX(1.12f).scaleY(1.12f).setDuration(180).withEndAction { ik.animate().scaleX(1f).scaleY(1f).setDuration(220).start() }.start()
+                // Fajerwerk: iskry w kolorach logo wylatuja z logo na wszystkie strony
+                val kol = intArrayOf(0xFFFF3D5A.toInt(), 0xFFB52AD6.toInt(), 0xFF7A1FFF.toInt(), 0xFFFFC94D.toInt(), Color.WHITE)
+                val los = java.util.Random()
+                for (i in 0 until 28) {
+                    val iskra = View(this).apply { background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(kol[i % kol.size]) } }
+                    val r = dp(4 + los.nextInt(6))
+                    n.addView(iskra, FrameLayout.LayoutParams(r, r).apply { gravity = Gravity.CENTER; bottomMargin = dp(70) })
+                    val kat = Math.toRadians(i * (360.0 / 28) + los.nextInt(10))
+                    val dl = dp(140 + los.nextInt(120)).toFloat()
+                    iskra.animate().translationX((Math.cos(kat) * dl).toFloat()).translationY((Math.sin(kat) * dl).toFloat())
+                        .alpha(0f).scaleX(0.3f).scaleY(0.3f).setDuration(900L + los.nextInt(400))
+                        .setInterpolator(android.view.animation.DecelerateInterpolator(1.6f)).start()
+                }
+                // Blysk: jasny pas przejezdza po logo
+                val blysk = View(this).apply { background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(0x00FFFFFF, 0x88FFFFFF.toInt(), 0x00FFFFFF)); rotation = 20f }
+                n.addView(blysk, FrameLayout.LayoutParams(dp(50), dp(200)).apply { gravity = Gravity.CENTER; bottomMargin = dp(70) })
+                blysk.translationX = -dp(140).toFloat()
+                blysk.animate().translationX(dp(140).toFloat()).setDuration(600).withEndAction { n.removeView(blysk) }.start()
             }.start()
         // Napis: litery "zjezdzaja sie" do siebie
         na.postDelayed({

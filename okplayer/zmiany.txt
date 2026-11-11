@@ -1,3 +1,3 @@
-Przewijanie programu na pełnym ekranie|przesunięcie palcem po liście programu przełączało na inny kanał|lista programu przewija się normalnie; kanał zmienia tylko przesunięcie po samym obrazie
-Zmiana kanału po archiwum|czarny obraz / stare archiwum|nowy kanał gra na żywo (z 1.79)
-Małe okno|działa (1.74)|bez zmian
+Animacja przy włączaniu kanału / filmu|obraz pojawiał się bez animacji|wraca animacja: pulsujące logo, kręcący się kolorowy pierścień i nazwa kanału, aż ruszy obraz
+Animacja startu aplikacji|logo wpadało i fale|do tego fajerwerk iskier w kolorach aplikacji i błysk przejeżdżający po logo
+Małe okno i program|działa (1.80)|bez zmian
