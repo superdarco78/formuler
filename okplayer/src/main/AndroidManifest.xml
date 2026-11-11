@@ -17,7 +17,8 @@
         android:networkSecurityConfig="@xml/network_security_config"
         android:theme="@style/Motyw">
 
-        <activity android:name=".StartActivity" android:exported="true" android:configChanges="orientation|screenSize|keyboardHidden">
+        <activity android:name=".StartActivity" android:exported="true" android:supportsPictureInPicture="true" android:resizeableActivity="true"
+            android:configChanges="orientation|screenSize|keyboardHidden|screenLayout|smallestScreenSize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

@@ -105,6 +105,7 @@ class StartActivity : AppCompatActivity() {
     private fun ekranGlowny() {
         parowanie?.cancel()
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(CZARNY) }
+        glowny = root
         val gora = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(18), dp(14), dp(18), dp(10)) }
         gora.addView(ImageView(this).apply { setImageResource(R.mipmap.ic_launcher) }, LinearLayout.LayoutParams(dp(36), dp(36)))
         gora.addView(tekst("OK Player", 22f, gruby = true).apply { setPadding(dp(10), 0, 0, 0) }, LinearLayout.LayoutParams(0, -2, 1f))
@@ -496,7 +497,34 @@ class StartActivity : AppCompatActivity() {
     }
 
     override fun onResume() { super.onResume(); pokazMini() }
-    override fun onStop() { super.onStop(); zatrzymajMini() }
+    override fun onStop() { super.onStop(); if (!isInPictureInPictureMode) zatrzymajMini() }
+
+    /** Mini-okno gra, a Ty wychodzisz do ekranu telefonu: TV zostaje w plywajacym okienku (jak wczesniej). */
+    private var glowny: LinearLayout? = null
+    private var miniRodzic: LinearLayout? = null
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        if (miniGracz?.isPlaying != true || !Ust.prefs(this).getBoolean("okienko", true)) return
+        try { enterPictureInPictureMode(android.app.PictureInPictureParams.Builder().setAspectRatio(android.util.Rational(16, 9)).build()) } catch (e: Exception) { }
+    }
+
+    override fun onPictureInPictureModeChanged(w: Boolean, c: android.content.res.Configuration) {
+        super.onPictureInPictureModeChanged(w, c)
+        if (w) {
+            miniRodzic = miniWidok.parent as? LinearLayout
+            miniRodzic?.removeView(miniWidok)
+            setContentView(FrameLayout(this).apply { setBackgroundColor(Color.BLACK); addView(miniWidok, FrameLayout.LayoutParams(-1, -1)) })
+        } else {
+            (miniWidok.parent as? ViewGroup)?.removeView(miniWidok)
+            miniRodzic?.addView(miniWidok, 0, LinearLayout.LayoutParams(dp(150), dp(84)))
+            glowny?.let { (it.parent as? ViewGroup)?.removeView(it); setContentView(it) }
+            // Powiekszenie okienka -> TV na caly ekran; zamkniecie (X) -> koniec grania.
+            window.decorView.postDelayed({
+                if (lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) miniKanal?.let { val ch = it; zamknijMini(); graj(ch) }
+                else zamknijMini()
+            }, 400)
+        }
+    }
 
     private fun graj(ch: Kanal) {
         if (miniGracz != null || Ust.prefs(this).contains("mini")) zamknijMini()
