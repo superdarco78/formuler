@@ -52,16 +52,6 @@ object Aktualizacja {
             } catch (e: Exception) { Serwer.raport(app, "aktualizacja blad " + (e.message ?: "")) }
         }.start()
     }
-}
-
-class WynikInstalacji : android.content.BroadcastReceiver() {
-    override fun onReceive(c: Context, i: Intent) {
-        if (i.getIntExtra(PackageInstaller.EXTRA_STATUS, -1) == PackageInstaller.STATUS_PENDING_USER_ACTION) {
-            @Suppress("DEPRECATION") val p = i.getParcelableExtra<Intent>(Intent.EXTRA_INTENT)
-            if (p != null) try { c.startActivity(p.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } catch (_: Exception) {}
-        }
-    }
-
     /** Ladne okno aktualizacji: tytul, a pod nim tylko zmiany tej wersji - kazda: nazwa, bylo, teraz. */
     private fun okno(a: Activity, o: JSONObject) {
         val dp = { v: Int -> (v * a.resources.displayMetrics.density).toInt() }
@@ -94,5 +84,14 @@ class WynikInstalacji : android.content.BroadcastReceiver() {
         d.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
         d.window?.setLayout((a.resources.displayMetrics.widthPixels * 0.9).toInt(), -2)
         d.show()
+    }
+}
+
+class WynikInstalacji : android.content.BroadcastReceiver() {
+    override fun onReceive(c: Context, i: Intent) {
+        if (i.getIntExtra(PackageInstaller.EXTRA_STATUS, -1) == PackageInstaller.STATUS_PENDING_USER_ACTION) {
+            @Suppress("DEPRECATION") val p = i.getParcelableExtra<Intent>(Intent.EXTRA_INTENT)
+            if (p != null) try { c.startActivity(p.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } catch (_: Exception) {}
+        }
     }
 }
