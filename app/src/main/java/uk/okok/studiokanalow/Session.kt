@@ -50,20 +50,38 @@ object Session {
     }
 
     // ----- pamiec list na dysku: Start pokazuje sie od razu, a swieze listy pobieraja sie w tle -----
+    /** Zapis strumieniowy (JsonWriter) - nie buduje calej listy w pamieci, wiec nie zamraza telefonu. */
     fun zapiszKanaly(ctx: Context, klucz: String, l: List<uk.okok.studiokanalow.model.Channel>) {
         try {
-            val a = org.json.JSONArray()
-            for (c in l) a.put(org.json.JSONArray().put(c.streamId).put(c.name).put(c.logo ?: "").put(c.categoryId ?: "").put(c.num).put(c.directUrl ?: "").put(c.rating).put(c.opis).put(c.czas))
-            java.io.File(ctx.filesDir, "lista_$klucz.json").writeText(a.toString())
+            val tmp = java.io.File(ctx.filesDir, "lista_$klucz.tmp")
+            android.util.JsonWriter(java.io.BufferedWriter(java.io.FileWriter(tmp), 65536)).use { w ->
+                w.beginArray()
+                for (c in l) {
+                    w.beginArray().value(c.streamId).value(c.name).value(c.logo ?: "").value(c.categoryId ?: "").value(c.num.toLong())
+                        .value(c.directUrl ?: "").value(c.rating).value(c.opis).value(c.czas).endArray()
+                }
+                w.endArray()
+            }
+            tmp.renameTo(java.io.File(ctx.filesDir, "lista_$klucz.json"))
         } catch (e: Exception) { }
     }
     fun wczytajKanaly(ctx: Context, klucz: String): List<uk.okok.studiokanalow.model.Channel>? = try {
         val f = java.io.File(ctx.filesDir, "lista_$klucz.json")
         if (!f.exists()) null else {
-            val a = org.json.JSONArray(f.readText())
-            (0 until a.length()).map { i -> val o = a.getJSONArray(i)
-                uk.okok.studiokanalow.model.Channel(o.getString(0), o.getString(1), o.getString(2).ifEmpty { null }, o.getString(3).ifEmpty { null },
-                    o.optInt(4), o.getString(5).ifEmpty { null }, o.optDouble(6, 0.0), o.optString(7), o.optString(8)) }
+            val out = ArrayList<uk.okok.studiokanalow.model.Channel>()
+            android.util.JsonReader(java.io.BufferedReader(java.io.FileReader(f), 65536)).use { r ->
+                r.beginArray()
+                while (r.hasNext()) {
+                    r.beginArray()
+                    val id = r.nextString(); val n = r.nextString(); val lg = r.nextString(); val cat = r.nextString()
+                    val num = r.nextInt(); val u = r.nextString(); val rt = r.nextDouble(); val op = r.nextString(); val cz = r.nextString()
+                    while (r.hasNext()) r.skipValue()
+                    r.endArray()
+                    out.add(uk.okok.studiokanalow.model.Channel(id, n, lg.ifEmpty { null }, cat.ifEmpty { null }, num, u.ifEmpty { null }, rt, op, cz))
+                }
+                r.endArray()
+            }
+            out
         }
     } catch (e: Exception) { null }
     fun zapiszKategorie(ctx: Context, klucz: String, l: List<uk.okok.studiokanalow.model.Category>) {
