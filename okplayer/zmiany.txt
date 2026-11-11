@@ -1,5 +1,4 @@
-• Dolne menu: były napisy → teraz profesjonalne ikonki (dom, telewizor, klaps, seriale, gwiazdka); wybrana biała z różową kreską u góry
-• Lupa i ustawienia w nagłówku: były emotki 🔍 ⚙ → teraz ładne, równe ikony
-• Mini-okno: były emotki ⏸ ⛶ ✕ → teraz profesjonalne ikony pauza, pełny ekran, zamknij
-• Duży ekran ↔ mini-okno: płynnie, bez ponownego ładowania obrazu
-• Zakładka Ulubione (gwiazdka); przytrzymaj kanał = dodaj do ulubionych
+• Dotknięcie mini-okna: otwierało TV w pionie z listą → teraz od razu pełny ekran (poziomo)
+• Wstecz z pełnego ekranu → widok z listą kanałów → jeszcze raz Wstecz → mini-okno
+• Dolny pasek: same ikonki zamiast napisów; lupa, zębatka i przyciski mini-okna jako białe ikony
+• Duży ekran ↔ mini-okno: płynnie, bez ładowania od nowa

@@ -128,7 +128,7 @@ class StartActivity : AppCompatActivity() {
         mini.addView(ImageView(this).apply { setImageResource(R.drawable.ik_pelny); scaleType = ImageView.ScaleType.CENTER; isFocusable = true
             setOnClickListener { miniKanal?.let { miniNaDuzy(it, true) } } }, LinearLayout.LayoutParams(dp(44), dp(84)))
         mini.addView(ImageView(this).apply { setImageResource(R.drawable.ik_zamknij); scaleType = ImageView.ScaleType.CENTER; isFocusable = true; setOnClickListener { zamknijMini() } }, LinearLayout.LayoutParams(dp(50), dp(84)))
-        mini.setOnClickListener { miniKanal?.let { miniNaDuzy(it, false) } }
+        mini.setOnClickListener { miniKanal?.let { miniNaDuzy(it, true) } }
         root.addView(mini, LinearLayout.LayoutParams(-1, -2))
         dol = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setBackgroundColor(0xFF0D0D0D.toInt()) }
         // Dolne menu jak w MyTvOnline: same ikonki (Start, TV, Filmy, Seriale, Ulubione)
