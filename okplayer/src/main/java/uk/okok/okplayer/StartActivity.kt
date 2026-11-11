@@ -150,6 +150,8 @@ class StartActivity : AppCompatActivity() {
         obszar.addView(mini, FrameLayout.LayoutParams(dp(208), dp(117)).apply { gravity = Gravity.BOTTOM or Gravity.END; setMargins(0, 0, dp(12), dp(12)) })
         gora2 = budujGornyGracz()
         root.addView(gora2, LinearLayout.LayoutParams(-1, -2))
+        naglowek = ImageView(this).apply { adjustViewBounds = true; scaleType = ImageView.ScaleType.FIT_XY; visibility = View.GONE }
+        root.addView(naglowek, LinearLayout.LayoutParams(-1, -2))
         root.addView(obszar, LinearLayout.LayoutParams(-1, 0, 1f))
         dol = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setBackgroundColor(0xFF0D0D0D.toInt()) }
         // Dolne menu jak w MyTvOnline: same ikonki (Start, TV, Filmy, Seriale, Ulubione)
@@ -328,7 +330,7 @@ class StartActivity : AppCompatActivity() {
             }) {}
             override fun onBindViewHolder(h: RecyclerView.ViewHolder, i: Int) {
                 val w = h.itemView as LinearLayout; val ch = l[i]
-                (w.getChildAt(0) as ImageView).apply { setImageDrawable(null); if (ch.logo != null) load(ch.logo) }
+                (w.getChildAt(0) as ImageView).apply { setImageDrawable(null); if (ch.logo != null) load(ch.logo) { canva("brak_logo").takeIf { it != 0 }?.let { error(it) } } else canva("brak_logo").takeIf { it != 0 }?.let { setImageResource(it) } }
                 (w.getChildAt(1) as TextView).text = ch.nazwa
                 w.setOnClickListener { graj(ch) }
             }
@@ -462,9 +464,11 @@ class StartActivity : AppCompatActivity() {
             Triple("📻", "Radio") { pokaz(7) }, Triple("🕘", "Historia") { pokaz(8) }, Triple("👤", "Konto") { ekranKonta() }, Triple("⚙️", "Ustawienia") { pokaz(4) })
         poz.forEachIndexed { i, (ik, nazwa, akcja) ->
             val el = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL; setPadding(0, dp(6), 0, dp(6)); isFocusable = true; isClickable = true }
-            val kolo = tekst(ik, 24f).apply { gravity = Gravity.CENTER
+            val ikC = mapOf("Telewizja" to "ik_c_tv", "Filmy" to "ik_c_filmy", "Seriale" to "ik_c_seriale", "Ulubione" to "ik_c_ulubione", "Szukaj" to "ik_c_szukaj", "Ustawienia" to "ik_c_ustawienia", "Radio" to "ik_c_kanaly")[nazwa]?.let { canva(it) } ?: 0
+            val kolo: View = if (ikC != 0) ImageView(this).apply { setImageResource(ikC) } else tekst(ik, 24f).apply { gravity = Gravity.CENTER
                 background = if (i == 0) GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(0xFFFF3D5A.toInt(), 0xFFB52AD6.toInt())).apply { shape = GradientDrawable.OVAL }
                     else GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(0xFF2A2A35.toInt()); setStroke(dp(1), 0xFF3A3A48.toInt()) } }
+            if (ikC != 0 && i == 0) kolo.background = GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(0xFFFF3D5A.toInt(), 0xFFB52AD6.toInt())).apply { cornerRadius = dp(16).toFloat() }
             el.addView(kolo, LinearLayout.LayoutParams(dp(58), dp(58)))
             el.addView(tekst(nazwa, 12f, if (i == 0) 0xFFFF6B85.toInt() else 0xFFDDDDDD.toInt()).apply { setPadding(0, dp(4), 0, 0); gravity = Gravity.CENTER })
             el.setOnClickListener { kolo.animate().scaleX(0.85f).scaleY(0.85f).setDuration(90).withEndAction { kolo.animate().scaleX(1f).scaleY(1f).setDuration(120).start(); akcja() }.start() }
@@ -595,19 +599,17 @@ class StartActivity : AppCompatActivity() {
         }
     }
 
-    /** Kinowe naglowki zakladek z grafik Canvy (wbudowane przy budowie). Gdy grafiki brak - nic sie nie zmienia. */
+    /** Grafika z Canvy (wbudowana przy budowie) albo 0, gdy jej brak. */
+    private fun canva(n: String) = resources.getIdentifier(n, "drawable", packageName)
+    private lateinit var naglowek: ImageView
+    /** Baner z Canvy nad zakladka: Filmy = "Nowosci filmowe", TV = "Kanaly na zywo", Seriale/Ulubione = "Witaj w OK Player". */
     private fun naglowekCanva(i: Int) {
-        val nazwa = when (i) { 1 -> if (::gora2.isInitialized && gora2.visibility == View.VISIBLE) null else "naglowek_kanaly"; 2 -> "naglowek_filmy"; 3 -> "naglowek_seriale"; 6 -> "naglowek_ulubione"; 5 -> "naglowek_szukaj"; 4, 8 -> "tlo_start"; else -> null } ?: return
-        val id = resources.getIdentifier(nazwa, "drawable", packageName); if (id == 0 || tresc.childCount != 1) return
-        val stara = tresc.getChildAt(0); tresc.removeView(stara)
-        val obraz = FrameLayout(this)
-        obraz.addView(ImageView(this).apply { setImageResource(id); adjustViewBounds = true; scaleType = ImageView.ScaleType.FIT_XY }, FrameLayout.LayoutParams(-1, -2))
-        obraz.addView(View(this).apply { background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(0x00000000, 0x00000000, Color.BLACK)) }, FrameLayout.LayoutParams(-1, -1))
-        val kol = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        kol.addView(obraz, LinearLayout.LayoutParams(-1, -2))
-        kol.addView(stara, LinearLayout.LayoutParams(-1, 0, 1f))
-        tresc.addView(kol, FrameLayout.LayoutParams(-1, -1))
-        obraz.alpha = 0f; obraz.translationY = -dp(20).toFloat(); obraz.animate().alpha(1f).translationY(0f).setDuration(450).start()
+        if (!::naglowek.isInitialized) return
+        val n = when (i) { 1 -> if (::gora2.isInitialized && gora2.visibility == View.VISIBLE) null else "baner_kanaly"; 2 -> "baner_filmy"; 3, 6 -> "baner_witaj"; else -> null }
+        val id = n?.let { canva(it) } ?: 0
+        if (id == 0) { naglowek.visibility = View.GONE; return }
+        naglowek.setImageResource(id); naglowek.visibility = View.VISIBLE
+        naglowek.alpha = 0f; naglowek.translationY = -dp(16).toFloat(); naglowek.animate().alpha(1f).translationY(0f).setDuration(420).start()
     }
 
     private fun start() {
@@ -776,7 +778,7 @@ class StartActivity : AppCompatActivity() {
         }
         override fun onBindViewHolder(h: RecyclerView.ViewHolder, i: Int) {
             val w = h.itemView as LinearLayout; val v = l[i]
-            (w.getChildAt(0) as ImageView).apply { setImageDrawable(null); if (v.okladka != null) load(v.okladka) }
+            (w.getChildAt(0) as ImageView).apply { setImageDrawable(null); if (v.okladka != null) load(v.okladka) { canva("brak_plakatu").takeIf { it != 0 }?.let { error(it) } } else canva("brak_plakatu").takeIf { it != 0 }?.let { setImageResource(it) } }
             (w.getChildAt(1) as TextView).text = v.nazwa
             w.setOnClickListener { otworz(v) }
         }
@@ -807,7 +809,7 @@ class StartActivity : AppCompatActivity() {
 
     private fun kafelKanalu(ch: Kanal) = LinearLayout(this).apply {
         orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; background = tlo(KARTA, 10); setPadding(dp(12), dp(8), dp(12), dp(8)); isFocusable = true
-        addView(ImageView(this@StartActivity).apply { scaleType = ImageView.ScaleType.FIT_CENTER; if (ch.logo != null) load(ch.logo) }, LinearLayout.LayoutParams(dp(80), dp(52)))
+        addView(ImageView(this@StartActivity).apply { scaleType = ImageView.ScaleType.FIT_CENTER; if (ch.logo != null) load(ch.logo) { canva("brak_logo").takeIf { it != 0 }?.let { error(it) } } else canva("brak_logo").takeIf { it != 0 }?.let { setImageResource(it) } }, LinearLayout.LayoutParams(dp(80), dp(52)))
         addView(tekst(ch.nazwa, 17f).apply { setPadding(dp(14), 0, 0, 0) }, LinearLayout.LayoutParams(0, -2, 1f))
         addView(tekst("▶", 20f, AKCENT))
         setOnClickListener { graj(ch) }
@@ -1098,6 +1100,8 @@ class StartActivity : AppCompatActivity() {
     private fun animacjaStartu() {
         val dekor = window.decorView as ViewGroup
         val n = FrameLayout(this).apply { background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(0xFF2A0A1E.toInt(), 0xFF0B0B12.toInt(), Color.BLACK)) }
+        canva("tlo_splash").takeIf { it != 0 }?.let { id -> n.addView(ImageView(this).apply { setImageResource(id); scaleType = ImageView.ScaleType.CENTER_CROP; alpha = 0.55f
+            animate().scaleX(1.12f).scaleY(1.12f).setDuration(2600).start() }, FrameLayout.LayoutParams(-1, -1)) }
         // Fale: trzy kregi w kolorach logo rozchodzace sie od srodka
         val fale = listOf(0xFFFF3D5A.toInt(), 0xFFB52AD6.toInt(), 0xFF7A1FFF.toInt()).mapIndexed { i, k ->
             View(this).apply {
@@ -1222,7 +1226,7 @@ class StartActivity : AppCompatActivity() {
         override fun onBindViewHolder(h: RecyclerView.ViewHolder, i: Int) {
             val ch = l[i]; val w = h.itemView as LinearLayout
             (w.getChildAt(0) as TextView).text = "${i + 1}"
-            (w.getChildAt(1) as ImageView).apply { setImageDrawable(null); if (ch.logo != null) load(ch.logo) }
+            (w.getChildAt(1) as ImageView).apply { setImageDrawable(null); if (ch.logo != null) load(ch.logo) { canva("brak_logo").takeIf { it != 0 }?.let { error(it) } } else canva("brak_logo").takeIf { it != 0 }?.let { setImageResource(it) } }
             val opis = w.getChildAt(2) as LinearLayout
             (opis.getChildAt(0) as TextView).text = ch.nazwa
             w.setBackgroundColor(if (gornyKanal?.id == ch.id) 0xFF2A2A2A.toInt() else Color.TRANSPARENT)

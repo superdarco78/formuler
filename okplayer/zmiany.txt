@@ -1,3 +1,5 @@
-Grafiki z Canvy|zakładki bez grafik|kinowe nagłówki z Twoich grafik z Canvy: Kanały, Filmy, Seriale, Ulubione, Szukaj, a w Ustawieniach i Historii scena „Dobre historie zawsze z Tobą” – z płynnym wjazdem
-Historia i nagrywanie|–|z 1.94
+Grafiki z Canvy – poprawione|w Ustawieniach i zakładkach wyświetlały się całe zrzuty ekranów z Canvy|prawdziwe grafiki z „Komplet grafik OK Player”: banery „Nowości filmowe” (Filmy), „Kanały na żywo” (TV), „Witaj w OK Player” (Seriale, Ulubione); Ustawienia bez obrazka
+Ikona aplikacji|stara ikona|logo OK Player z Canvy (play w okręgu)
+Brak plakatu / brak logo|puste szare pola|grafiki „Brak plakatu” i „Brak logo kanału” z Canvy
+Ikony menu i start|emoji / gradient|w układzie Ikony ikony z Canvy (TV, Filmy, Seriale, Ulubione, Szukaj, Ustawienia); tło animacji startu z Canvy (ekran z taśmą filmową)
 Małe okno i program|działa (1.80)|bez zmian

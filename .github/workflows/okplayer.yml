@@ -29,24 +29,29 @@ jobs:
           KLUCZ_APK: ${{ secrets.KLUCZ_APK }}
         run: |
           if [ -n "$KLUCZ_APK" ]; then echo "$KLUCZ_APK" | base64 -d > "$RUNNER_TEMP/okplayer.jks"; echo "KLUCZ_PLIK=$RUNNER_TEMP/okplayer.jks" >> "$GITHUB_ENV"; echo "Podpis: klucz prywatny"; else echo "Podpis: stary klucz"; fi
-      - name: Grafiki z Canvy (pobranie, przyciecie, zapas w wydaniu)
+      - name: Grafiki z Canvy (pobranie, dopasowanie, zapas w wydaniu)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           pip install --quiet pillow
           D=okplayer/src/main/res/drawable-nodpi; mkdir -p "$D" grafiki
-          if [ -f okplayer/grafiki.txt ]; then while IFS='|' read -r n u; do
+          while IFS='|' read -r n u; do
             [ -z "$n" ] && continue
-            if curl -fsSL -o "grafiki/$n.jpg" "$u"; then echo "Canva: $n pobrane"
-            else gh release download okplayer-latest -p "$n.jpg" -D grafiki --clobber -R "$GITHUB_REPOSITORY" && echo "Canva: $n z zapasu" || { echo "Canva: brak $n"; continue; }; fi
+            e=jpg; case "$u" in *.png*) e=png;; esac
+            if curl -fsSL -o "grafiki/$n.$e" "$u"; then echo "Canva: $n pobrane"
+            else gh release download okplayer-latest -p "$n.$e" -D grafiki --clobber -R "$GITHUB_REPOSITORY" && echo "Canva: $n z zapasu" || { echo "Canva: brak $n"; continue; }; fi
             python3 -c "
           import sys; from PIL import Image
-          n, src, dst = sys.argv[1:4]; im = Image.open(src).convert('RGB'); w, h = im.size
-          if n != 'tlo_start': im = im.crop((0, int(h*0.065), w, int(h*0.46)))
-          im = im.resize((1280, int(im.size[1]*1280/im.size[0]))); im.save(dst, quality=85)
-          " "$n" "grafiki/$n.jpg" "$D/$n.jpg"
-          done < okplayer/grafiki.txt; fi
-          ls -la "$D" || true
+          n, src, dst, e = sys.argv[1:5]; im = Image.open(src)
+          if e == 'png':
+              im = im.convert('RGBA'); s = 432 if n == 'ikona_canva' else 192; im = im.resize((s, s)); im.save(dst)
+          else:
+              im = im.convert('RGB'); im = im.resize((1280, int(im.size[1]*1280/im.size[0]))); im.save(dst, quality=86)
+          " "$n" "grafiki/$n.$e" "$D/$n.$e" "$e"
+          done < okplayer/grafiki.txt
+          # Ikona aplikacji z Canvy (gdy pobrana)
+          if [ -f "$D/ikona_canva.png" ]; then cp okplayer/ikona_canva_wzor.xml okplayer/src/main/res/mipmap-anydpi-v26/ic_launcher.xml; echo "Ikona aplikacji: Canva"; fi
+          ls -la "$D"
       - name: Zbuduj OK Player
         env:
           HASLO_APK: ${{ secrets.HASLO_APK }}
@@ -67,3 +72,4 @@ jobs:
             dist/okplayer.apk
             dist/wersja.json
             grafiki/*.jpg
+            grafiki/*.png
