@@ -27,6 +27,7 @@
         <activity android:name=".OdtwarzaczActivity" android:exported="false"
             android:configChanges="orientation|screenSize|keyboardHidden|screenLayout|smallestScreenSize"
             android:theme="@style/Motyw.Odtwarzacz" />
+        <activity android:name=".DetaleActivity" android:exported="false" />
         <receiver android:name=".WynikInstalacji" android:exported="false" />
     </application>
 </manifest>

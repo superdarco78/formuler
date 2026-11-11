@@ -40,6 +40,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         f.addView(napis, FrameLayout.LayoutParams(-2, -2).apply { gravity = Gravity.TOP or Gravity.START; setMargins(24, 24, 24, 24) })
         setContentView(f)
         requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+        if (intent.getBooleanExtra("vod", false)) { pokazNapis(intent.getStringExtra("nazwa") ?: ""); return }
         biezacy = Kanal(intent.getStringExtra("id") ?: "", intent.getStringExtra("nazwa") ?: "", intent.getStringExtra("logo"), intent.getStringExtra("kat") ?: "", 0)
         pokazNapis(biezacy!!.nazwa)
         lifecycleScope.launch {
@@ -75,7 +76,13 @@ class OdtwarzaczActivity : AppCompatActivity() {
             }
             override fun onPlaybackStateChanged(s: Int) { if (s == Player.STATE_READY) proby = 0 }
         })
-        graj(intent.getStringExtra("url") ?: return)
+        val url = intent.getStringExtra("url") ?: return
+        graj(url)
+        // Filmy i odcinki: wznawianie od miejsca przerwania.
+        if (intent.getBooleanExtra("vod", false)) {
+            val poz = Ust.pozycja(this, url)
+            if (poz > 30_000) { p.seekTo(poz); pokazNapis("Wznawiam od " + poz / 60000 + " min") }
+        }
     }
 
     private fun zmien(o: Int) {
@@ -92,14 +99,20 @@ class OdtwarzaczActivity : AppCompatActivity() {
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         when (keyCode) {
-            KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_CHANNEL_UP -> { zmien(-1); return true }
-            KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_CHANNEL_DOWN -> { zmien(1); return true }
+            KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_CHANNEL_UP -> if (!intent.getBooleanExtra("vod", false)) { zmien(-1); return true }
+            KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_CHANNEL_DOWN -> if (!intent.getBooleanExtra("vod", false)) { zmien(1); return true }
         }
         return super.onKeyDown(keyCode, event)
     }
 
     override fun onStop() {
         super.onStop()
+        gracz?.let { g ->
+            if (intent.getBooleanExtra("vod", false) && g.duration > 0) {
+                val koniec = g.currentPosition > g.duration - 90_000
+                Ust.zapiszPozycje(this, intent.getStringExtra("url") ?: "", if (koniec) 0 else g.currentPosition)
+            }
+        }
         gracz?.release(); gracz = null
     }
 }

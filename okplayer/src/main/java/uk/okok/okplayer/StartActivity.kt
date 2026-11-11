@@ -39,6 +39,10 @@ class StartActivity : AppCompatActivity() {
     private lateinit var dol: LinearLayout
     private var kategorie: List<Kat> = emptyList()
     private var kanaly: List<Kanal> = emptyList()
+    private var filmy: List<Vod> = emptyList()
+    private var seriale: List<Vod> = emptyList()
+    private var katF: List<Kat> = emptyList()
+    private var katS: List<Kat> = emptyList()
     private var zakladka = 0
     private var parowanie: Job? = null
 
@@ -104,7 +108,7 @@ class StartActivity : AppCompatActivity() {
         tresc = FrameLayout(this)
         root.addView(tresc, LinearLayout.LayoutParams(-1, 0, 1f))
         dol = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setBackgroundColor(0xFF0D0D0D.toInt()) }
-        listOf("Start", "Kanały", "Ustawienia").forEachIndexed { i, n ->
+        listOf("Start", "TV", "Filmy", "Seriale", "Ustawienia").forEachIndexed { i, n ->
             dol.addView(tekst(n, 15f, SZARY).apply {
                 gravity = Gravity.CENTER; setPadding(0, dp(16), 0, dp(16)); isFocusable = true
                 setOnClickListener { pokaz(i) }
@@ -120,11 +124,12 @@ class StartActivity : AppCompatActivity() {
         zakladka = i
         for (k in 0 until dol.childCount) (dol.getChildAt(k) as TextView).setTextColor(if (k == i) Color.WHITE else SZARY)
         tresc.removeAllViews()
-        when (i) { 0 -> start(); 1 -> listaKanalow(); else -> ustawienia() }
+        when (i) { 0 -> start(); 1 -> listaKanalow(); 2 -> siatkaVod(filmy, katF, "f"); 3 -> siatkaVod(seriale, katS, "s"); else -> ustawienia() }
     }
 
     /** Dane: najpierw z pamieci telefonu (od razu), potem swieze z serwera w tle. */
     private fun laduj() {
+        ladujVod()
         lifecycleScope.launch {
             val zPamieci = withContext(Dispatchers.IO) { Pamiec.kat(this@StartActivity) to Pamiec.kanaly(this@StartActivity) }
             if (zPamieci.first != null && zPamieci.second != null) { kategorie = zPamieci.first!!; kanaly = zPamieci.second!!; odswiezEkran() }
@@ -142,29 +147,122 @@ class StartActivity : AppCompatActivity() {
         }
     }
 
-    private fun odswiezEkran() { if (zakladka != 2) pokaz(zakladka) }
+    /** Filmy i seriale - osobno, po kolei, w tle (nie blokuja kanalow). */
+    private fun ladujVod() {
+        lifecycleScope.launch {
+            val c = this@StartActivity
+            withContext(Dispatchers.IO) { Triple(Pamiec.vod(c, "filmy"), Pamiec.vod(c, "seriale"), Pamiec.katN(c, "katf") to Pamiec.katN(c, "kats")) }.let { (f, se, k) ->
+                if (f != null) filmy = f; if (se != null) seriale = se; k.first?.let { katF = it }; k.second?.let { katS = it }
+                if (f != null || se != null) odswiezEkran()
+            }
+            try {
+                val kf = withContext(Dispatchers.IO) { Serwer.kategorie(c, "get_vod_categories") }
+                val f = withContext(Dispatchers.IO) { Serwer.filmy(c) }
+                if (f.isNotEmpty()) { filmy = f; katF = kf; odswiezEkran(); withContext(Dispatchers.IO) { Pamiec.zapiszVod(c, "filmy", f); Pamiec.zapiszKatN(c, "katf", kf) } }
+                val ks = withContext(Dispatchers.IO) { Serwer.kategorie(c, "get_series_categories") }
+                val se = withContext(Dispatchers.IO) { Serwer.seriale(c) }
+                if (se.isNotEmpty()) { seriale = se; katS = ks; odswiezEkran(); withContext(Dispatchers.IO) { Pamiec.zapiszVod(c, "seriale", se); Pamiec.zapiszKatN(c, "kats", ks) } }
+            } catch (e: Exception) {
+                withContext(Dispatchers.IO) { Serwer.raport(c, "vod blad " + e.javaClass.simpleName + " " + (e.message ?: "").take(80)) }
+            }
+        }
+    }
 
-    // ---------------- Start ----------------
+    private fun odswiezEkran() { if (zakladka != 4) pokaz(zakladka) }
+
+    // ---------------- Start (jak MyTvOnline: rzedy kafelkow) ----------------
     private fun start() {
         val sv = ScrollView(this)
-        val k = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), dp(8), dp(16), dp(16)) }
+        val k = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(0, dp(4), 0, dp(16)) }
         sv.addView(k); tresc.addView(sv)
         Ust.ostatni(this)?.let { o ->
-            k.addView(tekst("Kontynuuj oglądanie", 19f).apply { setPadding(0, dp(6), 0, dp(10)) })
-            k.addView(kafelKanalu(o), LinearLayout.LayoutParams(-1, dp(72)))
+            k.addView(naglowek("Kontynuuj oglądanie"))
+            k.addView(kafelKanalu(o), LinearLayout.LayoutParams(-1, dp(72)).apply { setMargins(dp(16), 0, dp(16), 0) })
         }
-        k.addView(tekst("Grupy kanałów", 19f).apply { setPadding(0, dp(22), 0, dp(10)) })
-        if (kategorie.isEmpty()) { k.addView(tekst("Ładuję listę…", 15f, SZARY)); return }
-        val ile = kanaly.groupingBy { it.kat }.eachCount()
-        for (g in kategorie) {
-            val n = ile[g.id] ?: 0
-            if (n == 0) continue
-            k.addView(LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; background = tlo(KARTA, 10); setPadding(dp(16), dp(16), dp(16), dp(16)); isFocusable = true
-                addView(tekst(g.nazwa, 17f), LinearLayout.LayoutParams(0, -2, 1f))
-                addView(tekst("$n", 14f, SZARY))
-                setOnClickListener { Ust.zapiszGrupe(this@StartActivity, g.id); pokaz(1) }
-            }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
+        if (filmy.isEmpty() && kanaly.isEmpty()) { k.addView(tekst("Ładuję listę…", 15f, SZARY).apply { setPadding(dp(16), dp(16), 0, 0) }); return }
+        if (filmy.isNotEmpty()) {
+            rzad(k, "Popularne filmy", filmy.filter { it.ocena > 0 }.sortedByDescending { it.ocena }.take(20).ifEmpty { filmy.takeLast(20).reversed() })
+            rzad(k, "Nowo dodane filmy", filmy.takeLast(25).reversed())
+        }
+        if (seriale.isNotEmpty()) {
+            rzad(k, "Popularne seriale", seriale.filter { it.ocena > 0 }.sortedByDescending { it.ocena }.take(20).ifEmpty { seriale.takeLast(20).reversed() })
+            rzad(k, "Nowe seriale", seriale.takeLast(25).reversed())
+        }
+        if (kanaly.isNotEmpty()) {
+            k.addView(naglowek("Kanały TV"))
+            val rv = RecyclerView(this).apply { layoutManager = LinearLayoutManager(this@StartActivity, LinearLayoutManager.HORIZONTAL, false); setPadding(dp(12), 0, dp(12), 0); clipToPadding = false }
+            val l = kanaly.take(30)
+            rv.adapter = object : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+                override fun getItemCount() = l.size
+                override fun onCreateViewHolder(p: ViewGroup, t: Int) = object : RecyclerView.ViewHolder(LinearLayout(p.context).apply {
+                    orientation = LinearLayout.VERTICAL; isFocusable = true; layoutParams = RecyclerView.LayoutParams(dp(130), -2).apply { marginEnd = dp(10) }
+                    addView(ImageView(p.context).apply { scaleType = ImageView.ScaleType.FIT_CENTER; background = tlo(KARTA, 10); setPadding(dp(10), dp(10), dp(10), dp(10)) }, LinearLayout.LayoutParams(-1, dp(80)))
+                    addView(tekst("", 13f).apply { maxLines = 1; setPadding(0, dp(6), 0, 0) })
+                }) {}
+                override fun onBindViewHolder(h: RecyclerView.ViewHolder, i: Int) {
+                    val w = h.itemView as LinearLayout; val ch = l[i]
+                    (w.getChildAt(0) as ImageView).apply { setImageDrawable(null); if (ch.logo != null) load(ch.logo) }
+                    (w.getChildAt(1) as TextView).text = ch.nazwa
+                    w.setOnClickListener { graj(ch) }
+                }
+            }
+            k.addView(rv, LinearLayout.LayoutParams(-1, -2))
+        }
+    }
+
+    private fun naglowek(t: String) = tekst(t, 19f, gruby = true).apply { setPadding(dp(16), dp(20), dp(16), dp(10)) }
+
+    private fun rzad(k: LinearLayout, tytul: String, l: List<Vod>) {
+        if (l.isEmpty()) return
+        k.addView(naglowek(tytul))
+        val rv = RecyclerView(this).apply { layoutManager = LinearLayoutManager(this@StartActivity, LinearLayoutManager.HORIZONTAL, false); setPadding(dp(12), 0, dp(12), 0); clipToPadding = false }
+        rv.adapter = PlakatyAdapter(l, dp(112))
+        k.addView(rv, LinearLayout.LayoutParams(-1, -2))
+    }
+
+    // ---------------- Filmy / Seriale: grupy + siatka plakatow ----------------
+    private fun siatkaVod(lista: List<Vod>, kat: List<Kat>, rodzaj: String) {
+        val k = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        tresc.addView(k)
+        if (lista.isEmpty()) { k.addView(tekst("Ładuję " + (if (rodzaj == "f") "filmy" else "seriale") + "…", 15f, SZARY).apply { setPadding(dp(16), dp(16), 0, 0) }); return }
+        val ile = lista.groupingBy { it.kat }.eachCount()
+        val grupy = listOf(Kat("", "Wszystkie")) + kat.filter { (ile[it.id] ?: 0) > 0 }
+        val klucz = "grupa_$rodzaj"
+        var wybrana = Ust.prefs(this).getString(klucz, "") ?: ""
+        val siatka = RecyclerView(this).apply { layoutManager = androidx.recyclerview.widget.GridLayoutManager(this@StartActivity, 3); setPadding(dp(8), 0, dp(8), dp(8)); clipToPadding = false }
+        fun ustaw() { siatka.adapter = PlakatyAdapter(if (wybrana.isEmpty()) lista.asReversed() else lista.filter { it.kat == wybrana }, -1) }
+        val pasek = RecyclerView(this).apply { layoutManager = LinearLayoutManager(this@StartActivity, LinearLayoutManager.HORIZONTAL, false); setPadding(dp(10), dp(4), dp(10), dp(8)); clipToPadding = false }
+        lateinit var ga: GrupyAdapter
+        ga = GrupyAdapter(grupy, wybrana) { id -> wybrana = id; Ust.prefs(this).edit().putString(klucz, id).apply(); ga.wybrana = id; ga.notifyDataSetChanged(); ustaw() }
+        pasek.adapter = ga
+        k.addView(pasek, LinearLayout.LayoutParams(-1, -2))
+        k.addView(siatka, LinearLayout.LayoutParams(-1, 0, 1f))
+        ustaw()
+    }
+
+    private fun otworz(v: Vod) {
+        startActivity(Intent(this, DetaleActivity::class.java).putExtra("id", v.id).putExtra("nazwa", v.nazwa)
+            .putExtra("okladka", v.okladka).putExtra("ext", v.ext).putExtra("rodzaj", v.rodzaj).putExtra("ocena", v.ocena))
+    }
+
+    /** Plakaty filmow/seriali. szer = -1 -> do siatki (dopasuj szerokosc). */
+    inner class PlakatyAdapter(val l: List<Vod>, val szer: Int) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+        override fun getItemCount() = l.size
+        override fun onCreateViewHolder(p: ViewGroup, t: Int): RecyclerView.ViewHolder {
+            val w = LinearLayout(p.context).apply {
+                orientation = LinearLayout.VERTICAL; isFocusable = true
+                layoutParams = if (szer > 0) RecyclerView.LayoutParams(szer, -2).apply { marginEnd = dp(10) } else RecyclerView.LayoutParams(-1, -2).apply { setMargins(dp(4), dp(4), dp(4), dp(8)) }
+                val wys = if (szer > 0) szer * 3 / 2 else (resources.displayMetrics.widthPixels / 3 - dp(14)) * 3 / 2
+                addView(ImageView(p.context).apply { scaleType = ImageView.ScaleType.CENTER_CROP; background = tlo(KARTA, 8); clipToOutline = true }, LinearLayout.LayoutParams(-1, wys))
+                addView(tekst("", 13f).apply { maxLines = 2; setPadding(0, dp(6), 0, 0) })
+            }
+            return object : RecyclerView.ViewHolder(w) {}
+        }
+        override fun onBindViewHolder(h: RecyclerView.ViewHolder, i: Int) {
+            val w = h.itemView as LinearLayout; val v = l[i]
+            (w.getChildAt(0) as ImageView).apply { setImageDrawable(null); if (v.okladka != null) load(v.okladka) }
+            (w.getChildAt(1) as TextView).text = v.nazwa
+            w.setOnClickListener { otworz(v) }
         }
     }
 
@@ -212,7 +310,7 @@ class StartActivity : AppCompatActivity() {
         }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
         wiersz("Informacje", "OK Player, nowa wersja $wersja") {}
         wiersz("Sprawdź aktualizację", "Pobiera i instaluje nową wersję w tle") { lifecycleScope.launch { Aktualizacja.sprawdz(this@StartActivity, true) } }
-        wiersz("Odśwież listę", "Pobiera świeżą listę kanałów z serwera") { laduj() }
+        wiersz("Odśwież listę", "Pobiera świeżą listę kanałów, filmów i seriali z serwera") { laduj() }
         wiersz("Wyloguj", "Aplikacja pokaże nowy kod do edytora") { Ust.wyloguj(this); ekranLogowania() }
     }
 

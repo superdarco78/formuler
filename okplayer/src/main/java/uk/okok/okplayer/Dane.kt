@@ -15,6 +15,8 @@ import java.util.concurrent.TimeUnit
 
 data class Kat(val id: String, val nazwa: String)
 data class Kanal(val id: String, val nazwa: String, val logo: String?, val kat: String, val nr: Int)
+/** Film albo serial (rodzaj "f" / "s"). ext = rozszerzenie pliku filmu. */
+data class Vod(val id: String, val nazwa: String, val okladka: String?, val kat: String, val ocena: Double, val ext: String, val rodzaj: String)
 
 /** Ustawienia - zwykle prywatne ustawienia aplikacji, otwierane raz (bez Keystore, ktory blokowal stara aplikacje). */
 object Ust {
@@ -29,6 +31,8 @@ object Ust {
         return Kanal(id, prefs(c).getString("ost_nazwa", "") ?: "", prefs(c).getString("ost_logo", null), "", 0)
     }
     fun zapiszOstatni(c: Context, k: Kanal) = prefs(c).edit().putString("ost_id", k.id).putString("ost_nazwa", k.nazwa).putString("ost_logo", k.logo).apply()
+    fun pozycja(c: Context, url: String): Long = prefs(c).getLong("poz_" + url.hashCode(), 0)
+    fun zapiszPozycje(c: Context, url: String, ms: Long) = prefs(c).edit().putLong("poz_" + url.hashCode(), ms).apply()
     fun grupa(c: Context): String = prefs(c).getString("grupa", "") ?: ""
     fun zapiszGrupe(c: Context, id: String) = prefs(c).edit().putString("grupa", id).apply()
 }
@@ -111,10 +115,66 @@ object Serwer {
     }
 
     fun adresKanalu(c: Context, id: String) = "$BAZA/live/app/${Ust.klucz(c)}/$id.m3u8"
+    /** Filmy i odcinki ida przez serwer (okp=1), bo dostawca blokuje telefon. */
+    fun adresFilmu(c: Context, id: String, ext: String) = "$BAZA/movie/app/${Ust.klucz(c)}/$id.$ext?okp=1"
+    fun adresOdcinka(c: Context, id: String, ext: String) = "$BAZA/series/app/${Ust.klucz(c)}/$id.$ext?okp=1"
+
+    fun kategorie(c: Context, akcja: String): List<Kat> {
+        val out = ArrayList<Kat>()
+        strumien(api(c, akcja)) { o -> out.add(Kat(o["category_id"] ?: "", o["category_name"] ?: "")) }
+        return out
+    }
+    private fun ocena(o: Map<String, String>) = o["rating"]?.toDoubleOrNull() ?: ((o["rating_5based"]?.toDoubleOrNull() ?: 0.0) * 2)
+    fun filmy(c: Context): List<Vod> {
+        val out = ArrayList<Vod>()
+        strumien(api(c, "get_vod_streams")) { o -> out.add(Vod(o["stream_id"] ?: "", o["name"] ?: "", o["stream_icon"]?.takeIf { it.startsWith("http") }, o["category_id"] ?: "", ocena(o), o["container_extension"]?.ifEmpty { null } ?: "mp4", "f")) }
+        return out
+    }
+    fun seriale(c: Context): List<Vod> {
+        val out = ArrayList<Vod>()
+        strumien(api(c, "get_series")) { o -> out.add(Vod(o["series_id"] ?: "", o["name"] ?: "", o["cover"]?.takeIf { it.startsWith("http") }, o["category_id"] ?: "", ocena(o), "", "s")) }
+        return out
+    }
+    fun infoFilmu(c: Context, id: String): JSONObject? = try { JSONObject(tekst(api(c, "get_vod_info") + "&vod_id=$id&okp=1")) } catch (e: Exception) { null }
+    fun infoSerialu(c: Context, id: String): JSONObject? = try { JSONObject(tekst(api(c, "get_series_info") + "&series_id=$id&okp=1")) } catch (e: Exception) { null }
 }
 
 /** Pamiec list na dysku: Start pokazuje sie od razu, swieze dane dociagaja sie w tle. */
 object Pamiec {
+    fun zapiszVod(c: Context, n: String, l: List<Vod>) = try {
+        val t = File(c.filesDir, "$n.tmp")
+        android.util.JsonWriter(t.bufferedWriter()).use { w ->
+            w.beginArray(); for (v in l) w.beginArray().value(v.id).value(v.nazwa).value(v.okladka ?: "").value(v.kat).value(v.ocena).value(v.ext).value(v.rodzaj).endArray(); w.endArray()
+        }
+        t.renameTo(File(c.filesDir, "$n.json")); Unit
+    } catch (e: Exception) { }
+
+    fun vod(c: Context, n: String): List<Vod>? = try {
+        val f = File(c.filesDir, "$n.json"); if (!f.exists()) null else {
+            val out = ArrayList<Vod>()
+            android.util.JsonReader(f.bufferedReader()).use { r ->
+                r.beginArray()
+                while (r.hasNext()) { r.beginArray(); val v = Vod(r.nextString(), r.nextString(), r.nextString().ifEmpty { null }, r.nextString(), r.nextDouble(), r.nextString(), r.nextString()); while (r.hasNext()) r.skipValue(); r.endArray(); out.add(v) }
+                r.endArray()
+            }
+            out
+        }
+    } catch (e: Exception) { null }
+
+    fun zapiszKatN(c: Context, n: String, l: List<Kat>) = try {
+        val t = File(c.filesDir, "$n.tmp")
+        android.util.JsonWriter(t.bufferedWriter()).use { w -> w.beginArray(); for (k in l) w.beginArray().value(k.id).value(k.nazwa).endArray(); w.endArray() }
+        t.renameTo(File(c.filesDir, "$n.json")); Unit
+    } catch (e: Exception) { }
+
+    fun katN(c: Context, n: String): List<Kat>? = try {
+        val f = File(c.filesDir, "$n.json"); if (!f.exists()) null else {
+            val out = ArrayList<Kat>()
+            android.util.JsonReader(f.bufferedReader()).use { r -> r.beginArray(); while (r.hasNext()) { r.beginArray(); out.add(Kat(r.nextString(), r.nextString())); while (r.hasNext()) r.skipValue(); r.endArray() }; r.endArray() }
+            out
+        }
+    } catch (e: Exception) { null }
+
     private fun plik(c: Context, n: String) = File(c.filesDir, "$n.json")
 
     fun zapiszKanaly(c: Context, l: List<Kanal>) = try {
