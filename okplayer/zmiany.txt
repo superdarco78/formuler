@@ -1,1 +1,2 @@
-Małe okno na wierzchu|po Wstecz obraz nie przypinał się na wierzchu albo pojawiał się w innym miejscu, dopiero po zmianie zakładki|po jednym Wstecz małe okno od razu na wierzchu w prawym dolnym rogu, obraz gra dalej
+Lista pod obrazem na żywo|lista wszystkich kanałów i przełącznik Program/Kanały|tylko program z archiwum kanału, który leci – nic innego
+Wstecz z pełnego ekranu|zależało od ustawień i miejsca, czasem nic się nie działo|jedno Wstecz zawsze od razu zmniejsza obraz do małego okna przypiętego na dole aplikacji, na wierzchu (TV, archiwum, film, odcinek)

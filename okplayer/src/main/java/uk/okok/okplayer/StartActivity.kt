@@ -647,7 +647,7 @@ class StartActivity : AppCompatActivity() {
             if (WspolnyGracz.graj(this, miniFilm!!)) Ust.pozycja(this, miniFilm!!).takeIf { it > 0 }?.let { miniGracz?.seekTo(it) }
             return
         }
-        WspolnyGracz.graj(this, Serwer.adresKanalu(this, ch.id))
+        WspolnyGracz.graj(this, z.getOrNull(5)?.takeIf { it.isNotEmpty() } ?: Serwer.adresKanalu(this, ch.id))
         lifecycleScope.launch {
             val t = withContext(Dispatchers.IO) { Serwer.terazLeci(this@StartActivity, ch.id) }
             if (miniKanal?.id == ch.id) miniTeraz.text = if (t.isEmpty()) "Na żywo" else "Teraz: $t"
