@@ -108,6 +108,7 @@ class StartActivity : AppCompatActivity() {
         val gora = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(18), dp(14), dp(18), dp(10)) }
         gora.addView(ImageView(this).apply { setImageResource(R.mipmap.ic_launcher) }, LinearLayout.LayoutParams(dp(36), dp(36)))
         gora.addView(tekst("OK Player", 22f, gruby = true).apply { setPadding(dp(10), 0, 0, 0) }, LinearLayout.LayoutParams(0, -2, 1f))
+        gora.addView(tekst("🔍", 22f).apply { setPadding(dp(12), dp(4), dp(16), dp(4)); isFocusable = true; setOnClickListener { pokaz(5) } })
         gora.addView(tekst("v$wersja", 12f, SZARY))
         root.addView(gora)
         tresc = FrameLayout(this)
@@ -140,7 +141,7 @@ class StartActivity : AppCompatActivity() {
         zakladka = i
         for (k in 0 until dol.childCount) (dol.getChildAt(k) as TextView).setTextColor(if (k == i) Color.WHITE else SZARY)
         tresc.removeAllViews()
-        when (i) { 0 -> start(); 1 -> listaKanalow(); 2 -> siatkaVod(filmy, katF, "f"); 3 -> siatkaVod(seriale, katS, "s"); else -> ustawienia() }
+        when (i) { 0 -> start(); 1 -> listaKanalow(); 2 -> siatkaVod(filmy, katF, "f"); 3 -> siatkaVod(seriale, katS, "s"); 5 -> szukaj(); else -> ustawienia() }
     }
 
     /** Dane: najpierw z pamieci telefonu (od razu), potem swieze z serwera w tle. */
@@ -241,6 +242,64 @@ class StartActivity : AppCompatActivity() {
         val rv = RecyclerView(this).apply { layoutManager = LinearLayoutManager(this@StartActivity, LinearLayoutManager.HORIZONTAL, false); setPadding(dp(12), 0, dp(12), 0); clipToPadding = false }
         rv.adapter = PlakatyAdapter(l, dp(112))
         k.addView(rv, LinearLayout.LayoutParams(-1, -2))
+    }
+
+    // ---------------- Szukaj: kanaly, filmy, seriale, aktor ----------------
+    private var fraza = ""
+    private fun bezOgonkow(t: String) = java.text.Normalizer.normalize(t.lowercase(), java.text.Normalizer.Form.NFD).replace(Regex("\\p{M}+"), "").replace('ł', 'l')
+
+    private fun szukaj() {
+        val k = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        tresc.addView(k)
+        val pole = android.widget.EditText(this).apply {
+            hint = "Szukaj kanału, filmu, serialu, aktora…"; setHintTextColor(SZARY); setTextColor(Color.WHITE); textSize = 17f; setSingleLine()
+            background = GradientDrawable().apply { setColor(0xFF222222.toInt()); cornerRadius = dp(24).toFloat() }; setPadding(dp(18), dp(12), dp(18), dp(12))
+            imeOptions = android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH; setText(fraza); setSelection(fraza.length)
+        }
+        k.addView(pole, LinearLayout.LayoutParams(-1, -2).apply { setMargins(dp(14), dp(4), dp(14), dp(8)) })
+        val wyniki = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        k.addView(ScrollView(this).apply { addView(wyniki) }, LinearLayout.LayoutParams(-1, 0, 1f))
+        var zadanie: Job? = null
+        fun licz() {
+            zadanie?.cancel()
+            val q = pole.text.toString().trim(); fraza = q
+            zadanie = lifecycleScope.launch {
+                delay(300)
+                wyniki.removeAllViews()
+                if (q.length < 2) { wyniki.addView(tekst("Wpisz co najmniej 2 litery.", 15f, SZARY).apply { setPadding(dp(18), dp(12), 0, 0) }); return@launch }
+                val n = bezOgonkow(q)
+                val (ch, f, se) = withContext(Dispatchers.Default) {
+                    Triple(kanaly.filter { bezOgonkow(it.nazwa).contains(n) }.take(40),
+                        filmy.filter { bezOgonkow(it.nazwa).contains(n) }.take(60),
+                        seriale.filter { bezOgonkow(it.nazwa).contains(n) }.take(60))
+                }
+                if (q != fraza) return@launch
+                if (ch.isNotEmpty()) {
+                    wyniki.addView(naglowek("Kanały (${ch.size})"))
+                    ch.forEach { c -> wyniki.addView(LinearLayout(this@StartActivity).apply {
+                        orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(16), dp(8), dp(16), dp(8)); isFocusable = true
+                        addView(ImageView(this@StartActivity).apply { scaleType = ImageView.ScaleType.FIT_CENTER; c.logo?.let { load(it) } }, LinearLayout.LayoutParams(dp(56), dp(36)))
+                        addView(tekst(c.nazwa, 16f).apply { setPadding(dp(14), 0, 0, 0) }, LinearLayout.LayoutParams(0, -2, 1f))
+                        setOnClickListener { graj(c) }
+                    }) }
+                }
+                rzad(wyniki, "Filmy (${f.size})", f)
+                rzad(wyniki, "Seriale (${se.size})", se)
+                wyniki.addView(tekst("👤  Szukaj aktora: „$q”", 16f).apply {
+                    setPadding(dp(18), dp(18), dp(18), dp(18)); isFocusable = true
+                    setOnClickListener { startActivity(Intent(this@StartActivity, AktorActivity::class.java).putExtra("aktor", q.split(" ").joinToString(" ") { w -> w.replaceFirstChar { it.uppercaseChar() } })) }
+                })
+                if (ch.isEmpty() && f.isEmpty() && se.isEmpty()) wyniki.addView(tekst("Nic nie znaleziono w kanałach, filmach i serialach.", 15f, SZARY).apply { setPadding(dp(18), 0, 0, 0) }, 0)
+            }
+        }
+        pole.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(a: CharSequence?, b: Int, c: Int, d: Int) {}
+            override fun onTextChanged(a: CharSequence?, b: Int, c: Int, d: Int) {}
+            override fun afterTextChanged(e: android.text.Editable?) { licz() }
+        })
+        licz()
+        pole.requestFocus()
+        pole.postDelayed({ (getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager).showSoftInput(pole, 0) }, 200)
     }
 
     // ---------------- Filmy / Seriale: grupy + siatka plakatow ----------------
@@ -435,6 +494,7 @@ class StartActivity : AppCompatActivity() {
 
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
+        if (::mini.isInitialized && mini.visibility == View.VISIBLE) { zamknijMini(); return }
         if (Ust.zalogowany(this) && zakladka != 0) { pokaz(0); return }
         oknoWyjscia()
     }
