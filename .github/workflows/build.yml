@@ -8,6 +8,11 @@ on:
 permissions:
   contents: write
 
+# Budowy po kolei - zeby dwie wersje naraz nie nadpisywaly sobie pliku APK i wersja.json.
+concurrency:
+  group: wydanie-apk
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
