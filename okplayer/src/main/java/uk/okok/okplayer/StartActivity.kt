@@ -112,6 +112,17 @@ class StartActivity : AppCompatActivity() {
         root.addView(gora)
         tresc = FrameLayout(this)
         root.addView(tresc, LinearLayout.LayoutParams(-1, 0, 1f))
+        mini = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setBackgroundColor(0xFF1C1C1C.toInt()); visibility = View.GONE; isFocusable = true }
+        miniWidok = androidx.media3.ui.PlayerView(this).apply { useController = false; setBackgroundColor(Color.BLACK) }
+        mini.addView(miniWidok, LinearLayout.LayoutParams(dp(150), dp(84)))
+        val mOpis = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), 0, dp(6), 0) }
+        miniNazwa = tekst("", 16f, gruby = true).apply { maxLines = 1 }
+        miniTeraz = tekst("", 13f, SZARY).apply { maxLines = 1 }
+        mOpis.addView(miniNazwa); mOpis.addView(miniTeraz)
+        mini.addView(mOpis, LinearLayout.LayoutParams(0, -2, 1f))
+        mini.addView(tekst("✕", 22f).apply { gravity = Gravity.CENTER; isFocusable = true; setOnClickListener { zamknijMini() } }, LinearLayout.LayoutParams(dp(56), dp(84)))
+        mini.setOnClickListener { miniKanal?.let { val ch = it; zamknijMini(); graj(ch) } }
+        root.addView(mini, LinearLayout.LayoutParams(-1, -2))
         dol = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setBackgroundColor(0xFF0D0D0D.toInt()) }
         listOf("Start", "TV", "Filmy", "Seriale", "Ustawienia").forEachIndexed { i, n ->
             dol.addView(tekst(n, 15f, SZARY).apply {
@@ -312,7 +323,46 @@ class StartActivity : AppCompatActivity() {
         setOnClickListener { graj(ch) }
     }
 
+    // ---------------- Mini-odtwarzacz na dole ----------------
+    private lateinit var mini: LinearLayout
+    private lateinit var miniWidok: androidx.media3.ui.PlayerView
+    private lateinit var miniNazwa: TextView
+    private lateinit var miniTeraz: TextView
+    private var miniGracz: androidx.media3.exoplayer.ExoPlayer? = null
+    private var miniKanal: Kanal? = null
+
+    private fun pokazMini() {
+        if (!::mini.isInitialized) return
+        val z = Ust.prefs(this).getString("mini", null)?.split("\u0001") ?: run { mini.visibility = View.GONE; return }
+        if (z.size < 4) return
+        val ch = Kanal(z[0], z[1], z[2].ifEmpty { null }, z[3], 0)
+        miniKanal = ch; miniNazwa.text = ch.nazwa; miniTeraz.text = ""
+        mini.visibility = View.VISIBLE
+        if (miniGracz == null) {
+            val http = androidx.media3.datasource.DefaultHttpDataSource.Factory().setUserAgent("VLC/3.0.20 LibVLC/3.0.20").setAllowCrossProtocolRedirects(true)
+            miniGracz = androidx.media3.exoplayer.ExoPlayer.Builder(this).setMediaSourceFactory(androidx.media3.exoplayer.source.DefaultMediaSourceFactory(http)).build()
+            miniWidok.player = miniGracz
+            miniGracz!!.setMediaItem(androidx.media3.common.MediaItem.fromUri(Serwer.adresKanalu(this, ch.id))); miniGracz!!.prepare(); miniGracz!!.playWhenReady = true
+        }
+        lifecycleScope.launch {
+            val t = withContext(Dispatchers.IO) { Serwer.terazLeci(this@StartActivity, ch.id) }
+            if (miniKanal?.id == ch.id) miniTeraz.text = if (t.isEmpty()) "Na żywo" else "Teraz: $t"
+        }
+    }
+
+    private fun zatrzymajMini() { miniGracz?.release(); miniGracz = null; if (::miniWidok.isInitialized) miniWidok.player = null }
+
+    private fun zamknijMini() {
+        Ust.prefs(this).edit().remove("mini").apply()
+        zatrzymajMini(); miniKanal = null
+        if (::mini.isInitialized) mini.visibility = View.GONE
+    }
+
+    override fun onResume() { super.onResume(); pokazMini() }
+    override fun onStop() { super.onStop(); zatrzymajMini() }
+
     private fun graj(ch: Kanal) {
+        if (miniGracz != null || Ust.prefs(this).contains("mini")) zamknijMini()
         Ust.zapiszOstatni(this, ch)
         startActivity(Intent(this, OdtwarzaczActivity::class.java)
             .putExtra("url", Serwer.adresKanalu(this, ch.id)).putExtra("nazwa", ch.nazwa).putExtra("logo", ch.logo).putExtra("id", ch.id).putExtra("kat", ch.kat))

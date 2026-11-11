@@ -80,7 +80,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         pn.addView(TextView(this).apply {
             text = "⧉"; setTextColor(Color.WHITE); textSize = 20f; gravity = Gravity.CENTER; isFocusable = true
             background = android.graphics.drawable.GradientDrawable().apply { shape = android.graphics.drawable.GradientDrawable.OVAL; setColor(0xFF333333.toInt()) }
-            setOnClickListener { if (wejdzWOkienko(true)) startActivity(Intent(this@OdtwarzaczActivity, StartActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)) }
+            setOnClickListener { doMini() }
         }, android.widget.LinearLayout.LayoutParams(110, 110).apply { marginStart = 16 })
         korzen.addView(pn); panel = pn
         przewodnik = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.VERTICAL; visibility = android.view.View.GONE }
@@ -460,6 +460,12 @@ class OdtwarzaczActivity : AppCompatActivity() {
 
     override fun onUserLeaveHint() { super.onUserLeaveHint(); wejdzWOkienko() }
 
+    /** Mini-odtwarzacz: TV gra dalej w malym pasku na dole aplikacji (nad zakladkami). */
+    private fun doMini() {
+        biezacy?.let { Ust.prefs(this).edit().putString("mini", listOf(it.id, it.nazwa, it.logo ?: "", it.kat).joinToString("\u0001")).apply() }
+        finish(); overridePendingTransition(0, android.R.anim.fade_out)
+    }
+
     /** Nowy kanal / film z listy, gdy odtwarzacz juz gra (np. w okienku) - zaczynamy od nowa z nowymi danymi. */
     override fun onNewIntent(i: Intent) { super.onNewIntent(i); setIntent(i); recreate() }
 
@@ -470,9 +476,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         if (resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE && panel != null) {
             requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT; return
         }
-        if (!intent.getBooleanExtra("vod", false) && Ust.prefs(this).getBoolean("okienko", true) && gracz?.isPlaying == true) {
-            if (wejdzWOkienko(true)) { startActivity(Intent(this, StartActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)); return }
-        }
+        if (!intent.getBooleanExtra("vod", false) && !archiwumGra && Ust.prefs(this).getBoolean("okienko", true)) { doMini(); return }
         @Suppress("DEPRECATION") super.onBackPressed()
     }
 
