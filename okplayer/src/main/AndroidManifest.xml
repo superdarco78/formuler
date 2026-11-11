@@ -25,6 +25,7 @@
             </intent-filter>
         </activity>
         <activity android:name=".OdtwarzaczActivity" android:exported="false"
+            android:supportsPictureInPicture="true" android:resizeableActivity="true" android:launchMode="singleTask"
             android:configChanges="orientation|screenSize|keyboardHidden|screenLayout|smallestScreenSize"
             android:theme="@style/Motyw.Odtwarzacz" />
         <activity android:name=".DetaleActivity" android:exported="false" />

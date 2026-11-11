@@ -365,10 +365,34 @@ class OdtwarzaczActivity : AppCompatActivity() {
         return super.onKeyDown(keyCode, event)
     }
 
+    /** Okienko (obraz w obrazie): po wyjsciu do ekranu glownego telefonu TV gra dalej w malym okienku. */
+    private fun wejdzWOkienko() {
+        if (gracz?.isPlaying != true) return
+        if (!Ust.prefs(this).getBoolean("okienko", true)) return
+        try {
+            val b = android.app.PictureInPictureParams.Builder().setAspectRatio(android.util.Rational(16, 9))
+            if (android.os.Build.VERSION.SDK_INT >= 31) b.setAutoEnterEnabled(true).setSeamlessResizeEnabled(true)
+            enterPictureInPictureMode(b.build())
+        } catch (e: Exception) { }
+    }
+
+    override fun onUserLeaveHint() { super.onUserLeaveHint(); wejdzWOkienko() }
+
+    override fun onPictureInPictureModeChanged(w: Boolean, c: android.content.res.Configuration) {
+        super.onPictureInPictureModeChanged(w, c)
+        widok.useController = !w
+        if (w) {
+            ramka?.layoutParams = android.widget.LinearLayout.LayoutParams(-1, -1)
+            panel?.visibility = android.view.View.GONE; listaTv?.visibility = android.view.View.GONE; przewodnik?.visibility = android.view.View.GONE
+            napis.visibility = android.view.View.GONE
+        } else uloz(resources.configuration.orientation)
+    }
+
     override fun onDestroy() { wylacznik?.cancel(); super.onDestroy() }
 
     override fun onStop() {
         super.onStop()
+        if (isInPictureInPictureMode) return
         gracz?.let { g ->
             if (intent.getBooleanExtra("vod", false) && g.duration > 0) {
                 val koniec = g.currentPosition > g.duration - 90_000
