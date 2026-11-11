@@ -38,6 +38,12 @@ class OdtwarzaczActivity : AppCompatActivity() {
             setTextColor(Color.WHITE); textSize = 18f; setPadding(36, 24, 36, 24); setBackgroundColor(0x99000000.toInt())
         }
         f.addView(napis, FrameLayout.LayoutParams(-2, -2).apply { gravity = Gravity.TOP or Gravity.START; setMargins(24, 24, 24, 24) })
+        val przyciski = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.HORIZONTAL }
+        fun prz(t: String, a: () -> Unit) = TextView(this).apply { text = t; setTextColor(Color.WHITE); textSize = 15f; setPadding(32, 18, 32, 18); setBackgroundColor(0x99000000.toInt()); isFocusable = true; setOnClickListener { a() } }
+        przyciski.addView(prz("⚙ Opcje") { opcje() })
+        if (!intent.getBooleanExtra("vod", false)) przyciski.addView(prz("☰ Program / archiwum") { program() }, android.widget.LinearLayout.LayoutParams(-2, -2).apply { marginStart = 16 })
+        widok.setControllerVisibilityListener(PlayerView.ControllerVisibilityListener { v -> przyciski.visibility = v })
+        f.addView(przyciski, FrameLayout.LayoutParams(-2, -2).apply { gravity = Gravity.TOP or Gravity.END; setMargins(24, 24, 24, 24) })
         setContentView(f)
         requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         if (intent.getBooleanExtra("vod", false)) { pokazNapis(intent.getStringExtra("nazwa") ?: ""); return }
@@ -97,6 +103,77 @@ class OdtwarzaczActivity : AppCompatActivity() {
         pokazNapis(n.nazwa); graj(url)
     }
 
+    private var wylacznik: android.os.CountDownTimer? = null
+
+    private fun wybor(t: String, o: List<String>, z: Int, a: (Int) -> Unit) {
+        androidx.appcompat.app.AlertDialog.Builder(this).setTitle(t).setSingleChoiceItems(o.toTypedArray(), z) { d, i -> a(i); d.dismiss() }.setNegativeButton("Zamknij", null).show()
+    }
+
+    /** Opcje jak w MyTvOnline: dzwiek, napisy, format obrazu, predkosc (filmy), wylacznik czasowy. */
+    private fun opcje() {
+        val p = gracz ?: return
+        val vod = intent.getBooleanExtra("vod", false)
+        val l = mutableListOf("Ścieżka dźwiękowa", "Napisy", "Format obrazu")
+        if (vod) l.add("Prędkość odtwarzania")
+        l.add("Wyłącznik czasowy")
+        androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Opcje").setItems(l.toTypedArray()) { _, i ->
+            when (l[i]) {
+                "Ścieżka dźwiękowa" -> sciezki(p, androidx.media3.common.C.TRACK_TYPE_AUDIO)
+                "Napisy" -> sciezki(p, androidx.media3.common.C.TRACK_TYPE_TEXT)
+                "Format obrazu" -> {
+                    val t = listOf("Dopasuj" to androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIT, "Powiększ (bez pasów)" to androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_ZOOM, "Rozciągnij" to androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FILL)
+                    wybor("Format obrazu", t.map { it.first }, t.indexOfFirst { it.second == widok.resizeMode }) { k -> widok.resizeMode = t[k].second }
+                }
+                "Prędkość odtwarzania" -> { val pr = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f); wybor("Prędkość", pr.map { if (it == 1f) "Normalna" else "${it}x" }, pr.indexOf(p.playbackParameters.speed)) { k -> p.setPlaybackSpeed(pr[k]) } }
+                else -> {
+                    val m = listOf(0, 15, 30, 60, 90, 120)
+                    wybor("Wyłącznik czasowy", m.map { if (it == 0) "Wyłączony" else "$it min" }, -1) { k ->
+                        wylacznik?.cancel(); wylacznik = null
+                        if (m[k] > 0) wylacznik = object : android.os.CountDownTimer(m[k] * 60_000L, 60_000L) { override fun onTick(x: Long) {}; override fun onFinish() { finish() } }.start()
+                    }
+                }
+            }
+        }.show()
+    }
+
+    private fun sciezki(p: ExoPlayer, typ: Int) {
+        val g = p.currentTracks.groups.filter { it.type == typ }
+        val nazwy = ArrayList<String>(); val wyb = ArrayList<Pair<Int, Int>>(); var akt = -1
+        if (typ == androidx.media3.common.C.TRACK_TYPE_TEXT) { nazwy.add("Wyłączone"); wyb.add(-1 to -1) }
+        g.forEachIndexed { gi, gr -> for (t in 0 until gr.length) {
+            val f = gr.getTrackFormat(t)
+            val jez = f.language?.let { java.util.Locale(it).getDisplayLanguage(java.util.Locale("pl")) } ?: "Ścieżka ${nazwy.size + 1}"
+            if (gr.isTrackSelected(t)) akt = nazwy.size
+            nazwy.add(listOfNotNull(jez, f.label, if (f.channelCount > 0) "${f.channelCount} kan." else null).distinct().joinToString(" • ")); wyb.add(gi to t)
+        } }
+        if (nazwy.size <= (if (typ == androidx.media3.common.C.TRACK_TYPE_TEXT) 1 else 0)) { pokazNapis("Brak innych ścieżek"); return }
+        wybor(if (typ == androidx.media3.common.C.TRACK_TYPE_AUDIO) "Ścieżka dźwiękowa" else "Napisy", nazwy, if (akt < 0) 0 else akt) { k ->
+            val (gi, t) = wyb[k]
+            val b = p.trackSelectionParameters.buildUpon()
+            if (gi < 0) b.setTrackTypeDisabled(typ, true) else b.setTrackTypeDisabled(typ, false).setOverrideForType(androidx.media3.common.TrackSelectionOverride(g[gi].mediaTrackGroup, t))
+            p.trackSelectionParameters = b.build()
+        }
+    }
+
+    /** Program kanalu; przeszle audycje z archiwum mozna obejrzec (cofanie). */
+    private fun program() {
+        val ch = biezacy ?: return
+        pokazNapis("Ładuję program…")
+        lifecycleScope.launch {
+            val l = withContext(Dispatchers.IO) { Serwer.przewodnik(this@OdtwarzaczActivity, ch.id) }
+            if (l.isEmpty()) { pokazNapis("Brak programu dla tego kanału"); return@launch }
+            val teraz = System.currentTimeMillis() / 1000
+            val wid = l.filter { it.koniec > teraz - 3 * 86400 }.takeLast(80)
+            val fmt = java.text.SimpleDateFormat("EEE HH:mm", java.util.Locale("pl"))
+            val nazwy = wid.map { w -> fmt.format(java.util.Date(w.start * 1000)) + "  " + w.tytul + (if (w.archiwum && w.koniec < teraz) "  ⏪" else if (w.start <= teraz && w.koniec > teraz) "  ● teraz" else "") }
+            androidx.appcompat.app.AlertDialog.Builder(this@OdtwarzaczActivity).setTitle(ch.nazwa + " — program (⏪ = archiwum)").setItems(nazwy.toTypedArray()) { _, i ->
+                val w = wid[i]
+                if (w.archiwum && w.start < teraz) { val u = Serwer.adresArchiwum(this@OdtwarzaczActivity, ch.id, w); intent.putExtra("url", u); pokazNapis("Archiwum: " + w.tytul); graj(u) }
+                else pokazNapis("Ta audycja nie ma archiwum")
+            }.setNegativeButton("Zamknij", null).show()
+        }
+    }
+
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         when (keyCode) {
             KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_CHANNEL_UP -> if (!intent.getBooleanExtra("vod", false)) { zmien(-1); return true }
@@ -104,6 +181,8 @@ class OdtwarzaczActivity : AppCompatActivity() {
         }
         return super.onKeyDown(keyCode, event)
     }
+
+    override fun onDestroy() { wylacznik?.cancel(); super.onDestroy() }
 
     override fun onStop() {
         super.onStop()

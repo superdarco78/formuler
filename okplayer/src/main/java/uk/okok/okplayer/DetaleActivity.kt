@@ -34,6 +34,10 @@ class DetaleActivity : AppCompatActivity() {
     private lateinit var tabTresc: LinearLayout
     private var info: JSONObject? = null
     private var odcinki: List<Pair<String, List<JSONObject>>> = emptyList()
+    private var zwiastun = ""
+    private var role: Map<String, String> = emptyMap()
+    private var akt = 0
+    private var serialF = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,6 +60,16 @@ class DetaleActivity : AppCompatActivity() {
             setOnClickListener { if (serial) pokazOdcinki(nazwa) else grajFilm(id, nazwa) }
         }
         rzad.addView(ogladaj, LinearLayout.LayoutParams(0, -2, 1f))
+        val rodz = if (serial) "s" else "f"
+        val gw = tekst(if (Ust.czyUlubiony(this, rodz, id)) "★" else "☆", 24f, 0xFFBDBDBD.toInt()).apply {
+            gravity = Gravity.CENTER; background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(0xFF2A2A2A.toInt()) }; isFocusable = true
+            setOnClickListener {
+                val teraz = Ust.przelaczUlubiony(this@DetaleActivity, rodz, id, nazwa, intent.getStringExtra("okladka"), intent.getStringExtra("ext") ?: "", "")
+                text = if (teraz) "★" else "☆"
+                android.widget.Toast.makeText(this@DetaleActivity, if (teraz) "Dodano do ulubionych" else "Usunięto z ulubionych", android.widget.Toast.LENGTH_SHORT).show()
+            }
+        }
+        rzad.addView(gw, LinearLayout.LayoutParams(dp(54), dp(54)).apply { marginStart = dp(10) })
         kol.addView(rzad)
         val opis = tekst("", 15f, SZARY).apply { setPadding(dp(16), dp(6), dp(16), dp(6)); maxLines = 3; ellipsize = android.text.TextUtils.TruncateAt.END }
         var rozw = false
@@ -63,9 +77,10 @@ class DetaleActivity : AppCompatActivity() {
         kol.addView(opis)
         val zakl = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(dp(8), dp(16), dp(8), dp(8)) }
         tabTresc = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), 0, dp(12), dp(24)) }
-        val nazwyZ = listOf("Obsada", "Nośnik", "Detale")
+        serialF = serial
+        val nazwyZ = listOf("Zwiastun", "Obsada", "Nośnik", "Detale")
         val tv = nazwyZ.map { n -> tekst(n, 16f, SZARY).apply { gravity = Gravity.CENTER; setPadding(0, dp(10), 0, dp(10)); isFocusable = true } }
-        fun wybierz(i: Int) { tv.forEachIndexed { k, t -> t.setTextColor(if (k == i) Color.WHITE else SZARY); t.paint.isUnderlineText = k == i; t.invalidate() }; zakladka(i, serial) }
+        fun wybierz(i: Int) { akt = i; tv.forEachIndexed { k, t -> t.setTextColor(if (k == i) Color.WHITE else SZARY); t.paint.isUnderlineText = k == i; t.invalidate() }; zakladka(i, serial) }
         tv.forEachIndexed { i, t -> t.setOnClickListener { wybierz(i) }; zakl.addView(t, LinearLayout.LayoutParams(0, -2, 1f)) }
         kol.addView(zakl); kol.addView(tabTresc)
         val f = FrameLayout(this)
@@ -98,7 +113,14 @@ class DetaleActivity : AppCompatActivity() {
             czas(t("duration").ifEmpty { t("episode_run_time") }).takeIf { it.isNotEmpty() }?.let { c -> if (sb.isNotEmpty()) sb.append("  •  "); sb.append(c) }
             ocena.text = sb
             opis.text = t("plot").ifEmpty { t("description") }
-            wybierz(0)
+            zwiastun = t("youtube_trailer").let { y -> Regex("([A-Za-z0-9_-]{11})$").find(y.substringBefore("&"))?.groupValues?.get(1) ?: "" }
+            wybierz(akt)
+            // Zwiastun i role z Wikidata, a gdy brak - zwiastun z YouTube po tytule.
+            val (yt, r) = withContext(Dispatchers.IO) { Dodatki.wikidata(t("tmdb_id").ifEmpty { t("tmdb") }) }
+            role = r
+            if (zwiastun.isEmpty()) zwiastun = yt
+            if (zwiastun.isEmpty()) zwiastun = withContext(Dispatchers.IO) { Dodatki.szukajZwiastuna(nazwa.replace(Regex("\\(.*$"), "").trim() + " " + rok) }
+            zakladka(akt, serialF)
         }
     }
 
@@ -116,11 +138,39 @@ class DetaleActivity : AppCompatActivity() {
         fun t(k: String) = inf.optString(k).takeIf { it.isNotEmpty() && it != "null" } ?: ""
         when (i) {
             0 -> {
-                val ob = t("cast").ifEmpty { t("actors") }.split(",").map { it.trim() }.filter { it.isNotEmpty() }
-                if (ob.isEmpty()) tabTresc.addView(tekst("Brak danych", 15f, SZARY))
-                ob.forEach { tabTresc.addView(tekst(it, 17f).apply { setPadding(dp(4), dp(6), 0, dp(6)) }) }
+                val ramka = FrameLayout(this).apply { background = tlo(KARTA, 8); clipToOutline = true }
+                val im = ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_CROP }
+                ramka.addView(im, FrameLayout.LayoutParams(-1, -1))
+                val nap = tekst(if (zwiastun.isEmpty()) "Szukam zwiastuna…" else "▶", if (zwiastun.isEmpty()) 16f else 54f).apply { gravity = Gravity.CENTER; setShadowLayer(12f, 0f, 0f, Color.BLACK) }
+                ramka.addView(nap, FrameLayout.LayoutParams(-1, -1))
+                if (zwiastun.isNotEmpty()) {
+                    im.load("https://img.youtube.com/vi/$zwiastun/hqdefault.jpg")
+                    ramka.setOnClickListener { startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.youtube.com/watch?v=$zwiastun"))) }
+                }
+                tabTresc.addView(ramka, LinearLayout.LayoutParams(-1, resources.displayMetrics.widthPixels * 9 / 16))
             }
             1 -> {
+                val ob = t("cast").ifEmpty { t("actors") }.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                if (ob.isEmpty()) tabTresc.addView(tekst("Brak danych", 15f, SZARY))
+                ob.chunked(2).forEach { para ->
+                    val rz = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, 0, 0, dp(14)) }
+                    para.forEach { a ->
+                        val k = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(4), 0, dp(4), 0) }
+                        val f = FrameLayout(this).apply { background = tlo(KARTA, 8); clipToOutline = true }
+                        f.addView(tekst(a.split(" ").mapNotNull { it.firstOrNull()?.uppercaseChar() }.take(2).joinToString(""), 36f, 0xFF777777.toInt(), true).apply { gravity = Gravity.CENTER }, FrameLayout.LayoutParams(-1, -1))
+                        val foto = ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_CROP }
+                        f.addView(foto, FrameLayout.LayoutParams(-1, -1))
+                        lifecycleScope.launch { val u = withContext(Dispatchers.IO) { Dodatki.zdjecieAktora(a) }; if (u.isNotEmpty()) foto.load(u) }
+                        k.addView(f, LinearLayout.LayoutParams(-1, dp(220)))
+                        k.addView(tekst(a, 16f).apply { setPadding(0, dp(6), 0, 0) })
+                        role[a]?.let { k.addView(tekst(it, 14f, SZARY)) }
+                        rz.addView(k, LinearLayout.LayoutParams(0, -2, 1f))
+                    }
+                    if (para.size == 1) rz.addView(android.view.View(this), LinearLayout.LayoutParams(0, 1, 1f))
+                    tabTresc.addView(rz)
+                }
+            }
+            2 -> {
                 val obrazy = (inf.optJSONArray("backdrop_path")?.let { a -> (0 until a.length()).map { a.optString(it) } } ?: emptyList()).filter { it.startsWith("http") }
                 if (obrazy.isEmpty()) tabTresc.addView(tekst("Brak danych", 15f, SZARY))
                 obrazy.forEach { u ->

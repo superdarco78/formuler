@@ -15,6 +15,7 @@ import java.util.concurrent.TimeUnit
 
 data class Kat(val id: String, val nazwa: String)
 data class Kanal(val id: String, val nazwa: String, val logo: String?, val kat: String, val nr: Int)
+data class Wpis(val tytul: String, val start: Long, val koniec: Long, val startTxt: String, val archiwum: Boolean)
 /** Film albo serial (rodzaj "f" / "s"). ext = rozszerzenie pliku filmu. */
 data class Vod(val id: String, val nazwa: String, val okladka: String?, val kat: String, val ocena: Double, val ext: String, val rodzaj: String)
 
@@ -33,6 +34,16 @@ object Ust {
     fun zapiszOstatni(c: Context, k: Kanal) = prefs(c).edit().putString("ost_id", k.id).putString("ost_nazwa", k.nazwa).putString("ost_logo", k.logo).apply()
     fun pozycja(c: Context, url: String): Long = prefs(c).getLong("poz_" + url.hashCode(), 0)
     fun zapiszPozycje(c: Context, url: String, ms: Long) = prefs(c).edit().putLong("poz_" + url.hashCode(), ms).apply()
+    // Ulubione: lista "rodzaj|id|nazwa|obraz|ext|kat"
+    fun ulubione(c: Context): List<List<String>> = (prefs(c).getString("ulubione", "") ?: "").split("\n").filter { it.isNotEmpty() }.map { it.split("|") }.filter { it.size >= 6 }
+    fun czyUlubiony(c: Context, rodzaj: String, id: String) = ulubione(c).any { it[0] == rodzaj && it[1] == id }
+    fun przelaczUlubiony(c: Context, rodzaj: String, id: String, nazwa: String, obraz: String?, ext: String, kat: String): Boolean {
+        val l = ulubione(c).toMutableList()
+        val jest = l.removeAll { it[0] == rodzaj && it[1] == id }
+        if (!jest) l.add(0, listOf(rodzaj, id, nazwa.replace("|", " ").replace("\n", " "), obraz ?: "", ext, kat))
+        prefs(c).edit().putString("ulubione", l.joinToString("\n") { it.joinToString("|") }).apply()
+        return !jest
+    }
     fun grupa(c: Context): String = prefs(c).getString("grupa", "") ?: ""
     fun zapiszGrupe(c: Context, id: String) = prefs(c).edit().putString("grupa", id).apply()
 }
@@ -118,6 +129,20 @@ object Serwer {
     /** Filmy i odcinki ida przez serwer (okp=1), bo dostawca blokuje telefon. */
     fun adresFilmu(c: Context, id: String, ext: String) = "$BAZA/movie/app/${Ust.klucz(c)}/$id.$ext?okp=1"
     fun adresOdcinka(c: Context, id: String, ext: String) = "$BAZA/series/app/${Ust.klucz(c)}/$id.$ext?okp=1"
+
+    /** Program TV kanalu (z archiwum, jesli dostawca je ma). */
+    fun przewodnik(c: Context, id: String): List<Wpis> = try {
+        val arr = JSONObject(tekst(api(c, "get_simple_data_table") + "&stream_id=$id&okp=1")).optJSONArray("epg_listings")
+        fun dek(x: String) = try { String(android.util.Base64.decode(x, android.util.Base64.DEFAULT), Charsets.UTF_8) } catch (e: Exception) { x }
+        if (arr == null) emptyList() else (0 until arr.length()).map { i -> val o = arr.getJSONObject(i)
+            Wpis(dek(o.optString("title")), o.optString("start_timestamp").toLongOrNull() ?: 0, o.optString("stop_timestamp").toLongOrNull() ?: 0, o.optString("start"), o.optString("has_archive") == "1") }.sortedBy { it.start }
+    } catch (e: Exception) { emptyList() }
+
+    fun adresArchiwum(c: Context, id: String, w: Wpis): String {
+        val min = ((w.koniec - w.start) / 60).toInt().coerceAtLeast(1)
+        val t = w.startTxt.replace(' ', ':').take(16).let { x -> if (x.length == 16) x.substring(0, 13) + "-" + x.substring(14) else x }
+        return "$BAZA/timeshift/app/${Ust.klucz(c)}/$min/$t/$id.ts?okp=1"
+    }
 
     fun kategorie(c: Context, akcja: String): List<Kat> {
         val out = ArrayList<Kat>()
