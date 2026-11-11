@@ -43,6 +43,7 @@ class StartActivity : AppCompatActivity() {
     private var seriale: List<Vod> = emptyList()
     private var katF: List<Kat> = emptyList()
     private var katS: List<Kat> = emptyList()
+    private var bladVod = ""
     private var zakladka = 0
     private var parowanie: Job? = null
 
@@ -164,6 +165,8 @@ class StartActivity : AppCompatActivity() {
                 val se = withContext(Dispatchers.IO) { Serwer.seriale(c) }
                 if (se.isNotEmpty()) { seriale = se; katS = ks; odswiezEkran(); withContext(Dispatchers.IO) { Pamiec.zapiszVod(c, "seriale", se); Pamiec.zapiszKatN(c, "kats", ks) } }
             } catch (e: Exception) {
+                bladVod = e.javaClass.simpleName + " " + (e.message ?: "")
+                odswiezEkran()
                 withContext(Dispatchers.IO) { Serwer.raport(c, "vod blad " + e.javaClass.simpleName + " " + (e.message ?: "").take(80)) }
             }
         }
@@ -179,6 +182,11 @@ class StartActivity : AppCompatActivity() {
         Ust.ostatni(this)?.let { o ->
             k.addView(naglowek("Kontynuuj oglądanie"))
             k.addView(kafelKanalu(o), LinearLayout.LayoutParams(-1, dp(72)).apply { setMargins(dp(16), 0, dp(16), 0) })
+        }
+        val ul = Ust.ulubione(this)
+        if (ul.isNotEmpty()) {
+            val v = ul.filter { it[0] != "k" }.map { Vod(it[1], it[2], it[3].ifEmpty { null }, it[5], 0.0, it[4], it[0]) }
+            if (v.isNotEmpty()) rzad(k, "Ulubione", v)
         }
         if (filmy.isEmpty() && kanaly.isEmpty()) { k.addView(tekst("Ładuję listę…", 15f, SZARY).apply { setPadding(dp(16), dp(16), 0, 0) }); return }
         if (filmy.isNotEmpty()) {
@@ -225,7 +233,14 @@ class StartActivity : AppCompatActivity() {
     private fun siatkaVod(lista: List<Vod>, kat: List<Kat>, rodzaj: String) {
         val k = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         tresc.addView(k)
-        if (lista.isEmpty()) { k.addView(tekst("Ładuję " + (if (rodzaj == "f") "filmy" else "seriale") + "…", 15f, SZARY).apply { setPadding(dp(16), dp(16), 0, 0) }); return }
+        if (lista.isEmpty()) {
+            if (bladVod.isNotEmpty()) {
+                k.addView(tekst("Nie udało się pobrać listy.\n" + bladVod.take(120), 15f, SZARY).apply { setPadding(dp(16), dp(16), dp(16), dp(12)) })
+                k.addView(tekst("⟳  Spróbuj ponownie", 17f, 0xFF111111.toInt()).apply { gravity = Gravity.CENTER; background = tlo(0xFFE6E6E6.toInt(), 26); setPadding(0, dp(14), 0, dp(14)); setOnClickListener { bladVod = ""; ladujVod(); pokaz(zakladka) } },
+                    LinearLayout.LayoutParams(-1, -2).apply { setMargins(dp(16), 0, dp(16), 0) })
+            } else k.addView(tekst("Ładuję " + (if (rodzaj == "f") "filmy" else "seriale") + "… (pierwszy raz może potrwać do minuty)", 15f, SZARY).apply { setPadding(dp(16), dp(16), dp(16), 0) })
+            return
+        }
         val ile = lista.groupingBy { it.kat }.eachCount()
         val grupy = listOf(Kat("", "Wszystkie")) + kat.filter { (ile[it.id] ?: 0) > 0 }
         val klucz = "grupa_$rodzaj"
@@ -379,7 +394,11 @@ class StartActivity : AppCompatActivity() {
                 layoutParams = RecyclerView.LayoutParams(-1, -2)
                 addView(tekst("", 14f, SZARY).apply { minWidth = dp(36) })
                 addView(ImageView(p.context).apply { scaleType = ImageView.ScaleType.FIT_CENTER }, LinearLayout.LayoutParams(dp(64), dp(40)))
-                addView(tekst("", 17f).apply { setPadding(dp(14), 0, 0, 0); maxLines = 1 }, LinearLayout.LayoutParams(0, -2, 1f))
+                addView(LinearLayout(p.context).apply {
+                    orientation = LinearLayout.VERTICAL; setPadding(dp(14), 0, 0, 0)
+                    addView(tekst("", 17f).apply { maxLines = 1 })
+                    addView(tekst("", 13f, SZARY).apply { maxLines = 1 })
+                }, LinearLayout.LayoutParams(0, -2, 1f))
             }
             return object : RecyclerView.ViewHolder(w) {}
         }
@@ -387,7 +406,14 @@ class StartActivity : AppCompatActivity() {
             val ch = l[i]; val w = h.itemView as LinearLayout
             (w.getChildAt(0) as TextView).text = "${i + 1}"
             (w.getChildAt(1) as ImageView).apply { setImageDrawable(null); if (ch.logo != null) load(ch.logo) }
-            (w.getChildAt(2) as TextView).text = ch.nazwa
+            val opis = w.getChildAt(2) as LinearLayout
+            (opis.getChildAt(0) as TextView).text = ch.nazwa
+            val epg = opis.getChildAt(1) as TextView
+            epg.text = ""; epg.tag = ch.id
+            lifecycleScope.launch {
+                val t = withContext(Dispatchers.IO) { Serwer.terazLeci(this@StartActivity, ch.id) }
+                if (epg.tag == ch.id) epg.text = if (t.isEmpty()) "" else "Teraz: $t"
+            }
             w.setOnClickListener { klik(ch) }
         }
     }

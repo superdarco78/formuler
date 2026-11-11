@@ -138,6 +138,23 @@ object Serwer {
             Wpis(dek(o.optString("title")), o.optString("start_timestamp").toLongOrNull() ?: 0, o.optString("stop_timestamp").toLongOrNull() ?: 0, o.optString("start"), o.optString("has_archive") == "1") }.sortedBy { it.start }
     } catch (e: Exception) { emptyList() }
 
+    /** "Teraz leci" dla kanalu (EPG), z pamiecia na 10 min. */
+    private val teraz = java.util.concurrent.ConcurrentHashMap<String, Pair<Long, String>>()
+    fun terazLeci(c: Context, id: String): String {
+        val now = System.currentTimeMillis()
+        teraz[id]?.let { if (now - it.first < 600_000) return it.second }
+        val w = try {
+            val arr = JSONObject(tekst(api(c, "get_short_epg") + "&stream_id=$id&limit=2&okp=1")).optJSONArray("epg_listings")
+            fun dek(x: String) = try { String(android.util.Base64.decode(x, android.util.Base64.DEFAULT), Charsets.UTF_8) } catch (e: Exception) { x }
+            val sek = now / 1000
+            var out = ""
+            if (arr != null) for (i in 0 until arr.length()) { val o = arr.getJSONObject(i); val en = o.optString("stop_timestamp").toLongOrNull() ?: 0; if (en in 1..sek) continue; out = dek(o.optString("title")); break }
+            out
+        } catch (e: Exception) { "" }
+        teraz[id] = now to w
+        return w
+    }
+
     fun adresArchiwum(c: Context, id: String, w: Wpis): String {
         val min = ((w.koniec - w.start) / 60).toInt().coerceAtLeast(1)
         val t = w.startTxt.replace(' ', ':').take(16).let { x -> if (x.length == 16) x.substring(0, 13) + "-" + x.substring(14) else x }
