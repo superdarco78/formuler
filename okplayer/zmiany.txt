@@ -1,3 +1,4 @@
-Animacja przy włączaniu kanału / filmu|obraz pojawiał się bez animacji|wraca animacja: pulsujące logo, kręcący się kolorowy pierścień i nazwa kanału, aż ruszy obraz
-Animacja startu aplikacji|logo wpadało i fale|do tego fajerwerk iskier w kolorach aplikacji i błysk przejeżdżający po logo
+Obsada filmu i serialu|tylko kilku aktorów z serwera; braki uzupełniane tylko, gdy czegoś w ogóle nie było|pełna obsada: aktorzy z serwera + wszyscy pozostali z Wikidata (do 80), każdy ze zdjęciem i rolą; dotknij = strona aktora
+Reżyser|tylko nazwisko w Detalach|reżyser na początku Obsady ze zdjęciem, dotknij = jego strona
+Detale filmu|premiera, gatunek, reżyseria, kraj, czas|do tego scenariusz i muzyka
 Małe okno i program|działa (1.80)|bez zmian

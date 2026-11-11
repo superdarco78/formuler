@@ -149,12 +149,19 @@ class DetaleActivity : AppCompatActivity() {
             }
             fun t(k: String) = i.optString(k).takeIf { it.isNotEmpty() && it != "null" } ?: ""
             // Uzupelnienie z Wikidata/Wikipedii (raz): rezyser, obsada z rolami, gatunek, kraj, czas, zwiastun, opis - gdy czegos brakuje.
-            if (!uzupelniono && listOf("cast", "director", "genre", "plot", "duration", "country").any { t(it).isEmpty() || t(it) == "Serwer nie ma jeszcze opisu tego tytułu." }) {
+            // Zawsze raz: pelna obsada (wszyscy aktorzy), rezyser, scenariusz, muzyka - takze gdy serwer ma tylko czesc danych.
+            if (!uzupelniono) {
                 uzupelniono = true
                 launch {
                     val w = withContext(Dispatchers.IO) { Dodatki.filmWiki(nazwa, serial) } ?: return@launch
                     var zm = false
-                    for (k in listOf("director", "genre", "country", "cast", "releasedate", "duration", "youtube_trailer", "tmdb_id")) if (w.optString(k).isNotEmpty() && t(k).isEmpty()) { i.put(k, w.optString(k)); zm = true }
+                    for (k in listOf("director", "genre", "country", "cast", "releasedate", "duration", "youtube_trailer", "tmdb_id", "writer", "composer")) if (w.optString(k).isNotEmpty() && t(k).isEmpty()) { i.put(k, w.optString(k)); zm = true }
+                    // Obsada: najpierw ta z serwera, potem wszyscy pozostali aktorzy z Wikidata.
+                    if (t("cast").isNotEmpty() && w.optString("cast").isNotEmpty()) {
+                        val jest = t("cast").split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                        val nowi = w.optString("cast").split(",").map { it.trim() }.filter { n -> n.isNotEmpty() && jest.none { it.equals(n, true) } }
+                        if (nowi.isNotEmpty()) { i.put("cast", (jest + nowi).joinToString(", ")); zm = true }
+                    }
                     val pl = w.optString("plot_wiki")
                     if (pl.isNotEmpty() && (t("plot").isEmpty() || t("plot").startsWith("Serwer nie ma"))) { i.put("plot", pl); zm = true }
                     w.optJSONObject("_role")?.let { r -> role = role + r.keys().asSequence().associateWith { r.optString(it) } }
@@ -213,8 +220,13 @@ class DetaleActivity : AppCompatActivity() {
                 tabTresc.addView(ramka, LinearLayout.LayoutParams(-1, resources.displayMetrics.widthPixels * 9 / 16))
             }
             1 -> {
-                val ob = t("cast").ifEmpty { t("actors") }.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                val rezyserzy = t("director").split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                val ob0 = t("cast").ifEmpty { t("actors") }.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                // Najpierw rezyser (ze zdjeciem, dotknij = jego strona), potem wszyscy aktorzy.
+                rezyserzy.forEach { r -> if (role[r] == null) role = role + (r to "Reżyser") }
+                val ob = rezyserzy + ob0.filter { a -> rezyserzy.none { it.equals(a, true) } }
                 if (ob.isEmpty()) tabTresc.addView(tekst("Brak danych", 15f, SZARY))
+                else tabTresc.addView(tekst("Obsada: " + ob0.size + (if (rezyserzy.isNotEmpty()) "  •  reżyseria: " + rezyserzy.joinToString(", ") else ""), 14f, SZARY).apply { setPadding(dp(4), 0, 0, dp(10)) })
                 ob.chunked(2).forEach { para ->
                     val rz = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, 0, 0, dp(14)) }
                     para.forEach { a ->
@@ -245,7 +257,7 @@ class DetaleActivity : AppCompatActivity() {
             }
             else -> {
                 val k = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; background = tlo(KARTA, 10); setPadding(dp(18), dp(18), dp(18), dp(18)) }
-                listOf("Premiera" to t("releasedate").ifEmpty { t("releaseDate") }, "Gatunek" to t("genre"), "Reżyseria" to t("director"), "Kraj" to t("country"),
+                listOf("Premiera" to t("releasedate").ifEmpty { t("releaseDate") }, "Gatunek" to t("genre"), "Reżyseria" to t("director"), "Scenariusz" to t("writer"), "Muzyka" to t("composer"), "Kraj" to t("country"),
                     "Czas" to czas(t("duration").ifEmpty { t("episode_run_time") }), "Ocena" to t("rating"), "Obsada" to t("cast"))
                     .filter { it.second.isNotEmpty() }.forEach { (a, b) -> k.addView(tekst("$a: $b", 15f, 0xFFDDDDDD.toInt()).apply { setPadding(0, dp(4), 0, dp(4)) }) }
                 if (t("plot").isNotEmpty()) k.addView(tekst(t("plot"), 15f, SZARY).apply { setPadding(0, dp(12), 0, 0) })
