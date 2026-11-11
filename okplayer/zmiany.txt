@@ -1,6 +1,3 @@
-Nowa szata „Kolor z plakatu”|kolorowe/neonowe skórki|czarne tło, białe proste ikony i przyciski z Canvy, matowe szkło – zero neonu
-Kolor z plakatu|jeden kolor na sztywno|akcent i delikatna poświata tła biorą kolor z plakatu filmu na banerze – zmienia się razem z filmem
-Dolne menu i ikony|ikony 3D|cienkie białe ikony z Canvy, wybrana w kolorze plakatu
-Odtwarzacz|okrągłe neonowe przyciski|białe ikony z Canvy, duży biały przycisk pauzy/play
-Top 10, plakietki, ramki|neonowe|białe konturowe cyfry, plakietka LIVE, cienkie białe ramki z Canvy
-Skórki|–|stare warianty dalej do wyboru: Ustawienia → Skórka (wygląd)
+Domyślna skórka|„Kolor z plakatu” (biała)|z powrotem Grafit i srebro – realistyczne ikony jak na Twoim zdjęciu
+Tło aplikacji|neonowa fala z prześwitami i błyskami|spokojny grafit z delikatną fakturą z realistycznego zestawu Canvy, bez błysków
+Skórki|–|„Kolor z plakatu” i pozostałe dalej do wyboru: Ustawienia → Skórka (wygląd)
