@@ -54,22 +54,22 @@ class OdtwarzaczActivity : AppCompatActivity() {
         ramka = f
         korzen = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.VERTICAL; setBackgroundColor(Color.BLACK) }
         korzen.addView(f, android.widget.LinearLayout.LayoutParams(-1, resources.displayMetrics.widthPixels * 9 / 16))
-        panel = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(32, 24, 32, 24); setBackgroundColor(0xFF111111.toInt()) }
+        val pn = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(32, 24, 32, 24); setBackgroundColor(0xFF111111.toInt()) }
         logoTv = android.widget.ImageView(this).apply { scaleType = android.widget.ImageView.ScaleType.FIT_CENTER }
-        panel.addView(logoTv, android.widget.LinearLayout.LayoutParams(160, 100))
+        pn.addView(logoTv, android.widget.LinearLayout.LayoutParams(160, 100))
         val opisy = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.VERTICAL; setPadding(28, 0, 0, 0) }
         nazwaTv = TextView(this).apply { setTextColor(Color.WHITE); textSize = 19f; setTypeface(typeface, android.graphics.Typeface.BOLD) }
         terazTv = TextView(this).apply { setTextColor(0xFFDDDDDD.toInt()); textSize = 14f }
         potemTv = TextView(this).apply { setTextColor(0xFF9A9A9A.toInt()); textSize = 13f }
         opisy.addView(nazwaTv); opisy.addView(terazTv); opisy.addView(potemTv)
-        panel.addView(opisy, android.widget.LinearLayout.LayoutParams(0, -2, 1f))
+        pn.addView(opisy, android.widget.LinearLayout.LayoutParams(0, -2, 1f))
         przyciskProgram = TextView(this).apply {
             text = "☰ Program"; setTextColor(Color.BLACK); textSize = 14f; setPadding(30, 18, 30, 18); isFocusable = true
             background = android.graphics.drawable.GradientDrawable().apply { setColor(0xFFE6E6E6.toInt()); cornerRadius = 40f }
             setOnClickListener { if (przewodnikOtwarty) zamknijPrzewodnik() else otworzPrzewodnik() }
         }
-        panel.addView(przyciskProgram)
-        korzen.addView(panel)
+        pn.addView(przyciskProgram)
+        korzen.addView(pn); panel = pn
         przewodnik = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.VERTICAL; visibility = android.view.View.GONE }
         korzen.addView(przewodnik, android.widget.LinearLayout.LayoutParams(-1, 0, 1f))
         listaTv = androidx.recyclerview.widget.RecyclerView(this).apply { layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this@OdtwarzaczActivity) }
