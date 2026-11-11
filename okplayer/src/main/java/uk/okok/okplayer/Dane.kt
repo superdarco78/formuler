@@ -103,6 +103,9 @@ object Serwer {
         if (u == null) "" else if (e == null || e <= 0) "bez limitu" else java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.US).format(java.util.Date(e * 1000))
     } catch (e: Exception) { "" }
 
+    /** Dane konta (user_info + server_info) do ekranu Konto. */
+    fun konto(c: Context): JSONObject? = try { JSONObject(tekst("$BAZA/player_api.php?username=app&password=${Ust.klucz(c)}")) } catch (e: Exception) { null }
+
     private fun api(c: Context, akcja: String) = "$BAZA/player_api.php?username=app&password=${Ust.klucz(c)}&action=$akcja"
 
     /** Czyta liste JSON obiekt po obiekcie (malo pamieci, bez zawieszania). */

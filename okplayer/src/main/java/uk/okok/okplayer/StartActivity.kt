@@ -454,6 +454,44 @@ class StartActivity : AppCompatActivity() {
         return karta
     }
 
+    /** Duze okragle przyciski jak w IBO Player: najwazniejsze miejsca aplikacji jednym dotknieciem. */
+    private fun kafleMenu(): View {
+        val siatka = android.widget.GridLayout(this).apply { columnCount = 4 }
+        val poz = listOf(Triple("★", "Ulubione") { pokaz(6) }, Triple("📺", "Telewizja") { pokaz(1) }, Triple("🎬", "Filmy") { pokaz(2) }, Triple("🎞️", "Seriale") { pokaz(3) },
+            Triple("📻", "Radio") { pokaz(7) }, Triple("🔍", "Szukaj") { pokaz(5) }, Triple("👤", "Konto") { ekranKonta() }, Triple("⚙️", "Ustawienia") { pokaz(4) })
+        poz.forEachIndexed { i, (ik, nazwa, akcja) ->
+            val el = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL; setPadding(0, dp(6), 0, dp(6)); isFocusable = true; isClickable = true }
+            val kolo = tekst(ik, 24f).apply { gravity = Gravity.CENTER
+                background = if (i == 0) GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(0xFFFF3D5A.toInt(), 0xFFB52AD6.toInt())).apply { shape = GradientDrawable.OVAL }
+                    else GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(0xFF2A2A35.toInt()); setStroke(dp(1), 0xFF3A3A48.toInt()) } }
+            el.addView(kolo, LinearLayout.LayoutParams(dp(58), dp(58)))
+            el.addView(tekst(nazwa, 12f, if (i == 0) 0xFFFF6B85.toInt() else 0xFFDDDDDD.toInt()).apply { setPadding(0, dp(4), 0, 0); gravity = Gravity.CENTER })
+            el.setOnClickListener { kolo.animate().scaleX(0.85f).scaleY(0.85f).setDuration(90).withEndAction { kolo.animate().scaleX(1f).scaleY(1f).setDuration(120).start(); akcja() }.start() }
+            siatka.addView(el, android.widget.GridLayout.LayoutParams(android.widget.GridLayout.spec(i / 4, 1f), android.widget.GridLayout.spec(i % 4, 1f)).apply { width = 0 })
+        }
+        return siatka
+    }
+
+    /** Konto jak w IBO / Smarters: status, waznosc, polaczenia, urzadzenie, serwer. */
+    private fun ekranKonta() {
+        lifecycleScope.launch {
+            val j = withContext(Dispatchers.IO) { Serwer.konto(this@StartActivity) }
+            val u = j?.optJSONObject("user_info"); val sv = j?.optJSONObject("server_info")
+            val f = java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.US)
+            fun data(x: String?) = x?.toLongOrNull()?.takeIf { it > 0 }?.let { f.format(java.util.Date(it * 1000)) }
+            val tekstKonta = if (u == null) "Nie udało się pobrać danych konta. Sprawdź internet." else listOf(
+                "Status: " + (if (u.optString("auth") == "1" && u.optString("status", "Active").equals("Active", true)) "✅ aktywne" else "⛔ " + u.optString("status")),
+                "Ważne do: " + (data(u.optString("exp_date")) ?: "bez limitu"),
+                "Założone: " + (data(u.optString("created_at")) ?: "—"),
+                "Połączenia: " + u.optString("active_cons", "0") + " z " + u.optString("max_connections", "1"),
+                "Typ: " + (if (u.optString("is_trial") == "1") "próbne" else "abonament"),
+                "Kod urządzenia: " + Ust.klucz(this@StartActivity).take(4) + "••••",
+                "Serwer: " + (sv?.optString("url")?.ifEmpty { null } ?: "tv.ok-ok.uk") + (sv?.optString("timezone")?.takeIf { it.isNotEmpty() }?.let { "  •  $it" } ?: ""),
+                "Wersja aplikacji: " + wersja).joinToString("\n")
+            androidx.appcompat.app.AlertDialog.Builder(this@StartActivity).setTitle("👤 Moje konto").setMessage(tekstKonta).setPositiveButton("OK", null).show().also { Jezyk.okno(it) }
+        }
+    }
+
     private fun start() {
         val sv = ScrollView(this)
         val k = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(0, 0, 0, dp(16)) }
@@ -463,6 +501,7 @@ class StartActivity : AppCompatActivity() {
         // Kontynuuj ogladanie: ostatni kanal + filmy przerwane w polowie (z ulubionych i najnowszych)
         // Na samej gorze: zegar, data, pogoda i waznosc konta (jak w IBO Player), potem mecze.
         k.addView(kartaZegara(), LinearLayout.LayoutParams(-1, -2).apply { setMargins(dp(12), dp(4), dp(12), dp(4)) })
+        k.addView(kafleMenu(), LinearLayout.LayoutParams(-1, -2).apply { setMargins(dp(8), dp(10), dp(8), dp(6)) })
         // Na samej gorze: mecze i sport, ktore leca teraz
         rzadSportu(k)
         rzadKanalow(k, "Ostatnio oglądane kanały", Ust.ostatnie(this).map { o -> kanaly.firstOrNull { it.id == o.id } ?: o })

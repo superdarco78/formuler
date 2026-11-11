@@ -1,3 +1,4 @@
-Start – zegar, data i pogoda|nie było|na górze Startu karta: duży zegar, dzień i data, pogoda (ikona, temperatura, miasto) i do kiedy ważne konto – jak w IBO Player
-Kontrola rodzicielska (PIN)|nie było|Ustawienia → Kontrola rodzicielska: PIN, blokada wybranych grup (grupy dla dorosłych same), zablokowana grupa/kanał pyta o PIN (z 1.90)
+Start – duże okrągłe przyciski|tylko rzędy kafelków|pod zegarem 8 przycisków jak w IBO Player: Ulubione, Telewizja, Filmy, Seriale, Radio, Szukaj, Konto, Ustawienia (z animacją dotknięcia)
+Moje konto|nie było|przycisk Konto: status, ważne do, data założenia, połączenia (ile z ilu), typ, kod urządzenia, serwer, wersja aplikacji
+Zegar, data, pogoda|–|z 1.91; kontrola rodzicielska z 1.90
 Małe okno i program|działa (1.80)|bez zmian
