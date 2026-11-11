@@ -584,10 +584,13 @@ class OdtwarzaczActivity : AppCompatActivity() {
         if (!reczne && !Ust.prefs(this).getBoolean("okienko", true)) return false
         try {
             val b = android.app.PictureInPictureParams.Builder().setAspectRatio(android.util.Rational(16, 9))
-            if (android.os.Build.VERSION.SDK_INT >= 31) b.setAutoEnterEnabled(true).setSeamlessResizeEnabled(true)
+            if (android.os.Build.VERSION.SDK_INT >= 31) b.setAutoEnterEnabled(false).setSeamlessResizeEnabled(true)
             return enterPictureInPictureMode(b.build())
         } catch (e: Exception) { return false }
     }
+
+    /** Przejscia wewnatrz aplikacji (do mini, do opisu itd.) to nie wyjscie z aplikacji - bez systemowego okienka PiP. */
+    override fun startActivityForResult(i: Intent, kod: Int, o: android.os.Bundle?) { i.addFlags(Intent.FLAG_ACTIVITY_NO_USER_ACTION); super.startActivityForResult(i, kod, o) }
 
     override fun onUserLeaveHint() { super.onUserLeaveHint(); wejdzWOkienko() }
 
@@ -602,7 +605,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         biezacy?.let { Ust.prefs(this).edit().putString("mini", listOf(it.id, it.nazwa, it.logo ?: "", it.kat, "", intent.getStringExtra("url") ?: "").joinToString("\u0001")).apply() }
         WspolnyGracz.wlasciciel = "mini"
         // Mini-okno zyje na ekranie glownym aplikacji - film z opisu tez tam trafia.
-        startActivity(Intent(this, StartActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
+        if (intent.getBooleanExtra("vod", false)) startActivity(Intent(this, StartActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
         finish(); overridePendingTransition(0, android.R.anim.fade_out)
     }
 
@@ -617,7 +620,6 @@ class OdtwarzaczActivity : AppCompatActivity() {
         if (przewodnikOtwarty && panel != null && resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) { zamknijPrzewodnik(); uloz(resources.configuration.orientation); return }
         val koniecFilmu = intent.getBooleanExtra("vod", false) && gracz?.let { it.duration > 0 && it.currentPosition >= it.duration - 90_000 } == true
         if (Ust.prefs(this).getBoolean("okienko", true) && !koniecFilmu) {
-            requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
             doMini(); return
         }
         @Suppress("DEPRECATION") super.onBackPressed()

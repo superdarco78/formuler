@@ -1,3 +1,2 @@
-Wstecz – jedna zasada wszędzie|w niektórych miejscach Wstecz pokazywało listę wszystkich kanałów albo nie zmniejszało obrazu|TV, archiwum, film i odcinek: jedno Wstecz = małe okno w rogu, obraz gra dalej; dotknięcie okna = pełny ekran (na pełnym ekranie z otwartym programem z boku pierwsze Wstecz chowa tylko program)
-Program / archiwum w podglądzie|pod programem pojawiała się lista wszystkich kanałów|tylko archiwum tego jednego kanału, bez listy innych kanałów
-Małe okno po archiwum|przełączało się na żywo|gra dalej dokładnie to samo – archiwum albo na żywo
+Małe okno (mini) i okno w oknie (PiP)|przy przejściu do pełnego ekranu, opisu filmu albo programu aplikacja sama wskakiwała w systemowe okienko i mini się psuło|okienko systemowe tylko po wyjściu z aplikacji (przycisk Home); w aplikacji: Wstecz = mini w rogu, dotknięcie = pełny ekran, ✕ = zamknij
+Wstecz z pełnego ekranu|ekran się obracał i mini nie wracało|jedno Wstecz = od razu mini w rogu (TV, archiwum, film, odcinek), jak w działającej wersji 1.56
