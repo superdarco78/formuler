@@ -185,6 +185,7 @@ class StartActivity : AppCompatActivity() {
             }
         }
         when (i) { 0 -> start(); 1 -> listaKanalow(); 2 -> siatkaVod(filmy, katF, "f"); 3 -> siatkaVod(seriale, katS, "s"); 5 -> szukaj(); 6 -> ulubioneEkran(); 7 -> listaKanalow(radio = true); 8 -> historiaEkran(); else -> ustawienia() }
+        naglowekCanva(i)
         animujZakladke()
     }
 
@@ -592,6 +593,21 @@ class StartActivity : AppCompatActivity() {
             }
             k.addView(w, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
         }
+    }
+
+    /** Kinowe naglowki zakladek z grafik Canvy (wbudowane przy budowie). Gdy grafiki brak - nic sie nie zmienia. */
+    private fun naglowekCanva(i: Int) {
+        val nazwa = when (i) { 1 -> if (::gora2.isInitialized && gora2.visibility == View.VISIBLE) null else "naglowek_kanaly"; 2 -> "naglowek_filmy"; 3 -> "naglowek_seriale"; 6 -> "naglowek_ulubione"; 5 -> "naglowek_szukaj"; 4, 8 -> "tlo_start"; else -> null } ?: return
+        val id = resources.getIdentifier(nazwa, "drawable", packageName); if (id == 0 || tresc.childCount != 1) return
+        val stara = tresc.getChildAt(0); tresc.removeView(stara)
+        val obraz = FrameLayout(this)
+        obraz.addView(ImageView(this).apply { setImageResource(id); adjustViewBounds = true; scaleType = ImageView.ScaleType.FIT_XY }, FrameLayout.LayoutParams(-1, -2))
+        obraz.addView(View(this).apply { background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(0x00000000, 0x00000000, Color.BLACK)) }, FrameLayout.LayoutParams(-1, -1))
+        val kol = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        kol.addView(obraz, LinearLayout.LayoutParams(-1, -2))
+        kol.addView(stara, LinearLayout.LayoutParams(-1, 0, 1f))
+        tresc.addView(kol, FrameLayout.LayoutParams(-1, -1))
+        obraz.alpha = 0f; obraz.translationY = -dp(20).toFloat(); obraz.animate().alpha(1f).translationY(0f).setDuration(450).start()
     }
 
     private fun start() {

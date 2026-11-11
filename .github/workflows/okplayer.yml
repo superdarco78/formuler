@@ -29,6 +29,19 @@ jobs:
           KLUCZ_APK: ${{ secrets.KLUCZ_APK }}
         run: |
           if [ -n "$KLUCZ_APK" ]; then echo "$KLUCZ_APK" | base64 -d > "$RUNNER_TEMP/okplayer.jks"; echo "KLUCZ_PLIK=$RUNNER_TEMP/okplayer.jks" >> "$GITHUB_ENV"; echo "Podpis: klucz prywatny"; else echo "Podpis: stary klucz"; fi
+      - name: Grafiki z Canvy (pobranie, przyciecie, zapas w wydaniu)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          D=okplayer/src/main/res/drawable-nodpi; mkdir -p "$D" grafiki
+          if [ -f okplayer/grafiki.txt ]; then while IFS='|' read -r n u; do
+            [ -z "$n" ] && continue
+            if curl -fsSL -o "grafiki/$n.jpg" "$u"; then echo "Canva: $n pobrane"
+            else gh release download okplayer-latest -p "$n.jpg" -D grafiki --clobber -R "$GITHUB_REPOSITORY" && echo "Canva: $n z zapasu" || { echo "Canva: brak $n"; continue; }; fi
+            if [ "$n" = "tlo_start" ]; then convert "grafiki/$n.jpg" -resize 1280x -quality 85 "$D/$n.jpg"
+            else convert "grafiki/$n.jpg" -resize 1920x -gravity North -crop 1920x430+0+70 +repage -resize 1280x -quality 85 "$D/$n.jpg"; fi
+          done < okplayer/grafiki.txt; fi
+          ls -la "$D" || true
       - name: Zbuduj OK Player
         env:
           HASLO_APK: ${{ secrets.HASLO_APK }}
@@ -48,3 +61,4 @@ jobs:
           files: |
             dist/okplayer.apk
             dist/wersja.json
+            grafiki/*.jpg

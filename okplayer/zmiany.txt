@@ -1,4 +1,3 @@
-Historia oglądania|nie było|nowa zakładka 🕘 Historia (filtr na Starcie i przycisk w układzie Ikony): kanały, filmy i odcinki z godziną, pasek ile obejrzane, dotknij = oglądaj dalej, „Wyczyść”
-Nagrywanie z archiwum|nie było|w programie przytrzymaj audycję z archiwum → „⬇ Nagraj”: zapisuje ją na telefonie (Filmy/OK Player), postęp w powiadomieniach
-Kinowy Start|–|z 1.93
+Grafiki z Canvy|zakładki bez grafik|kinowe nagłówki z Twoich grafik z Canvy: Kanały, Filmy, Seriale, Ulubione, Szukaj, a w Ustawieniach i Historii scena „Dobre historie zawsze z Tobą” – z płynnym wjazdem
+Historia i nagrywanie|–|z 1.94
 Małe okno i program|działa (1.80)|bez zmian
