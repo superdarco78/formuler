@@ -82,4 +82,28 @@ object Dodatki {
         .replace(Regex("^[a-z]{2,3}\\s*[-|:]\\s*"), "")
         .replace(Regex("[(\\[]\\s*\\d{4}\\s*[)\\]]"), "")
         .replace(Regex("[^\\p{L}\\p{Nd}]"), "")
+
+    /** Zapas jak w starej aplikacji: opis, gatunek, rok i okladka z publicznej bazy iTunes (bez klucza). */
+    fun itunes(tytul: String, serial: Boolean): JSONObject? = try {
+        val rok = Regex("\\((\\d{4})\\)").find(tytul)?.groupValues?.get(1)?.toIntOrNull()
+        val czysty = tytul.replace(Regex("\\(\\d{4}\\)"), " ").replace(Regex("^[A-Z]{2,3}\\s*[-|:]\\s*"), "")
+            .replace(Regex("\\b(napisy|lektor|dubbing|pl|4k|hd|fhd|uhd)\\b", RegexOption.IGNORE_CASE), " ").replace(Regex("\\s+"), " ").trim()
+        fun n(x: String) = x.lowercase().replace(Regex("[^\\p{L}\\p{N}]"), "")
+        val media = if (serial) "&media=tvShow&entity=tvSeason" else "&media=movie&entity=movie"
+        val arr = JSONObject(tekst("https://itunes.apple.com/search?term=" + java.net.URLEncoder.encode(czysty, "UTF-8") + media + "&country=PL&limit=6")).optJSONArray("results")
+        var wynik: JSONObject? = null
+        if (arr != null && czysty.length >= 2) for (i in 0 until arr.length()) {
+            val o = arr.getJSONObject(i)
+            val nazwa = if (serial) o.optString("artistName").ifEmpty { o.optString("collectionName") } else o.optString("trackName")
+            val r = o.optString("releaseDate").take(4).toIntOrNull()
+            if (n(nazwa) != n(czysty) && !n(nazwa).contains(n(czysty)) && !n(czysty).contains(n(nazwa))) continue
+            if (!serial && rok != null && r != null && kotlin.math.abs(rok - r) > 1) continue
+            wynik = JSONObject().put("name", tytul)
+                .put("plot", o.optString("longDescription").ifEmpty { o.optString("description") }.ifEmpty { o.optString("shortDescription") })
+                .put("genre", o.optString("primaryGenreName")).put("releasedate", o.optString("releaseDate").take(10))
+                .put("cover_big", o.optString("artworkUrl100").replace("100x100bb", "600x900bb"))
+            break
+        }
+        wynik
+    } catch (e: Exception) { null }
 }

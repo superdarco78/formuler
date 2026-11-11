@@ -102,6 +102,10 @@ class DetaleActivity : AppCompatActivity() {
             val zPam = withContext(Dispatchers.IO) { Serwer.infoZPamieci(this@DetaleActivity, serial, id) }
             if (zPam != null) pokazInfo(zPam, serial, id, nazwa, plakat, meta, ocena, opis)
             val o = withContext(Dispatchers.IO) { if (serial) Serwer.infoSerialu(this@DetaleActivity, id) else Serwer.infoFilmu(this@DetaleActivity, id) }
+            if (o == null && zPam == null) {
+                val it2 = withContext(Dispatchers.IO) { Dodatki.itunes(nazwa, serial) }
+                if (it2 != null) { pokazInfo(JSONObject().put("info", it2), serial, id, nazwa, plakat, meta, ocena, opis); return@launch }
+            }
             if (o == null) {
                 if (zPam == null) { tabTresc.removeAllViews(); tabTresc.addView(tekst("Nie udało się pobrać opisu z serwera.", 15f, SZARY))
                     tabTresc.addView(tekst("(" + Serwer.bladInfo + ")", 12f, 0xFF777777.toInt()))
@@ -117,9 +121,10 @@ class DetaleActivity : AppCompatActivity() {
     private fun pokazInfo(o: JSONObject, serial: Boolean, id: String, nazwa: String, plakat: ImageView, meta: TextView, ocena: TextView, opis: TextView) {
         lifecycleScope.launch {
             // Gdy serwer nie ma opisu - pokazujemy to, co wiemy z listy (tytul, ocena), a zwiastun szukamy po tytule.
-            val i = o.optJSONObject("info")?.takeIf { it.length() > 0 } ?: JSONObject().put("name", nazwa)
-                .put("rating", intent.getDoubleExtra("ocena", 0.0).takeIf { it > 0 }?.toString() ?: "")
-                .put("plot", "Serwer nie ma jeszcze opisu tego tytułu.")
+            // Gdy serwer nie ma opisu - jak w starej aplikacji: opis, gatunek, rok z iTunes; ocena z listy; zwiastun po tytule.
+            val i = o.optJSONObject("info")?.takeIf { it.length() > 0 }
+                ?: (withContext(Dispatchers.IO) { Dodatki.itunes(nazwa, serial) } ?: JSONObject().put("name", nazwa).put("plot", "Serwer nie ma jeszcze opisu tego tytułu."))
+                    .put("rating", intent.getDoubleExtra("ocena", 0.0).takeIf { it > 0 }?.toString() ?: "")
             info = i
             if (serial) {
                 val ep = o.optJSONObject("episodes")

@@ -223,7 +223,7 @@ object Serwer {
         var zapas: JSONObject? = null
         for ((proba, u) in adresy.withIndex()) {
             try {
-                szybki.newCall(okhttp3.Request.Builder().url(u).build()).execute().use { r ->
+                szybki.newCall(okhttp3.Request.Builder().url(u).header("User-Agent", "OKPlayer/1.0").build()).execute().use { r ->
                     val t = r.body?.string() ?: ""
                     if (!r.isSuccessful) { bladInfo = "HTTP ${r.code}"; return@use }
                     val o = JSONObject(t)
