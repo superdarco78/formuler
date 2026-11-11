@@ -23,6 +23,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.withPermit
 
 /**
  * OK Player - jedna aktywnosc: logowanie kodem, Start, Kanaly, Ustawienia.
@@ -44,6 +45,8 @@ class StartActivity : AppCompatActivity() {
     private var katF: List<Kat> = emptyList()
     private var katS: List<Kat> = emptyList()
     private var bladVod = ""
+    /** Najwyzej 4 zapytania o program naraz - zeby nie zasypac serwera. */
+    private val limitEpg = kotlinx.coroutines.sync.Semaphore(4)
     private var zakladka = 0
     private var parowanie: Job? = null
 
@@ -411,7 +414,7 @@ class StartActivity : AppCompatActivity() {
             val epg = opis.getChildAt(1) as TextView
             epg.text = ""; epg.tag = ch.id
             lifecycleScope.launch {
-                val t = withContext(Dispatchers.IO) { Serwer.terazLeci(this@StartActivity, ch.id) }
+                val t = limitEpg.withPermit { withContext(Dispatchers.IO) { Serwer.terazLeci(this@StartActivity, ch.id) } }
                 if (epg.tag == ch.id) epg.text = if (t.isEmpty()) "" else "Teraz: $t"
             }
             w.setOnClickListener { klik(ch) }
