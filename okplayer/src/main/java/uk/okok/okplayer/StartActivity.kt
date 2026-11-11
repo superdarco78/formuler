@@ -404,6 +404,9 @@ class StartActivity : AppCompatActivity() {
                     orientation = LinearLayout.VERTICAL; setPadding(dp(14), 0, 0, 0)
                     addView(tekst("", 17f).apply { maxLines = 1 })
                     addView(tekst("", 13f, SZARY).apply { maxLines = 1 })
+                    addView(android.widget.ProgressBar(p.context, null, android.R.attr.progressBarStyleHorizontal).apply {
+                        max = 100; visibility = android.view.View.INVISIBLE; progressTintList = android.content.res.ColorStateList.valueOf(0xFFE0245E.toInt()); progressBackgroundTintList = android.content.res.ColorStateList.valueOf(0xFF333333.toInt())
+                    }, LinearLayout.LayoutParams(-1, dp(3)).apply { topMargin = dp(5) })
                 }, LinearLayout.LayoutParams(0, -2, 1f))
             }
             return object : RecyclerView.ViewHolder(w) {}
@@ -415,10 +418,13 @@ class StartActivity : AppCompatActivity() {
             val opis = w.getChildAt(2) as LinearLayout
             (opis.getChildAt(0) as TextView).text = ch.nazwa
             val epg = opis.getChildAt(1) as TextView
-            epg.text = ""; epg.tag = ch.id
+            val pas = opis.getChildAt(2) as android.widget.ProgressBar
+            epg.text = ""; epg.tag = ch.id; pas.visibility = android.view.View.INVISIBLE
             lifecycleScope.launch {
                 val t = limitEpg.withPermit { withContext(Dispatchers.IO) { Serwer.terazLeci(this@StartActivity, ch.id) } }
-                if (epg.tag == ch.id) epg.text = if (t.isEmpty()) "" else "Teraz: $t"
+                if (epg.tag != ch.id) return@launch
+                epg.text = if (t.isEmpty()) "" else "Teraz: $t"
+                val pr = Serwer.postep(ch.id); if (pr >= 0) { pas.progress = pr; pas.visibility = android.view.View.VISIBLE }
             }
             w.setOnClickListener { klik(ch) }
         }

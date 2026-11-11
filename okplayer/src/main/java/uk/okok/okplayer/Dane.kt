@@ -149,6 +149,11 @@ object Serwer {
     val okno = java.util.concurrent.ConcurrentHashMap<String, Pair<Long, Long>>()
     fun postep(id: String): Int { val (a, b) = okno[id] ?: return -1; val t = System.currentTimeMillis() / 1000; return if (b > a && t in a..b) ((t - a) * 100 / (b - a)).toInt() else -1 }
 
+    /** "13:35–14:10 • jeszcze 25 min" dla biezacej audycji. */
+    fun godziny(id: String): String { val (a, b) = okno[id] ?: return ""; if (a <= 0 || b <= a) return ""
+        val f = java.text.SimpleDateFormat("HH:mm", java.util.Locale("pl")); val z = ((b - System.currentTimeMillis() / 1000) / 60).coerceAtLeast(0)
+        return f.format(java.util.Date(a * 1000)) + "–" + f.format(java.util.Date(b * 1000)) + "  •  jeszcze " + z + " min" }
+
     fun terazLeci(c: Context, id: String): String {
         val now = System.currentTimeMillis()
         teraz[id]?.let { if (now - it.first < 600_000) return it.second }

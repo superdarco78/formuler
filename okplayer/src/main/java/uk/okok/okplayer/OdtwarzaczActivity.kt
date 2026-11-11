@@ -63,7 +63,11 @@ class OdtwarzaczActivity : AppCompatActivity() {
         nazwaTv = TextView(this).apply { setTextColor(Color.WHITE); textSize = 19f; setTypeface(typeface, android.graphics.Typeface.BOLD) }
         terazTv = TextView(this).apply { setTextColor(0xFFDDDDDD.toInt()); textSize = 14f }
         potemTv = TextView(this).apply { setTextColor(0xFF9A9A9A.toInt()); textSize = 13f }
-        opisy.addView(nazwaTv); opisy.addView(terazTv); opisy.addView(potemTv)
+        pasekTeraz = android.widget.ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
+            max = 100; visibility = android.view.View.GONE; progressTintList = android.content.res.ColorStateList.valueOf(0xFFE0245E.toInt()); progressBackgroundTintList = android.content.res.ColorStateList.valueOf(0xFF333333.toInt())
+        }
+        godzinyTv = TextView(this).apply { setTextColor(0xFF9A9A9A.toInt()); textSize = 12f; visibility = android.view.View.GONE }
+        opisy.addView(nazwaTv); opisy.addView(terazTv); opisy.addView(pasekTeraz, android.widget.LinearLayout.LayoutParams(-1, 10).apply { topMargin = 8; bottomMargin = 4 }); opisy.addView(godzinyTv); opisy.addView(potemTv)
         opisy.setOnClickListener { if (archiwumGra) biezacy?.let { przelacz(it) } }
         pn.addView(opisy, android.widget.LinearLayout.LayoutParams(0, -2, 1f))
         przyciskProgram = TextView(this).apply {
@@ -102,7 +106,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         if (panel == null) return
         val fmt = java.text.SimpleDateFormat("EEE d.MM HH:mm", java.util.Locale("pl"))
         terazTv.text = "⏪ Archiwum: " + fmt.format(java.util.Date(w.start * 1000)) + "  " + w.tytul
-        potemTv.text = "▶ Dotknij tutaj, aby wrócić na żywo"
+        potemTv.text = "▶ Dotknij tutaj, aby wrócić na żywo"; pasekTeraz?.visibility = android.view.View.GONE; godzinyTv?.visibility = android.view.View.GONE
     }
 
     /** Na zywo: bez paska czasu i przewijania (jak w innych aplikacjach IPTV); w archiwum pasek i przewijanie wracaja. */
@@ -198,6 +202,8 @@ class OdtwarzaczActivity : AppCompatActivity() {
     private lateinit var nazwaTv: TextView
     private lateinit var terazTv: TextView
     private lateinit var potemTv: TextView
+    private var pasekTeraz: android.widget.ProgressBar? = null
+    private var godzinyTv: TextView? = null
 
     private fun uloz(o: Int) {
         val f = ramka ?: return
@@ -218,7 +224,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         val ch = biezacy ?: return
         if (panel == null) return
         nazwaTv.text = ch.nazwa; logoTv.setImageDrawable(null); if (ch.logo != null) coilLoad(logoTv, ch.logo)
-        terazTv.text = ""; potemTv.text = ""
+        terazTv.text = ""; potemTv.text = ""; pasekTeraz?.visibility = android.view.View.GONE; godzinyTv?.visibility = android.view.View.GONE
         lifecycleScope.launch {
             val l = withContext(Dispatchers.IO) { Serwer.przewodnik(this@OdtwarzaczActivity, ch.id) }
             val t = System.currentTimeMillis() / 1000
@@ -226,11 +232,16 @@ class OdtwarzaczActivity : AppCompatActivity() {
             val i = l.indexOfFirst { it.start <= t && it.koniec > t }
             if (biezacy?.id != ch.id) return@launch
             if (i >= 0) {
-                terazTv.text = "Teraz: " + fmt.format(java.util.Date(l[i].start * 1000)) + "  " + l[i].tytul
+                terazTv.text = "Teraz: " + l[i].tytul
+                val w = l[i]; val pr = ((t - w.start) * 100 / (w.koniec - w.start).coerceAtLeast(1)).toInt()
+                pasekTeraz?.progress = pr; pasekTeraz?.visibility = android.view.View.VISIBLE
+                godzinyTv?.text = fmt.format(java.util.Date(w.start * 1000)) + "–" + fmt.format(java.util.Date(w.koniec * 1000)) + "  •  jeszcze " + ((w.koniec - t) / 60) + " min"; godzinyTv?.visibility = android.view.View.VISIBLE
                 l.getOrNull(i + 1)?.let { potemTv.text = "Potem: " + fmt.format(java.util.Date(it.start * 1000)) + "  " + it.tytul }
             } else {
                 val tl = withContext(Dispatchers.IO) { Serwer.terazLeci(this@OdtwarzaczActivity, ch.id) }
-                if (biezacy?.id == ch.id) terazTv.text = if (tl.isEmpty()) "" else "Teraz: $tl"
+                if (biezacy?.id == ch.id) { terazTv.text = if (tl.isEmpty()) "" else "Teraz: $tl"
+                    val pr = Serwer.postep(ch.id); if (pr >= 0) { pasekTeraz?.progress = pr; pasekTeraz?.visibility = android.view.View.VISIBLE }
+                    Serwer.godziny(ch.id).takeIf { it.isNotEmpty() }?.let { godzinyTv?.text = it; godzinyTv?.visibility = android.view.View.VISIBLE } }
             }
         }
     }
