@@ -63,7 +63,15 @@ class DetaleActivity : AppCompatActivity() {
         kol = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         sv.addView(kol)
         val plakat = ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_CROP }
-        kol.addView(plakat, LinearLayout.LayoutParams(-1, dp(420)))
+        // 2.26: zajawka na plakacie w ekranie filmu - po 2,5 s plakat zamienia sie w fragment filmu (bez dzwieku)
+        val ramaPlakatu = FrameLayout(this)
+        ramaPlakatu.addView(plakat, FrameLayout.LayoutParams(-1, -1))
+        zajawkaWidok = (layoutInflater.inflate(R.layout.mini_gracz, null) as androidx.media3.ui.PlayerView).apply {
+            useController = false; resizeMode = androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_ZOOM; alpha = 0f; setShutterBackgroundColor(Color.TRANSPARENT); isClickable = false }
+        ramaPlakatu.addView(zajawkaWidok, FrameLayout.LayoutParams(-1, -1))
+        ramaPlakatu.addView(android.view.View(this).apply { background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(0x00000000, 0x00000000, 0xAA000000.toInt())) }, FrameLayout.LayoutParams(-1, -1))
+        kol.addView(ramaPlakatu, LinearLayout.LayoutParams(-1, dp(420)))
+        if (!serial) ramaPlakatu.postDelayed({ startZajawki(Serwer.adresFilmu(this, intent.getStringExtra("id") ?: "", intent.getStringExtra("ext") ?: "mp4")) }, 2500)
         kol.addView(tekst(nazwa, 24f, g = true).apply { gravity = Gravity.CENTER; setPadding(dp(16), dp(14), dp(16), dp(6)) })
         val meta = tekst("", 16f, 0xFFE6E6E6.toInt()).apply { gravity = Gravity.CENTER }
         kol.addView(meta)
@@ -172,6 +180,8 @@ class DetaleActivity : AppCompatActivity() {
                     val a = ep.optJSONArray(s); s to (0 until (a?.length() ?: 0)).map { a!!.getJSONObject(it) } }
                 val ost = Ust.ostatniOdcinek(this@DetaleActivity, id).split("|")
                 sezon = odcinki.indexOfFirst { it.first == ost.getOrNull(0) }.coerceAtLeast(0)
+                odcinki.firstOrNull()?.second?.firstOrNull()?.let { e -> e.optString("id").takeIf { it.isNotEmpty() }?.let { eid ->
+                    kol.postDelayed({ startZajawki(Serwer.adresOdcinka(this@DetaleActivity, eid, e.optString("container_extension").ifEmpty { "mp4" })) }, 1500) } }
                 pokazSezon(id, nazwa); ustawPrzycisk(id)
             }
             fun t(k: String) = i.optString(k).takeIf { it.isNotEmpty() && it != "null" } ?: ""
@@ -334,6 +344,28 @@ class DetaleActivity : AppCompatActivity() {
         if (Ust.pozycja(this, adresOdc(o)) > 0) return s to e
         return if (e + 1 < odcinki[s].second.size) s to e + 1 else if (s + 1 < odcinki.size) s + 1 to 0 else s to e
     }
+
+    private var zajawkaWidok: androidx.media3.ui.PlayerView? = null
+    private var zajawka: androidx.media3.exoplayer.ExoPlayer? = null
+    private var zajawkaBylo = false
+    private fun startZajawki(url: String) {
+        if (zajawkaBylo || isFinishing || (Ust.panelB(this, "ef_detale_zajawka") ?: true).not()) return
+        zajawkaBylo = true
+        val pv = zajawkaWidok ?: return
+        var gotowe = false
+        zajawka = Zajawki.gracz(this).apply {
+            volume = 0f; repeatMode = androidx.media3.common.Player.REPEAT_MODE_ONE
+            setMediaItem(androidx.media3.common.MediaItem.fromUri(url)); prepare()
+            addListener(object : androidx.media3.common.Player.Listener {
+                override fun onPlaybackStateChanged(st: Int) { if (st == androidx.media3.common.Player.STATE_READY && !gotowe) { gotowe = true
+                    if (duration > 120_000) seekTo((duration * (0.15 + Math.random() * 0.55)).toLong()); playWhenReady = true } }
+                override fun onIsPlayingChanged(gra: Boolean) { if (gra && pv.alpha == 0f) pv.animate().alpha(1f).setStartDelay(250).setDuration(900).start() }
+                override fun onPlayerError(e: androidx.media3.common.PlaybackException) { stopZajawki() } })
+        }
+        pv.player = zajawka
+    }
+    private fun stopZajawki() { zajawkaWidok?.animate()?.cancel(); zajawkaWidok?.alpha = 0f; zajawkaWidok?.player = null; zajawka?.release(); zajawka = null }
+    override fun onPause() { stopZajawki(); zajawkaBylo = false; super.onPause() }
 
     private fun ustawPrzycisk(serialId: String) {
         if (odcinki.isEmpty()) return

@@ -273,3 +273,11 @@ object Dodatki {
         }
     } catch (e: Exception) { null }
 }
+
+/** 2.26: wspolny odtwarzacz zajawek (jak glowny: VLC user-agent, przekierowania http<->https). */
+object Zajawki {
+    fun gracz(c: android.content.Context) = androidx.media3.exoplayer.ExoPlayer.Builder(c)
+        .setMediaSourceFactory(androidx.media3.exoplayer.source.DefaultMediaSourceFactory(
+            androidx.media3.datasource.DefaultHttpDataSource.Factory().setUserAgent("VLC/3.0.20 LibVLC/3.0.20").setAllowCrossProtocolRedirects(true)
+                .setConnectTimeoutMs(8000).setReadTimeoutMs(12000))).build()
+}
