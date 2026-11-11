@@ -297,6 +297,35 @@ object Api {
         }.filter { it.first.length >= 2 }.distinct()
     }
 
+    /** Dodatkowe dane filmu z Wikidata (bez klucza): zwiastun YouTube i obsada z rolami. */
+    data class WikiFilm(val youtube: String, val obsada: List<Pair<String, String>>)
+
+    private fun sparql(q: String): org.json.JSONArray {
+        val url = "https://query.wikidata.org/sparql?format=json&query=" + java.net.URLEncoder.encode(q, "UTF-8")
+        val req = Request.Builder().url(url).header("User-Agent", "OKPlayer/3.6 (aplikacja IPTV; kontakt przez GitHub superdarco78)")
+            .header("Accept", "application/sparql-results+json").build()
+        val body = client.newCall(req).execute().use { it.body?.string() ?: "" }
+        return JSONObject(body).optJSONObject("results")?.optJSONArray("bindings") ?: org.json.JSONArray()
+    }
+
+    /** Szuka filmu po numerze TMDb (dokladnie), a gdy go brak - po tytule i roku. */
+    suspend fun wikiFilm(tmdb: String, tytul: String): WikiFilm? = withContext(Dispatchers.IO) {
+        try {
+            val idTmdb = tmdb.filter { it.isDigit() }
+            val czysty = tytul.replace(Regex("\\(\\d{4}\\).*$"), "").replace("\"", "").trim()
+            val rok = rokTytulu(tytul)
+            val wybor = if (idTmdb.isNotEmpty()) """?f wdt:P4947 "$idTmdb"."""
+                else """?f rdfs:label "$czysty"@pl. ?f wdt:P31/wdt:P279* wd:Q11424. """ + (if (rok != null) "?f wdt:P577 ?d. FILTER(YEAR(?d) >= ${rok - 1} && YEAR(?d) <= ${rok + 1})" else "")
+            val yt = sparql("SELECT ?yt WHERE { $wybor ?f wdt:P1651 ?yt. } LIMIT 3").let { a -> if (a.length() > 0) a.getJSONObject(0).optJSONObject("yt")?.optString("value") ?: "" else "" }
+            val ob = sparql("""SELECT ?aL (SAMPLE(?rl) AS ?rL) WHERE { $wybor ?f p:P161 ?st. ?st ps:P161 ?a. ?a rdfs:label ?aL. FILTER(lang(?aL)="en")
+                OPTIONAL { ?st pq:P453 ?r. ?r rdfs:label ?rl. FILTER(lang(?rl) IN ("pl","en")) }
+                OPTIONAL { ?st pq:P4633 ?rn. BIND(STR(?rn) AS ?rl) } } GROUP BY ?aL LIMIT 40""")
+            val obsada = (0 until ob.length()).map { i -> val o = ob.getJSONObject(i)
+                (o.optJSONObject("aL")?.optString("value") ?: "") to (o.optJSONObject("rL")?.optString("value") ?: "") }.filter { it.first.isNotEmpty() }
+            if (yt.isEmpty() && obsada.isEmpty()) null else WikiFilm(yt, obsada)
+        } catch (e: Exception) { null }
+    }
+
     private val zdjeciaAktorow = java.util.concurrent.ConcurrentHashMap<String, String>()
 
     /** Zdjecie aktora z publicznej wyszukiwarki IMDb (bez klucza). Pusty tekst = brak. */
