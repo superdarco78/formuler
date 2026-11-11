@@ -1,3 +1,2 @@
-Mecze na Starcie – wygląd|zwykła karta z tytułem|kolorowa plakietka rozgrywek (Ekstraklasa, Premier League, Liga Mistrzów, LaLiga, Bundesliga, F1, KSW, siatkówka, skoki, żużel, tenis…), drużyny w dwóch linijkach jak w aplikacjach sportowych, logo kanału, godziny i pasek
-Mecze na Starcie – gdy nie ma meczu|rząd znikał|zawsze na samej górze: najpierw mecze, potem inne transmisje z kanałów sportowych
-Radio w dolnym menu|radio wymieszane z TV|osobna ikona radia (za Serialami) z grupami i stacjami
+Filmy aktora|„Szukam filmów…” trwało bardzo długo albo bez końca|szybsze wyszukiwanie filmografii (prostsze zapytanie, dłuższy czas na odpowiedź) – pod biografią najpierw jego filmy z Twojej listy, niżej wszystkie pozostałe
+Mecze na Starcie|zwykłe karty|plakietki lig i drużyny w dwóch linijkach, zawsze na górze

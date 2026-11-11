@@ -65,7 +65,8 @@ object Dodatki {
         if (!imdbId.containsKey(nazwa)) zdjecieAktora(nazwa)
         val nm = imdbId[nazwa] ?: ""
         val ktos = if (nm.isNotEmpty()) "?a wdt:P345 \"$nm\"." else "?a rdfs:label \"$n\"@en; wdt:P31 wd:Q5."
-        val a = sparql("SELECT ?f (SAMPLE(?pl) AS ?p) (SAMPLE(?en) AS ?e) (MIN(?r) AS ?rok) WHERE { $ktos ?f wdt:P161 ?a. OPTIONAL { ?f rdfs:label ?pl. FILTER(lang(?pl)=\"pl\") } OPTIONAL { ?f rdfs:label ?en. FILTER(lang(?en)=\"en\") } OPTIONAL { ?f wdt:P577 ?d. BIND(YEAR(?d) AS ?r) } } GROUP BY ?f LIMIT 400")
+        // Prosty, szybki zapytanie (bez grupowania) - powtorki usuwamy w aplikacji.
+        val a = sparql("SELECT ?f ?p ?e ?rok WHERE { $ktos ?f wdt:P161 ?a. OPTIONAL { ?f rdfs:label ?p. FILTER(lang(?p)=\"pl\") } OPTIONAL { ?f rdfs:label ?e. FILTER(lang(?e)=\"en\") } OPTIONAL { ?f wdt:P577 ?d. BIND(YEAR(?d) AS ?rok) } } LIMIT 2000")
         val out = ArrayList<Triple<String, String, Int>>()
         for (i in 0 until a.length()) {
             val o = a.getJSONObject(i)
@@ -74,7 +75,7 @@ object Dodatki {
             if (p.isEmpty() && e.isEmpty()) continue
             out.add(Triple(p, e, o.optJSONObject("rok")?.optString("value")?.toIntOrNull() ?: 0))
         }
-        return out.distinctBy { it.first + "|" + it.second }.sortedByDescending { it.third }
+        return out.groupBy { it.first + "|" + it.second }.map { (_, l) -> l.filter { it.third > 0 }.minByOrNull { it.third } ?: l.first() }.sortedByDescending { it.third }
     }
 
     /** Tytul do porownan: male litery, bez roku w nawiasie, bez przedrostkow typu "PL - ", tylko litery i cyfry. */

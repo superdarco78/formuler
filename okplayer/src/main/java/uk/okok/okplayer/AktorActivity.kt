@@ -81,7 +81,7 @@ class AktorActivity : AppCompatActivity() {
             if (u.isNotEmpty()) foto.load(u)
         }
         lifecycleScope.launch {
-            val wynik = withContext(Dispatchers.IO) { kotlinx.coroutines.withTimeoutOrNull(25_000) {
+            val wynik = withContext(Dispatchers.IO) { kotlinx.coroutines.withTimeoutOrNull(45_000) {
                 val fg = Dodatki.filmografia(nazwa)
                 val klucze = HashMap<String, Int>()
                 fg.forEachIndexed { i, f -> listOf(f.first, f.second).map { Dodatki.klucz(it) }.filter { it.length >= 2 }.forEach { k -> klucze.putIfAbsent(k, i) } }
