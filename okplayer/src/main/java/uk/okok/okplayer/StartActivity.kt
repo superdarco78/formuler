@@ -565,19 +565,27 @@ class StartActivity : AppCompatActivity() {
         fun pokazNr(n: Int, anim: Boolean) {
             stopZwiastun()
             val v = l[n]; val nowy = obrazy[1 - widoczny]; val stary = obrazy[widoczny]
+            // 2.12: zajawka - po 3 s na banerze leci wyciety losowy fragment z samego filmu (bez dzwieku, ok. 20 s)
             if (v.rodzaj == "f") karta.postDelayed({
                 if (i != n || !karta.isAttachedToWindow) return@postDelayed
-                lifecycleScope.launch {
-                    val u = withContext(Dispatchers.IO) { Dodatki.zwiastunItunes(v.nazwa) }
-                    if (u.isEmpty() || i != n || !karta.isAttachedToWindow) return@launch
-                    zwiastun = androidx.media3.exoplayer.ExoPlayer.Builder(this@StartActivity).build().apply {
-                        volume = 0f; repeatMode = androidx.media3.common.Player.REPEAT_MODE_ONE
-                        setMediaItem(androidx.media3.common.MediaItem.fromUri(u)); prepare(); playWhenReady = true
-                        addListener(object : androidx.media3.common.Player.Listener {
-                            override fun onRenderedFirstFrame() { zwiastunWidok.animate().alpha(1f).setDuration(900).start() } })
-                    }
-                    zwiastunWidok.player = zwiastun
+                var przewiniete = false
+                zwiastun = androidx.media3.exoplayer.ExoPlayer.Builder(this@StartActivity).build().apply {
+                    volume = 0f
+                    setMediaItem(androidx.media3.common.MediaItem.fromUri(Serwer.adresFilmu(this@StartActivity, v.id, v.ext))); prepare(); playWhenReady = false
+                    addListener(object : androidx.media3.common.Player.Listener {
+                        override fun onPlaybackStateChanged(st: Int) {
+                            if (st == androidx.media3.common.Player.STATE_READY && !przewiniete) {
+                                przewiniete = true
+                                val d = duration
+                                if (d > 120_000) seekTo((d * (0.15 + Math.random() * 0.55)).toLong())
+                                playWhenReady = true
+                                karta.postDelayed({ if (i == n) zwiastunWidok.animate().alpha(0f).setDuration(900).start() }, 21_000)
+                            }
+                        }
+                        override fun onIsPlayingChanged(gra: Boolean) { if (gra && przewiniete && zwiastunWidok.alpha == 0f) zwiastunWidok.animate().alpha(1f).setStartDelay(300).setDuration(900).start() }
+                        override fun onPlayerError(e: androidx.media3.common.PlaybackException) { stopZwiastun() } })
                 }
+                zwiastunWidok.player = zwiastun
             }, 3000)
             nowy.alpha = 0f; nowy.scaleX = 1f; nowy.scaleY = 1f; nowy.translationX = 0f
             nowy.load(v.okladka) { allowHardware(false); listener(onSuccess = { _, r ->
@@ -602,7 +610,7 @@ class StartActivity : AppCompatActivity() {
             lista.setOnClickListener { Ust.przelaczUlubiony(this, v.rodzaj, v.id, v.nazwa, v.okladka, v.ext, ""); android.widget.Toast.makeText(this, Jezyk.t("Dodano do Mojej listy"), android.widget.Toast.LENGTH_SHORT).show() }
         }
         pokazNr(0, false)
-        val zmiana = object : Runnable { override fun run() { if (!karta.isAttachedToWindow) return; i = (i + 1) % l.size; pokazNr(i, true); karta.postDelayed(this, if (zwiastun != null) 25000 else 9000) } }
+        val zmiana = object : Runnable { override fun run() { if (!karta.isAttachedToWindow) return; i = (i + 1) % l.size; pokazNr(i, true); karta.postDelayed(this, if (zwiastun != null) 26000 else 9000) } }
         karta.postDelayed(zmiana, 7000)
         karta.setOnClickListener { otworz(l[i], karta) }
     }
