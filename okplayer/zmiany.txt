@@ -1,2 +1,2 @@
-Opis filmu|„Nie udało się pobrać opisu” – pusta strona bez oceny i zwiastuna|3 różne próby po 25 s (z dodatkami i bez); gdy serwer nie ma opisu, pokazuje tytuł, ocenę z listy i szuka zwiastuna po tytule; pod komunikatem widać powód błędu
-Archiwum|obraz potrafił stanąć|strażnik: gdy obraz stoi ~12 s, sam przełącza na inny sposób (3 sposoby)
+Dni w programie TV|pokazywały się wszystkie dni, także przyszłe (czw., pt.) i dni bez archiwum|tylko dni, z których kanał ma archiwum, oraz dziś – każdy pokazany dzień da się obejrzeć
+Opis filmu|„Nie udało się pobrać opisu”|3 różne próby; gdy serwer nie ma opisu – tytuł, ocena i zwiastun po tytule; widać powód błędu

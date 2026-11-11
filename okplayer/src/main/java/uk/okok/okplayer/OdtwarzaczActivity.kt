@@ -216,8 +216,10 @@ class OdtwarzaczActivity : AppCompatActivity() {
         if (wpisy.isEmpty()) { pr.addView(TextView(this).apply { text = "Brak programu dla tego kanału"; setTextColor(0xFF9A9A9A.toInt()); setPadding(32, 24, 32, 24) }); return }
         val dz = java.text.SimpleDateFormat("yyyy-MM-dd", Jezyk.loc)
         val nazwaDnia = java.text.SimpleDateFormat("EEE d.MM", Jezyk.loc)
-        val dni = wpisy.map { dz.format(java.util.Date(it.start * 1000)) }.distinct()
         val dzis = dz.format(java.util.Date())
+        // Tylko dni z archiwum tego kanalu (+ dzis); bez przyszlych dni i bez dni, ktorych nie da sie obejrzec.
+        val dni = wpisy.filter { it.archiwum || dz.format(java.util.Date(it.start * 1000)) == dzis }
+            .map { dz.format(java.util.Date(it.start * 1000)) }.distinct().filter { it <= dzis }.ifEmpty { listOf(dzis) }
         val pasek = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.HORIZONTAL; setPadding(20, 12, 20, 12) }
         for (d in dni) {
             pasek.addView(TextView(this).apply {
