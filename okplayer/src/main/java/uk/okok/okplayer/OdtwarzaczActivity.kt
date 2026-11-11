@@ -162,6 +162,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         val pr = przewodnik ?: return
         przewodnikOtwarty = true; przyciskProgram.text = "✕ Kanały"
         listaTv?.visibility = android.view.View.GONE; pr.visibility = android.view.View.VISIBLE
+        uloz(resources.configuration.orientation)
         pr.removeAllViews()
         pr.addView(TextView(this).apply { text = "Ładuję program…"; setTextColor(0xFF9A9A9A.toInt()); setPadding(32, 24, 32, 24) })
         lifecycleScope.launch {
@@ -175,7 +176,8 @@ class OdtwarzaczActivity : AppCompatActivity() {
 
     private fun zamknijPrzewodnik() {
         przewodnikOtwarty = false; przyciskProgram.text = "☰ Program"
-        przewodnik?.visibility = android.view.View.GONE; listaTv?.visibility = android.view.View.VISIBLE
+        przewodnik?.visibility = android.view.View.GONE
+        listaTv?.visibility = if (resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) android.view.View.GONE else android.view.View.VISIBLE
     }
 
     private fun rysujPrzewodnik() {
@@ -270,7 +272,18 @@ class OdtwarzaczActivity : AppCompatActivity() {
         panel?.visibility = if (poziomo) android.view.View.GONE else android.view.View.VISIBLE
         progNaObrazie?.visibility = if (poziomo) android.view.View.VISIBLE else android.view.View.GONE
         listaTv?.visibility = if (poziomo || przewodnikOtwarty) android.view.View.GONE else android.view.View.VISIBLE
-        przewodnik?.visibility = if (!poziomo && przewodnikOtwarty) android.view.View.VISIBLE else android.view.View.GONE
+        przewodnik?.let { pr ->
+            val rodzic = pr.parent as? android.view.ViewGroup
+            if (poziomo && rodzic !== f) {
+                rodzic?.removeView(pr)
+                pr.setBackgroundColor(0xE6101010.toInt())
+                f.addView(pr, FrameLayout.LayoutParams((resources.displayMetrics.widthPixels * 0.5).toInt(), -1).apply { gravity = Gravity.END })
+            } else if (!poziomo && rodzic === f) {
+                f.removeView(pr); pr.setBackgroundColor(Color.TRANSPARENT)
+                korzen.addView(pr, korzen.indexOfChild(listaTv), android.widget.LinearLayout.LayoutParams(-1, 0, 1f))
+            }
+            pr.visibility = if (przewodnikOtwarty) android.view.View.VISIBLE else android.view.View.GONE
+        }
         val c = androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)
         if (poziomo) c.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars()) else c.show(androidx.core.view.WindowInsetsCompat.Type.systemBars())
     }
@@ -453,6 +466,8 @@ class OdtwarzaczActivity : AppCompatActivity() {
 
     /** Program kanalu; przeszle audycje z archiwum mozna obejrzec (cofanie). */
     private fun program() {
+        // TV: ten sam pelny przewodnik co w pionie (dni, opisy, NA ZYWO, archiwum) - w poziomie jako panel na obrazie.
+        if (przewodnik != null) { if (przewodnikOtwarty) zamknijPrzewodnik() else otworzPrzewodnik(); uloz(resources.configuration.orientation); return }
         val ch = biezacy ?: return
         pokazNapis("Ładuję program…")
         lifecycleScope.launch {
@@ -504,7 +519,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
     /** Wstecz przy TV: obraz zmniejsza sie do okienka, a pod nim wraca aplikacja (lista kanalow), jak mini-odtwarzacz. */
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
-        if (przewodnikOtwarty && panel != null && resources.configuration.orientation != android.content.res.Configuration.ORIENTATION_LANDSCAPE) { zamknijPrzewodnik(); return }
+        if (przewodnikOtwarty && panel != null) { zamknijPrzewodnik(); uloz(resources.configuration.orientation); return }
         // Pelny ekran -> Wstecz: od razu do mini-okna w aplikacji (bez posredniego widoku w pionie).
         if (resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE && panel != null) {
             if (!archiwumGra && Ust.prefs(this).getBoolean("okienko", true)) { requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT; doMini(); return }
