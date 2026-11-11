@@ -15,14 +15,14 @@ jobs:
         run: |
           pip install --quiet pillow
           mkdir -p k; i=0
-          while read -r u; do i=$((i+1)); n=$(printf "kzp_%02d.png" $i); curl -fsSL -o "k/$n" "$u" || echo "brak $n"; done < okplayer/kit.txt
+          while read -r u; do i=$((i+1)); n=$(printf "uni_%02d.jpg" $i); curl -fsSL -o "k/$n" "$u" || echo "brak $n"; done < okplayer/kit.txt
           python3 - <<'PY'
           from PIL import Image, ImageDraw
           import glob
-          fs=sorted(glob.glob('k/kzp_*.png'))
+          fs=sorted(glob.glob('k/uni_*.jpg'))
           sh=Image.new('RGB',(4*480,4*290),(90,90,90)); d=ImageDraw.Draw(sh)
           for j,f in enumerate(fs[:16]):
               im=Image.open(f).convert('RGB'); im.thumbnail((470,265)); x,y=(j%4)*480+5,(j//4)*290+20; sh.paste(im,(x,y)); d.text((x,y-16),f.split('/')[-1],fill=(255,255,0))
-          sh.save('k/kzp_podglad.jpg',quality=88)
+          sh.save('k/uni_podglad.jpg',quality=88)
           PY
           gh release upload canva-kit k/* --clobber
