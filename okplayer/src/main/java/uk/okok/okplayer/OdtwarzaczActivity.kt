@@ -15,6 +15,7 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
+import coil.load
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -44,15 +45,114 @@ class OdtwarzaczActivity : AppCompatActivity() {
         if (!intent.getBooleanExtra("vod", false)) przyciski.addView(prz("☰ Program / archiwum") { program() }, android.widget.LinearLayout.LayoutParams(-2, -2).apply { marginStart = 16 })
         widok.setControllerVisibilityListener(PlayerView.ControllerVisibilityListener { v -> przyciski.visibility = v })
         f.addView(przyciski, FrameLayout.LayoutParams(-2, -2).apply { gravity = Gravity.TOP or Gravity.END; setMargins(24, 24, 24, 24) })
-        setContentView(f)
-        requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-        if (intent.getBooleanExtra("vod", false)) { pokazNapis(intent.getStringExtra("nazwa") ?: ""); return }
+        if (intent.getBooleanExtra("vod", false)) {
+            setContentView(f)
+            requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            pokazNapis(intent.getStringExtra("nazwa") ?: ""); return
+        }
+        // TV jak w starej aplikacji: w pionie obraz u gory, pod nim kanal z programem i lista kanalow grupy; w poziomie pelny ekran.
+        ramka = f
+        korzen = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.VERTICAL; setBackgroundColor(Color.BLACK) }
+        korzen.addView(f, android.widget.LinearLayout.LayoutParams(-1, resources.displayMetrics.widthPixels * 9 / 16))
+        panel = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(32, 24, 32, 24); setBackgroundColor(0xFF111111.toInt()) }
+        logoTv = android.widget.ImageView(this).apply { scaleType = android.widget.ImageView.ScaleType.FIT_CENTER }
+        panel.addView(logoTv, android.widget.LinearLayout.LayoutParams(160, 100))
+        val opisy = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.VERTICAL; setPadding(28, 0, 0, 0) }
+        nazwaTv = TextView(this).apply { setTextColor(Color.WHITE); textSize = 19f; setTypeface(typeface, android.graphics.Typeface.BOLD) }
+        terazTv = TextView(this).apply { setTextColor(0xFFDDDDDD.toInt()); textSize = 14f }
+        potemTv = TextView(this).apply { setTextColor(0xFF9A9A9A.toInt()); textSize = 13f }
+        opisy.addView(nazwaTv); opisy.addView(terazTv); opisy.addView(potemTv)
+        panel.addView(opisy, android.widget.LinearLayout.LayoutParams(0, -2, 1f))
+        korzen.addView(panel)
+        listaTv = androidx.recyclerview.widget.RecyclerView(this).apply { layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this@OdtwarzaczActivity) }
+        korzen.addView(listaTv, android.widget.LinearLayout.LayoutParams(-1, 0, 1f))
+        setContentView(korzen)
+        widok.setFullscreenButtonClickListener { pelny ->
+            requestedOrientation = if (pelny) android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
+        }
         biezacy = Kanal(intent.getStringExtra("id") ?: "", intent.getStringExtra("nazwa") ?: "", intent.getStringExtra("logo"), intent.getStringExtra("kat") ?: "", 0)
-        pokazNapis(biezacy!!.nazwa)
+        ustawPanel()
+        uloz(resources.configuration.orientation)
         lifecycleScope.launch {
             val kat = biezacy!!.kat
             grupa = withContext(Dispatchers.IO) { Pamiec.kanaly(this@OdtwarzaczActivity)?.filter { it.kat == kat } ?: emptyList() }
+            listaTv?.adapter = ListaAdapter()
+            val i = grupa.indexOfFirst { it.id == biezacy?.id }; if (i > 2) listaTv?.scrollToPosition(i - 2)
         }
+    }
+
+    private var ramka: FrameLayout? = null
+    private lateinit var korzen: android.widget.LinearLayout
+    private var panel: android.widget.LinearLayout? = null
+    private var listaTv: androidx.recyclerview.widget.RecyclerView? = null
+    private lateinit var logoTv: android.widget.ImageView
+    private lateinit var nazwaTv: TextView
+    private lateinit var terazTv: TextView
+    private lateinit var potemTv: TextView
+
+    private fun uloz(o: Int) {
+        val f = ramka ?: return
+        val poziomo = o == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+        f.layoutParams = android.widget.LinearLayout.LayoutParams(-1, if (poziomo) -1 else resources.displayMetrics.widthPixels * 9 / 16)
+        panel?.visibility = if (poziomo) android.view.View.GONE else android.view.View.VISIBLE
+        listaTv?.visibility = if (poziomo) android.view.View.GONE else android.view.View.VISIBLE
+        val c = androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)
+        if (poziomo) c.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars()) else c.show(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+    }
+
+    override fun onConfigurationChanged(c: android.content.res.Configuration) { super.onConfigurationChanged(c); uloz(c.orientation) }
+
+    /** Logo, nazwa i program (teraz / potem) biezacego kanalu. */
+    private fun ustawPanel() {
+        val ch = biezacy ?: return
+        if (panel == null) return
+        nazwaTv.text = ch.nazwa; logoTv.setImageDrawable(null); if (ch.logo != null) coilLoad(logoTv, ch.logo)
+        terazTv.text = ""; potemTv.text = ""
+        lifecycleScope.launch {
+            val l = withContext(Dispatchers.IO) { Serwer.przewodnik(this@OdtwarzaczActivity, ch.id) }
+            val t = System.currentTimeMillis() / 1000
+            val fmt = java.text.SimpleDateFormat("HH:mm", java.util.Locale("pl"))
+            val i = l.indexOfFirst { it.start <= t && it.koniec > t }
+            if (biezacy?.id != ch.id) return@launch
+            if (i >= 0) {
+                terazTv.text = "Teraz: " + fmt.format(java.util.Date(l[i].start * 1000)) + "  " + l[i].tytul
+                l.getOrNull(i + 1)?.let { potemTv.text = "Potem: " + fmt.format(java.util.Date(it.start * 1000)) + "  " + it.tytul }
+            } else {
+                val tl = withContext(Dispatchers.IO) { Serwer.terazLeci(this@OdtwarzaczActivity, ch.id) }
+                if (biezacy?.id == ch.id) terazTv.text = if (tl.isEmpty()) "" else "Teraz: $tl"
+            }
+        }
+    }
+
+    private fun coilLoad(v: android.widget.ImageView, u: String) { v.load(u) }
+
+    inner class ListaAdapter : androidx.recyclerview.widget.RecyclerView.Adapter<androidx.recyclerview.widget.RecyclerView.ViewHolder>() {
+        override fun getItemCount() = grupa.size
+        override fun onCreateViewHolder(p: android.view.ViewGroup, t: Int): androidx.recyclerview.widget.RecyclerView.ViewHolder {
+            val w = android.widget.LinearLayout(p.context).apply {
+                orientation = android.widget.LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(32, 20, 32, 20); isFocusable = true
+                layoutParams = androidx.recyclerview.widget.RecyclerView.LayoutParams(-1, -2)
+                addView(android.widget.ImageView(p.context).apply { scaleType = android.widget.ImageView.ScaleType.FIT_CENTER }, android.widget.LinearLayout.LayoutParams(130, 80))
+                addView(TextView(p.context).apply { setTextColor(Color.WHITE); textSize = 16f; setPadding(28, 0, 0, 0); maxLines = 1 }, android.widget.LinearLayout.LayoutParams(0, -2, 1f))
+            }
+            return object : androidx.recyclerview.widget.RecyclerView.ViewHolder(w) {}
+        }
+        override fun onBindViewHolder(h: androidx.recyclerview.widget.RecyclerView.ViewHolder, i: Int) {
+            val w = h.itemView as android.widget.LinearLayout; val ch = grupa[i]
+            (w.getChildAt(0) as android.widget.ImageView).apply { setImageDrawable(null); if (ch.logo != null) load(ch.logo) }
+            (w.getChildAt(1) as TextView).text = ch.nazwa
+            w.setBackgroundColor(if (ch.id == biezacy?.id) 0xFF2A2A2A.toInt() else Color.TRANSPARENT)
+            w.setOnClickListener { przelacz(ch) }
+        }
+    }
+
+    private fun przelacz(n: Kanal) {
+        biezacy = n; proby = 0
+        Ust.zapiszOstatni(this, n)
+        val url = Serwer.adresKanalu(this, n.id)
+        intent.putExtra("url", url)
+        pokazNapis(n.nazwa); graj(url); ustawPanel()
+        listaTv?.adapter?.notifyDataSetChanged()
     }
 
     private fun pokazNapis(t: String) {
@@ -95,12 +195,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         val b = biezacy ?: return
         if (grupa.isEmpty()) return
         val i = grupa.indexOfFirst { it.id == b.id }
-        val n = grupa[((if (i < 0) 0 else i) + o + grupa.size) % grupa.size]
-        biezacy = n; proby = 0
-        Ust.zapiszOstatni(this, n)
-        val url = Serwer.adresKanalu(this, n.id)
-        intent.putExtra("url", url)
-        pokazNapis(n.nazwa); graj(url)
+        przelacz(grupa[((if (i < 0) 0 else i) + o + grupa.size) % grupa.size])
     }
 
     private var wylacznik: android.os.CountDownTimer? = null
