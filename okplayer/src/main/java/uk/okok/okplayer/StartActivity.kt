@@ -294,7 +294,11 @@ class StartActivity : AppCompatActivity() {
                 (kol.getChildAt(1) as TextView).text = v.nazwa.replace(Regex("\\s*\\(\\d{4}\\)\\s*$"), "")
                 (kol.getChildAt(2) as TextView).text = nazwaKat(v.kat, kat)
                 val cyfra = if (i < 10) canva("ok_gr_cyfra_" + (i + 1)) else 0
-                (f.getChildAt(2) as ImageView).apply { if (cyfra != 0) { setImageResource(cyfra); visibility = View.VISIBLE } else visibility = View.GONE }
+                (f.getChildAt(2) as ImageView).apply { if (cyfra != 0) { setImageResource(cyfra); visibility = View.VISIBLE
+                    // 2.18: cyfra Top 10 wpada z odbiciem (raz na pozycje)
+                    if (getTag(R.id.cyfra_anim) != i) { setTag(R.id.cyfra_anim, i); alpha = 0f; translationY = -dp(40).toFloat(); scaleX = 0.6f; scaleY = 0.6f
+                        animate().alpha(1f).translationY(0f).scaleX(1f).scaleY(1f).setStartDelay(80L * (i % 6)).setDuration(700).setInterpolator(android.view.animation.OvershootInterpolator(2.2f)).start() }
+                } else visibility = View.GONE }
                 (f.getChildAt(1) as TextView).apply {
                     visibility = if (cyfra != 0) View.GONE else View.VISIBLE
                     text = "${i + 1}"
@@ -469,7 +473,10 @@ class StartActivity : AppCompatActivity() {
                     layoutParams = RecyclerView.LayoutParams(dp(230), -2).apply { marginEnd = dp(10) }
                     addView(LinearLayout(p.context).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
                         addView(ImageView(p.context).apply { scaleType = ImageView.ScaleType.FIT_CENTER }, LinearLayout.LayoutParams(dp(54), dp(34)))
-                        addView(tekst("● NA ŻYWO", 11f, Color.WHITE, gruby = true)) })
+                        // 2.18: pulsujaca czerwona kropka NA ZYWO
+                        addView(tekst("●", 13f, 0xFFE53935.toInt(), gruby = true).apply { setPadding(dp(6), 0, dp(4), 0)
+                            android.animation.ObjectAnimator.ofFloat(this, View.ALPHA, 1f, 0.25f).apply { duration = 800; repeatCount = android.animation.ValueAnimator.INFINITE; repeatMode = android.animation.ValueAnimator.REVERSE; start() } })
+                        addView(tekst("NA ŻYWO", 11f, Color.WHITE, gruby = true)) })
                     addView(tekst("", 15f, gruby = true).apply { maxLines = 2; ellipsize = android.text.TextUtils.TruncateAt.END; setPadding(0, dp(8), 0, 0) })
                     addView(tekst("", 12f, SZARY).apply { maxLines = 1 })
                     addView(android.widget.ProgressBar(p.context, null, android.R.attr.progressBarStyleHorizontal).apply { max = 100
@@ -649,7 +656,10 @@ class StartActivity : AppCompatActivity() {
                 (r.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap?.let { bm ->
                     val kol = Skorka.zPlakatu(this@StartActivity, bm)
                     Ust.prefs(this@StartActivity).edit().putInt("kolor_plakatu", kol).apply()
-                    glowny?.background = Skorka.tloZAkcentem(kol)
+                    // 2.18: plynne przejscie koloru tla przy zmianie banera
+                    val stare = glowny?.background.let { (it as? android.graphics.drawable.TransitionDrawable)?.getDrawable(1) ?: it }
+                    val nowe = Skorka.tloZAkcentem(kol)
+                    glowny?.background = if (stare == null || !anim) nowe else android.graphics.drawable.TransitionDrawable(arrayOf(stare, nowe)).apply { isCrossFadeEnabled = true; startTransition(1400) }
                 } }) }
             nowy.animate().alpha(1f).setDuration(if (anim) 700 else 0).start()
             // 2.11: plakat banera powoli sie przybliza i przesuwa (efekt filmowy)
@@ -660,6 +670,9 @@ class StartActivity : AppCompatActivity() {
             stary.animate().alpha(0f).setDuration(if (anim) 700 else 0).start()
             widoczny = 1 - widoczny
             tytul.text = v.nazwa.replace(Regex("\\s*\\(\\d{4}\\).*$"), "")
+            // 2.18: tytul i opis wjezdzaja od dolu po kolei
+            if (anim) listOf(tytul, meta).forEachIndexed { x, t -> t.alpha = 0f; t.translationY = dp(22).toFloat()
+                t.animate().alpha(1f).translationY(0f).setStartDelay(250L + x * 180L).setDuration(650).setInterpolator(android.view.animation.DecelerateInterpolator(2f)).start() }
             val rok = Regex("\\((\\d{4})\\)").find(v.nazwa)?.groupValues?.get(1)
             meta.text = listOfNotNull(if (v.rodzaj == "s") "Serial" else "Film", rok, nazwaKat(v.kat, if (v.rodzaj == "s") katS else katF).ifEmpty { null }?.take(28), v.ocena.takeIf { it > 0 }?.let { "★ " + String.format(java.util.Locale.US, "%.1f", it) }).joinToString("  •  ")
             ogladaj.text = if (v.rodzaj == "s") "▶   Odtwórz serial" else "▶   Odtwórz film"

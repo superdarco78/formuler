@@ -1,3 +1,4 @@
+Efekty paczka 2|tło, tytuł, NA ŻYWO i cyfry Top 10 bez ruchu|tło płynnie zmienia kolor z plakatem, tytuł wjeżdża od dołu, czerwona kropka NA ŻYWO pulsuje, cyfry Top 10 wpadają z odbiciem
 Zrzuty ekranu na testy|zrzuty zawsze zablokowane|zrzuty działają; blokadę włączasz z panelu edytora (dla wszystkich lub dla klienta)
 Sterowanie z panelu|efekty i blokadę zrzutów klient przełączał w Ustawieniach aplikacji|tylko panel edytora (dla wszystkich lub dla wybranego klienta), w aplikacji nie ma już tych przełączników
 Efekty z panelu|efekty tylko na urządzeniu|panel edytora może globalnie wyłączyć efekt u wszystkich klientów (w aplikacji widać „wyłączone w panelu”)
