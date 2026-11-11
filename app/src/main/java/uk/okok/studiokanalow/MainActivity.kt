@@ -88,6 +88,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         b = ActivityMainBinding.inflate(layoutInflater)
         setContentView(b.root)
+        if (savedInstanceState == null) animacjaStartu()
 
         demo = intent.getBooleanExtra("demo", false)
 
@@ -106,7 +107,11 @@ class MainActivity : AppCompatActivity() {
         onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 if (b.bottomNav.selectedItemId != R.id.tab_start) { b.bottomNav.selectedItemId = R.id.tab_start; return }
-                if (!Session.optBool(this@MainActivity, "pytaj_wyjscie", true)) { finishAffinity(); return }
+                if (!Session.optBool(this@MainActivity, "pytaj_wyjscie", true)) {
+                    finishAndRemoveTask()
+                    android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ android.os.Process.killProcess(android.os.Process.myPid()) }, 300)
+                    return
+                }
                 oknoWyjscia()
             }
         })
@@ -505,6 +510,25 @@ class MainActivity : AppCompatActivity() {
         b.tvTitle.setTextColor(Color.WHITE)
     }
 
+    /** Animacja startu (lustrzana do zamykania): ikona wkreca sie i rosnie, napis pojawia sie, ekran sie odslania. */
+    private fun animacjaStartu() {
+        val dekor = window.decorView as android.view.ViewGroup
+        val nakladka = android.widget.FrameLayout(this).apply { setBackgroundColor(0xFF000000.toInt()); isClickable = true }
+        val srodek = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = android.view.Gravity.CENTER }
+        val ikona = android.widget.ImageView(this).apply { setImageResource(R.mipmap.ic_launcher_round) }
+        srodek.addView(ikona, LinearLayout.LayoutParams(dp(110), dp(110)))
+        val napis = TextView(this).apply { text = "OK Player"; setTextColor(Color.WHITE); textSize = 26f; setTypeface(typeface, android.graphics.Typeface.BOLD); gravity = android.view.Gravity.CENTER; setPadding(0, dp(16), 0, 0) }
+        srodek.addView(napis)
+        nakladka.addView(srodek, android.widget.FrameLayout.LayoutParams(-1, -1))
+        dekor.addView(nakladka, android.view.ViewGroup.LayoutParams(-1, -1))
+        ikona.scaleX = 0.2f; ikona.scaleY = 0.2f; ikona.alpha = 0f; ikona.rotation = -360f
+        napis.alpha = 0f; napis.translationY = dp(20).toFloat()
+        ikona.animate().scaleX(1f).scaleY(1f).alpha(1f).rotation(0f).setDuration(650)
+            .setInterpolator(android.view.animation.OvershootInterpolator(1.1f)).start()
+        napis.animate().alpha(1f).translationY(0f).setStartDelay(350).setDuration(400).start()
+        nakladka.animate().alpha(0f).setStartDelay(1300).setDuration(400).withEndAction { dekor.removeView(nakladka) }.start()
+    }
+
     /** Okno wyjscia w stylu aplikacji (czarne tlo, jasny przycisk jak "Ogladaj"). */
     private fun oknoWyjscia() {
         val d = android.app.Dialog(this)
@@ -527,7 +551,10 @@ class MainActivity : AppCompatActivity() {
             ikona.animate().rotation(360f).scaleX(0.2f).scaleY(0.2f).alpha(0f).setDuration(450).start()
             box.animate().alpha(0f).scaleX(0.85f).scaleY(0.85f).setStartDelay(250).setDuration(300).start()
             b.root.animate().alpha(0f).setStartDelay(250).setDuration(350).withEndAction {
-                d.dismiss(); finishAffinity(); overridePendingTransition(0, android.R.anim.fade_out)
+                d.dismiss()
+                // Pelne zamkniecie: znika tez z listy ostatnich aplikacji i nie zostaje w pamieci.
+                finishAndRemoveTask(); overridePendingTransition(0, android.R.anim.fade_out)
+                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ android.os.Process.killProcess(android.os.Process.myPid()) }, 400)
             }.start()
         }, LinearLayout.LayoutParams(-1, -2))
         box.addView(przycisk("Anuluj", 0xFF2A2A2A.toInt(), Color.WHITE) { d.dismiss() }, LinearLayout.LayoutParams(-1, -2).also { it.topMargin = dp(10) })
