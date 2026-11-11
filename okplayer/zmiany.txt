@@ -1,0 +1,8 @@
+• Okno aktualizacji: było samo „Nowa wersja” → teraz pokazuje listę zmian (co było, co jest)
+• Mini-okno: było tylko na dole aplikacji → teraz po wyjściu do ekranu telefonu zmienia się w pływające okienko; powiększenie = TV na cały ekran, ✕ = koniec
+• Start: były zwykłe rzędy → teraz jak w MyTvOnline: ranking 1, 2, 3 z TMDB, najnowsze kanały, najnowsze VOD-y z paskiem obejrzenia
+• Szukaj: nie było → lupa 🔍 w nagłówku: kanały, filmy, seriale, aktor
+• Wstecz przy TV: zamykało TV → raz: mini-okno na dole, drugi raz: zamyka mini-okno
+• Przewodnik TV: same tytuły → godziny od–do, NA ŻYWO z paskiem, opisy, niebieskie Archiwum
+• Lista kanałów: sam „Teraz” → pasek ile audycji minęło
+• Seriale: okienko z listą tytułów → sezony w rzędzie i odcinki z obrazkiem, opisem i paskiem

@@ -25,7 +25,7 @@ object Aktualizacja {
             if (zdalna > moja && (reczne || !pokazane) && !a.isFinishing) {
                 pokazane = true
                 AlertDialog.Builder(a).setTitle("Nowa wersja " + o.optString("versionName"))
-                    .setMessage("Po kliknięciu „Zainstaluj” aplikacja zaktualizuje się sama w tle.")
+                    .setMessage(o.optString("zmiany").let { z -> if (z.isEmpty()) "" else "Co było → co jest teraz:\n\n$z\n\n" } + "Po kliknięciu „Zainstaluj” aplikacja zaktualizuje się sama w tle.")
                     .setPositiveButton("Zainstaluj") { _, _ -> instaluj(a, o.optString("url")) }
                     .setNegativeButton("Później", null).show()
             } else if (reczne) android.widget.Toast.makeText(a, "Masz najnowszą wersję", android.widget.Toast.LENGTH_SHORT).show()

@@ -32,7 +32,7 @@ jobs:
           cp okplayer/build/outputs/apk/release/okplayer-release.apk dist/okplayer.apk
           VC=$(grep -m1 'versionCode' okplayer/build.gradle | grep -o '[0-9]\+')
           VN=$(grep -m1 'versionName' okplayer/build.gradle | sed 's/.*"\(.*\)".*/\1/')
-          echo "{\"versionCode\": $VC, \"versionName\": \"$VN\", \"url\": \"https://github.com/superdarco78/formuler/releases/download/okplayer-latest/okplayer.apk\"}" > dist/wersja.json
+          python3 -c "import json,sys; json.dump({'versionCode': int(sys.argv[1]), 'versionName': sys.argv[2], 'url': 'https://github.com/superdarco78/formuler/releases/download/okplayer-latest/okplayer.apk', 'zmiany': open('okplayer/zmiany.txt', encoding='utf-8').read().strip() if __import__('os').path.exists('okplayer/zmiany.txt') else ''}, open('dist/wersja.json', 'w', encoding='utf-8'), ensure_ascii=False)" "$VC" "$VN"
           cat dist/wersja.json
       - uses: softprops/action-gh-release@v2
         with:
