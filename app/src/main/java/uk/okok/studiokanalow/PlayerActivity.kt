@@ -120,6 +120,7 @@ class PlayerActivity : AppCompatActivity() {
             b.tvName.text = intent.getStringExtra("name") ?: ""
             b.tvEpg.text = "Archiwum • " + (intent.getStringExtra("kanal") ?: "")
             val lg0 = intent.getStringExtra("logo")
+            b.ivLogo.visibility = android.view.View.VISIBLE
             if (!lg0.isNullOrEmpty()) b.ivLogo.load(lg0) else b.ivLogo.setImageResource(R.drawable.ic_movie)
             b.pbEpg.visibility = android.view.View.GONE; b.btnPrzewodnik.visibility = android.view.View.GONE
         } else if (!intent.getBooleanExtra("demo", false)) ladujNaglowek(intent.getStringExtra("url") ?: "", intent.getStringExtra("name") ?: "")
@@ -138,7 +139,15 @@ class PlayerActivity : AppCompatActivity() {
                 b.playerView.overlayFrameLayout?.addView(bt, lp)
             }
         }
-        if (!intent.getBooleanExtra("demo", false) && !intent.getBooleanExtra("archiwum", false)) {
+        val czyLive = (intent.getStringExtra("url") ?: "").contains("/live/")
+        if (!czyLive) {
+            // Film / serial / archiwum: sam tytul, bez listy kanalow i logo.
+            if (!intent.getBooleanExtra("archiwum", false)) b.ivLogo.visibility = android.view.View.GONE
+            b.rvKanaly.visibility = android.view.View.GONE
+            b.btnPrzewodnik.visibility = android.view.View.GONE
+            if (!intent.getBooleanExtra("archiwum", false)) { b.tvEpg.text = ""; b.tvEpg.visibility = android.view.View.GONE }
+        }
+        if (czyLive && !intent.getBooleanExtra("demo", false) && !intent.getBooleanExtra("archiwum", false)) {
             if (Kontekst.kanaly.isNotEmpty()) ustawListeKanalow()
             else {
                 b.rvKanaly.visibility = android.view.View.GONE
