@@ -21,7 +21,7 @@ object Aktualizacja {
                 Serwer.http.newCall(Request.Builder().url(WERSJA).build()).execute().use { JSONObject(it.body?.string() ?: "{}") }
             }
             val zdalna = o.optLong("versionCode", 0)
-            val moja = withContext(Dispatchers.IO) { a.packageManager.getPackageInfo(a.packageName, 0).longVersionCode }
+            val moja = withContext(Dispatchers.IO) { androidx.core.content.pm.PackageInfoCompat.getLongVersionCode(a.packageManager.getPackageInfo(a.packageName, 0)) }
             if (zdalna > moja && (reczne || !pokazane) && !a.isFinishing) {
                 pokazane = true
                 AlertDialog.Builder(a).setTitle("Nowa wersja " + o.optString("versionName"))
