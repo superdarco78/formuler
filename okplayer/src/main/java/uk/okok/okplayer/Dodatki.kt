@@ -58,27 +58,48 @@ object Dodatki {
         Regex("\"videoId\":\"([A-Za-z0-9_-]{11})\"").find(html)?.groupValues?.get(1) ?: ""
     } catch (e: Exception) { "" }
     /** Filmografia aktora z Wikidata: (tytul pl, tytul en, rok), najnowsze pierwsze. */
+    /** Filmografia z dwoch zrodel naraz (dziala tez przy aktorach z setkami filmow):
+     *  1) iTunes - polskie tytuly i lata, 2) Wikidata - lekkie zapytanie o same filmy + nazwy pobierane paczkami po 50. */
     fun filmografia(nazwa: String): List<Triple<String, String, Int>> {
         val n = nazwa.trim().replace("\"", "")
         if (n.isEmpty()) return emptyList()
-        // Najpierw po numerze IMDb aktora (pewne i szybkie), a gdy brak - po nazwisku.
-        if (!imdbId.containsKey(nazwa)) zdjecieAktora(nazwa)
-        val nm = imdbId[nazwa] ?: ""
-        val ktos = if (nm.isNotEmpty()) "?a wdt:P345 \"$nm\"." else "?a rdfs:label \"$n\"@en; wdt:P31 wd:Q5."
-        // Prosty, szybki zapytanie (bez grupowania) - powtorki usuwamy w aplikacji.
-        val a = sparql("SELECT ?f ?p ?e ?rok WHERE { $ktos ?f wdt:P161 ?a. OPTIONAL { ?f rdfs:label ?p. FILTER(lang(?p)=\"pl\") } OPTIONAL { ?f rdfs:label ?e. FILTER(lang(?e)=\"en\") } OPTIONAL { ?f wdt:P577 ?d. BIND(YEAR(?d) AS ?rok) } } LIMIT 2000")
         val out = ArrayList<Triple<String, String, Int>>()
-        for (i in 0 until a.length()) {
-            val o = a.getJSONObject(i)
-            val p = o.optJSONObject("p")?.optString("value") ?: ""
-            val e = o.optJSONObject("e")?.optString("value") ?: ""
-            if (p.isEmpty() && e.isEmpty()) continue
-            out.add(Triple(p, e, o.optJSONObject("rok")?.optString("value")?.toIntOrNull() ?: 0))
+        // 1) iTunes: filmy z tym aktorem (polski sklep -> polskie tytuly)
+        try {
+            for (kraj in listOf("PL", "US")) {
+                val arr = JSONObject(tekst("https://itunes.apple.com/search?term=" + java.net.URLEncoder.encode(n, "UTF-8") + "&media=movie&attribute=actorTerm&limit=200&country=$kraj")).optJSONArray("results")
+                if (arr != null) for (i in 0 until arr.length()) { val o = arr.getJSONObject(i)
+                    val t = o.optString("trackName"); if (t.isEmpty()) continue
+                    out.add(if (kraj == "PL") Triple(t, "", o.optString("releaseDate").take(4).toIntOrNull() ?: 0) else Triple("", t, o.optString("releaseDate").take(4).toIntOrNull() ?: 0)) }
+            }
+        } catch (_: Exception) { }
+        // 2) Wikidata: najpierw same numery filmow (szybko), potem nazwy po polsku i angielsku
+        try {
+            if (!imdbId.containsKey(nazwa)) zdjecieAktora(nazwa)
+            val nm = imdbId[nazwa] ?: ""
+            val ktos = if (nm.isNotEmpty()) "?a wdt:P345 \"$nm\"." else "?a rdfs:label \"$n\"@en; wdt:P31 wd:Q5."
+            val a = sparql("SELECT ?f (MIN(YEAR(?d)) AS ?rok) WHERE { $ktos ?f wdt:P161 ?a. OPTIONAL { ?f wdt:P577 ?d. } } GROUP BY ?f LIMIT 600")
+            val lata = HashMap<String, Int>()
+            for (i in 0 until a.length()) { val o = a.getJSONObject(i); val q = o.optJSONObject("f")?.optString("value")?.substringAfterLast("/") ?: continue
+                lata[q] = o.optJSONObject("rok")?.optString("value")?.toIntOrNull() ?: 0 }
+            for (paczka in lata.keys.chunked(50)) {
+                val j = JSONObject(tekst("https://www.wikidata.org/w/api.php?action=wbgetentities&format=json&props=labels&languages=pl%7Cen&ids=" + paczka.joinToString("%7C")))
+                val ent = j.optJSONObject("entities") ?: continue
+                for (q in paczka) { val l = ent.optJSONObject(q)?.optJSONObject("labels") ?: continue
+                    val p = l.optJSONObject("pl")?.optString("value") ?: ""; val e = l.optJSONObject("en")?.optString("value") ?: ""
+                    if (p.isNotEmpty() || e.isNotEmpty()) out.add(Triple(p, e, lata[q] ?: 0)) }
+            }
+        } catch (_: Exception) { }
+        // Jedna pozycja na film (po tytule), najnowsze pierwsze
+        val wynik = LinkedHashMap<String, Triple<String, String, Int>>()
+        for (f in out) {
+            val k = klucz(f.first.ifEmpty { f.second }) + "|" + (f.third / 2)
+            val stary = wynik[k]
+            wynik[k] = if (stary == null) f else Triple(stary.first.ifEmpty { f.first }, stary.second.ifEmpty { f.second }, maxOf(stary.third, f.third))
         }
-        return out.groupBy { it.first + "|" + it.second }.map { (_, l) -> l.filter { it.third > 0 }.minByOrNull { it.third } ?: l.first() }.sortedByDescending { it.third }
+        return wynik.values.sortedByDescending { it.third }
     }
 
-    /** Tytul do porownan: male litery, bez roku w nawiasie, bez przedrostkow typu "PL - ", tylko litery i cyfry. */
     private val rePrzedrostek = Regex("^[a-z]{2,3}\\s*[-|:]\\s*")
     private val reRok = Regex("[(\\[]\\s*\\d{4}\\s*[)\\]]")
     private val reZnaki = Regex("[^\\p{L}\\p{Nd}]")

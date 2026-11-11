@@ -1,2 +1,1 @@
-Filmy aktora – szybkość|„Szukam filmów…” trwało długo (szczególnie przy aktorach z wieloma filmami, np. Anthony Hopkins)|porównywanie tytułów kilkadziesiąt razy szybsze, a Twoja lista wczytuje się równocześnie z pobieraniem filmografii
-Wiek aktora|sama data urodzenia|data i wiek, np. „31.12.1937 (88 lat)”
+Filmy aktora|„Brak danych o filmach” przy aktorach z bardzo długą filmografią (np. Anthony Hopkins)|filmy pobierane z dwóch źródeł naraz: iTunes (polskie tytuły i lata) oraz Wikidata (lekkie zapytanie, nazwy pobierane paczkami) – działa także przy setkach filmów, lepiej dopasowuje filmy z Twojej listy
