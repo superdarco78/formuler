@@ -223,7 +223,7 @@ object Serwer {
         var zapas: JSONObject? = null
         for ((proba, u) in adresy.withIndex()) {
             try {
-                szybki.newCall(okhttp3.Request.Builder().url(u).header("User-Agent", "OKPlayer/1.0").build()).execute().use { r ->
+                (if (proba < 2) bardzoSzybki else szybki).newCall(okhttp3.Request.Builder().url(u).header("User-Agent", "OKPlayer/1.0").build()).execute().use { r ->
                     val t = r.body?.string() ?: ""
                     if (!r.isSuccessful) { bladInfo = "HTTP ${r.code}"; return@use }
                     val o = JSONObject(t)
@@ -237,6 +237,7 @@ object Serwer {
     }
     /** Limit czasu dla opisow: 25 s na probe. */
     private val szybki by lazy { http.newBuilder().callTimeout(25, TimeUnit.SECONDS).build() }
+    private val bardzoSzybki by lazy { http.newBuilder().callTimeout(10, TimeUnit.SECONDS).build() }
     fun infoFilmu(c: Context, id: String): JSONObject? = info(c, false, id)
     fun infoSerialu(c: Context, id: String): JSONObject? = info(c, true, id)
     /** Wczesniejsze pobranie opisow (np. pierwszych plakatow na Starcie), zeby otwieraly sie od razu. */

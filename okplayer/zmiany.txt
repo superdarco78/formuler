@@ -1,3 +1,3 @@
-Opis filmu / serialu|gdy serwer nie miał opisu: „Nie udało się pobrać opisu” albo pusta strona|jak w starej aplikacji: opis, gatunek i rok z zapasowej bazy (iTunes), ocena z listy, zwiastun po tytule
-Pobieranie opisu z serwera|zapytanie bez nazwy aplikacji – serwer mógł je odrzucać|zapytanie przedstawia się jako OK Player, jak pozostałe
-Program TV|także przyszłe audycje|tylko archiwum kanału i to, co leci teraz
+Opis filmu – czekanie|„Ładuję…” trwało nawet ponad minutę|po 3 s pokazuje się opis z zapasowej bazy (jak w starej aplikacji), a gdy serwer odpowie – podmienia się na pełny opis z serwera
+Pierwsze próby serwera|po 25 s każda|10 s, 10 s, ostatnia 25 s
+Opis, gdy serwer go nie ma|pusta strona|opis, gatunek i rok z iTunes, ocena z listy, zwiastun po tytule

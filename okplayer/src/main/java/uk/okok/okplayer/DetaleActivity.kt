@@ -101,7 +101,14 @@ class DetaleActivity : AppCompatActivity() {
             // Najpierw z pamieci telefonu (od razu), potem swieze z serwera.
             val zPam = withContext(Dispatchers.IO) { Serwer.infoZPamieci(this@DetaleActivity, serial, id) }
             if (zPam != null) pokazInfo(zPam, serial, id, nazwa, plakat, meta, ocena, opis)
+            // Zapas po 3 s: gdy serwer jeszcze nie odpowiedzial, od razu opis z iTunes (jak w starej aplikacji), a serwer dociaga w tle.
+            var zapasPokazany = false
+            val zapas = if (zPam == null) launch {
+                kotlinx.coroutines.delay(3000)
+                if (info == null) withContext(Dispatchers.IO) { Dodatki.itunes(nazwa, serial) }?.let { pokazInfo(JSONObject().put("info", it.put("rating", intent.getDoubleExtra("ocena", 0.0).takeIf { r -> r > 0 }?.toString() ?: "")), serial, id, nazwa, plakat, meta, ocena, opis); zapasPokazany = true }
+            } else null
             val o = withContext(Dispatchers.IO) { if (serial) Serwer.infoSerialu(this@DetaleActivity, id) else Serwer.infoFilmu(this@DetaleActivity, id) }
+            if (o == null || (o.optJSONObject("info")?.length() ?: 0) == 0) { zapas?.join(); if (zapasPokazany) return@launch } else zapas?.cancel()
             if (o == null && zPam == null) {
                 val it2 = withContext(Dispatchers.IO) { Dodatki.itunes(nazwa, serial) }
                 if (it2 != null) { pokazInfo(JSONObject().put("info", it2), serial, id, nazwa, plakat, meta, ocena, opis); return@launch }
