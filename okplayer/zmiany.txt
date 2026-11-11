@@ -1,5 +1,4 @@
-• Kanał z listy: otwierał się w pionie z listą → teraz od razu pełny ekran
-• Wstecz na pełnym ekranie: od razu mini-okno (bez drugiego cofania)
-• Mini-okno: był pasek na całą szerokość z opisem i przyciskami → teraz mały kwadrat z samym obrazem, pływa nad aplikacją w prawym dolnym rogu
-• Mini-okno: dotknij = pełny ekran; małe ✕ w rogu = zamknij; przeciągnij palcem = przesuń w inne miejsce
-• Program/archiwum na pełnym ekranie: przycisk „☰ Program / archiwum” u góry obrazu
+Okno aktualizacji|zwykły szary tekst z całą historią zmian|ładne okno: tylko zmiany tej wersji, każda z opisem „było” i „teraz”
+Aktor (np. Brad Pitt)|ekran wisiał na „Szukam filmów…”|filmy szukane po numerze IMDb aktora – szybko i dokładnie; gdy brak odpowiedzi, pokazuje komunikat zamiast wiecznego szukania
+Mini-okno|pasek na całą szerokość z opisem|mały kwadrat z samym obrazem nad aplikacją; dotknij = pełny ekran, ✕ = zamknij, przeciągnij = przesuń
+Kanał z listy|otwierał się w pionie z listą|od razu pełny ekran; Wstecz = mini-okno

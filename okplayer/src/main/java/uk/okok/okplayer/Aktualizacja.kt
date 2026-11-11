@@ -24,10 +24,7 @@ object Aktualizacja {
             val moja = withContext(Dispatchers.IO) { androidx.core.content.pm.PackageInfoCompat.getLongVersionCode(a.packageManager.getPackageInfo(a.packageName, 0)) }
             if (zdalna > moja && (reczne || !pokazane) && !a.isFinishing) {
                 pokazane = true
-                AlertDialog.Builder(a).setTitle("Nowa wersja " + o.optString("versionName"))
-                    .setMessage(o.optString("zmiany").let { z -> if (z.isEmpty()) "" else "Co było → co jest teraz:\n\n$z\n\n" } + "Po kliknięciu „Zainstaluj” aplikacja zaktualizuje się sama w tle.")
-                    .setPositiveButton("Zainstaluj") { _, _ -> instaluj(a, o.optString("url")) }
-                    .setNegativeButton("Później", null).show()
+                okno(a, o)
             } else if (reczne) android.widget.Toast.makeText(a, "Masz najnowszą wersję", android.widget.Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             if (reczne) android.widget.Toast.makeText(a, "Nie udało się sprawdzić aktualizacji", android.widget.Toast.LENGTH_SHORT).show()
@@ -63,5 +60,39 @@ class WynikInstalacji : android.content.BroadcastReceiver() {
             @Suppress("DEPRECATION") val p = i.getParcelableExtra<Intent>(Intent.EXTRA_INTENT)
             if (p != null) try { c.startActivity(p.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } catch (_: Exception) {}
         }
+    }
+
+    /** Ladne okno aktualizacji: tytul, a pod nim tylko zmiany tej wersji - kazda: nazwa, bylo, teraz. */
+    private fun okno(a: Activity, o: JSONObject) {
+        val dp = { v: Int -> (v * a.resources.displayMetrics.density).toInt() }
+        val d = android.app.Dialog(a)
+        val kol = android.widget.LinearLayout(a).apply { orientation = android.widget.LinearLayout.VERTICAL; setPadding(dp(22), dp(22), dp(22), dp(16))
+            background = android.graphics.drawable.GradientDrawable().apply { setColor(0xFF1B1B1B.toInt()); cornerRadius = dp(18).toFloat() } }
+        fun t(x: String, r: Float, k: Int, g: Boolean = false) = android.widget.TextView(a).apply { text = x; textSize = r; setTextColor(k); if (g) setTypeface(typeface, android.graphics.Typeface.BOLD) }
+        kol.addView(t("Nowa wersja " + o.optString("versionName"), 22f, android.graphics.Color.WHITE, true))
+        kol.addView(t("Co się zmieniło", 14f, 0xFFE0245E.toInt(), true).apply { setPadding(0, dp(4), 0, dp(10)) })
+        val lista = android.widget.LinearLayout(a).apply { orientation = android.widget.LinearLayout.VERTICAL }
+        for (w in o.optString("zmiany").lines().map { it.trim().trimStart('•', ' ') }.filter { it.isNotEmpty() }) {
+            val cz = w.split("|").map { it.trim() }
+            val box = android.widget.LinearLayout(a).apply { orientation = android.widget.LinearLayout.VERTICAL; setPadding(dp(14), dp(10), dp(14), dp(10))
+                background = android.graphics.drawable.GradientDrawable().apply { setColor(0xFF262626.toInt()); cornerRadius = dp(12).toFloat() } }
+            if (cz.size >= 3) {
+                box.addView(t(cz[0], 15f, android.graphics.Color.WHITE, true))
+                box.addView(t("Było: " + cz[1], 13f, 0xFF9A9A9A.toInt()).apply { setPadding(0, dp(4), 0, 0) })
+                box.addView(t("Teraz: " + cz[2], 14f, 0xFFE6E6E6.toInt()).apply { setPadding(0, dp(2), 0, 0) })
+            } else box.addView(t(w, 14f, 0xFFE6E6E6.toInt()))
+            lista.addView(box, android.widget.LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
+        }
+        kol.addView(android.widget.ScrollView(a).apply { addView(lista) }, android.widget.LinearLayout.LayoutParams(-1, if (o.optString("zmiany").lines().size > 4) dp(380) else -2))
+        val przyciski = android.widget.LinearLayout(a).apply { orientation = android.widget.LinearLayout.HORIZONTAL; gravity = android.view.Gravity.END; setPadding(0, dp(12), 0, 0) }
+        przyciski.addView(t("Później", 15f, 0xFFBDBDBD.toInt()).apply { setPadding(dp(18), dp(12), dp(18), dp(12)); setOnClickListener { d.dismiss() } })
+        przyciski.addView(t("Zainstaluj", 15f, android.graphics.Color.WHITE, true).apply { setPadding(dp(22), dp(12), dp(22), dp(12))
+            background = android.graphics.drawable.GradientDrawable().apply { setColor(0xFFE0245E.toInt()); cornerRadius = dp(22).toFloat() }
+            setOnClickListener { d.dismiss(); instaluj(a, o.optString("url")) } })
+        kol.addView(przyciski)
+        d.setContentView(kol)
+        d.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+        d.window?.setLayout((a.resources.displayMetrics.widthPixels * 0.9).toInt(), -2)
+        d.show()
     }
 }

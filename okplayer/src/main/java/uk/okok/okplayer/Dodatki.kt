@@ -6,6 +6,7 @@ import org.json.JSONObject
 /** Dodatkowe dane filmow z publicznych zrodel bez klucza: zdjecia aktorow (IMDb), zwiastun i role (Wikidata). */
 object Dodatki {
     private val zdjecia = java.util.concurrent.ConcurrentHashMap<String, String>()
+    private val imdbId = java.util.concurrent.ConcurrentHashMap<String, String>()
 
     private fun tekst(url: String, ua: String = "OKPlayer/1.0 (aplikacja IPTV)", acc: String? = null): String {
         val b = Request.Builder().url(url).header("User-Agent", ua)
@@ -23,6 +24,7 @@ object Dodatki {
             if (arr != null) for (i in 0 until arr.length()) {
                 val o = arr.getJSONObject(i)
                 if (!o.optString("id").startsWith("nm")) continue
+                imdbId.putIfAbsent(nazwa, o.optString("id"))
                 u = o.optJSONObject("i")?.optString("imageUrl") ?: ""
                 if (u.isNotEmpty()) { u = u.replace(Regex("\\._V1_.*\\.jpg$"), "._V1_UX400_.jpg"); break }
             }
@@ -59,7 +61,11 @@ object Dodatki {
     fun filmografia(nazwa: String): List<Triple<String, String, Int>> {
         val n = nazwa.trim().replace("\"", "")
         if (n.isEmpty()) return emptyList()
-        val a = sparql("SELECT ?f (SAMPLE(?pl) AS ?p) (SAMPLE(?en) AS ?e) (MIN(?r) AS ?rok) WHERE { ?a rdfs:label \"$n\"@en; wdt:P31 wd:Q5. ?f wdt:P161 ?a. OPTIONAL { ?f rdfs:label ?pl. FILTER(lang(?pl)=\"pl\") } OPTIONAL { ?f rdfs:label ?en. FILTER(lang(?en)=\"en\") } OPTIONAL { ?f wdt:P577 ?d. BIND(YEAR(?d) AS ?r) } } GROUP BY ?f LIMIT 400")
+        // Najpierw po numerze IMDb aktora (pewne i szybkie), a gdy brak - po nazwisku.
+        if (!imdbId.containsKey(nazwa)) zdjecieAktora(nazwa)
+        val nm = imdbId[nazwa] ?: ""
+        val ktos = if (nm.isNotEmpty()) "?a wdt:P345 \"$nm\"." else "?a rdfs:label \"$n\"@en; wdt:P31 wd:Q5."
+        val a = sparql("SELECT ?f (SAMPLE(?pl) AS ?p) (SAMPLE(?en) AS ?e) (MIN(?r) AS ?rok) WHERE { $ktos ?f wdt:P161 ?a. OPTIONAL { ?f rdfs:label ?pl. FILTER(lang(?pl)=\"pl\") } OPTIONAL { ?f rdfs:label ?en. FILTER(lang(?en)=\"en\") } OPTIONAL { ?f wdt:P577 ?d. BIND(YEAR(?d) AS ?r) } } GROUP BY ?f LIMIT 400")
         val out = ArrayList<Triple<String, String, Int>>()
         for (i in 0 until a.length()) {
             val o = a.getJSONObject(i)

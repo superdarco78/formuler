@@ -60,7 +60,7 @@ class AktorActivity : AppCompatActivity() {
             if (u.isNotEmpty()) foto.load(u)
         }
         lifecycleScope.launch {
-            val (moje, reszta) = withContext(Dispatchers.IO) {
+            val wynik = withContext(Dispatchers.IO) { kotlinx.coroutines.withTimeoutOrNull(25_000) {
                 val fg = Dodatki.filmografia(nazwa)
                 val klucze = HashMap<String, Int>()
                 fg.forEachIndexed { i, f -> listOf(f.first, f.second).map { Dodatki.klucz(it) }.filter { it.length >= 2 }.forEach { k -> klucze.putIfAbsent(k, i) } }
@@ -73,7 +73,9 @@ class AktorActivity : AppCompatActivity() {
                     }
                 }
                 moje to fg.filterIndexed { i, _ -> i !in trafione }
-            }
+            } }
+            if (wynik == null) { licznik.text = "Nie udało się pobrać filmów (brak odpowiedzi). Wróć i spróbuj ponownie."; return@launch }
+            val (moje, reszta) = wynik
             licznik.text = when {
                 moje.isEmpty() && reszta.isEmpty() -> "Brak danych o filmach"
                 else -> "Na Twojej liście: ${moje.size}   •   Wszystkich: ${moje.size + reszta.size}"
