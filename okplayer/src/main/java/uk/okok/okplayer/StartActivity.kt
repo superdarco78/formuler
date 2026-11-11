@@ -124,11 +124,12 @@ class StartActivity : AppCompatActivity() {
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; tloCanvy(Skorka.id(this@StartActivity, R.drawable.ok_gr_tlo_aplikacji)) }
         glowny = root
         val gora = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(18), dp(14), dp(18), dp(10)) }
-        gora.addView(ImageView(this).apply { setImageResource(Skorka.id(this@StartActivity, R.drawable.ok_gr_logo)); scaleType = ImageView.ScaleType.FIT_START; adjustViewBounds = true }, LinearLayout.LayoutParams(dp(110), dp(40)))
-        gora.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
+        gora.addView(ImageView(this).apply { setImageResource(Skorka.id(this@StartActivity, R.drawable.ok_gr_logo)); scaleType = ImageView.ScaleType.FIT_START; adjustViewBounds = true }, LinearLayout.LayoutParams(dp(56), dp(40)))
+        tytulZakladki = tekst("Strona główna", 22f, gruby = true).apply { setPadding(dp(12), 0, 0, 0); maxLines = 1 }
+        gora.addView(tytulZakladki, LinearLayout.LayoutParams(0, -2, 1f))
         gora.addView(ImageView(this).apply { setImageResource(Skorka.id(this@StartActivity, R.drawable.ok_gr_ik_szukaj)); scaleType = ImageView.ScaleType.FIT_CENTER; isFocusable = true; setPadding(dp(2), dp(2), dp(2), dp(2)); setOnClickListener { pokaz(5) } }, LinearLayout.LayoutParams(dp(46), dp(46)))
         gora.addView(ImageView(this).apply { setImageResource(Skorka.id(this@StartActivity, R.drawable.ok_gr_ik_ustawienia)); scaleType = ImageView.ScaleType.FIT_CENTER; isFocusable = true; setPadding(dp(2), dp(2), dp(2), dp(2)); setOnClickListener { pokaz(4) } }, LinearLayout.LayoutParams(dp(46), dp(46)).apply { marginStart = dp(6); marginEnd = dp(8) })
-        gora.addView(tekst("v$wersja", 12f, SZARY))
+        gora.addView(tekst("v$wersja", 10f, SZARY))
         root.addView(gora)
         // Tresc zakladek + mini-okno TV plywajace nad nia (kwadrat z obrazem, bez opisu; dotknij = pelny ekran, X = zamknij).
         val obszar = FrameLayout(this)
@@ -168,39 +169,39 @@ class StartActivity : AppCompatActivity() {
         banerCanvy = ImageView(this).apply { adjustViewBounds = true; scaleType = ImageView.ScaleType.FIT_XY; visibility = View.GONE }
         root.addView(banerCanvy, LinearLayout.LayoutParams(-1, -2))
         root.addView(obszar, LinearLayout.LayoutParams(-1, 0, 1f))
-        dol = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; tloCanvy(Skorka.id(this@StartActivity, R.drawable.ok_gr_pasek)); setPadding(dp(6), dp(2), dp(6), dp(2)) }
-        // Dolne menu jak w MyTvOnline: same ikonki (Start, TV, Filmy, Seriale, Ulubione)
-        listOf(Skorka.id(this@StartActivity, R.drawable.ok_gr_menu_start) to 0, Skorka.id(this@StartActivity, R.drawable.ok_gr_menu_tv) to 1, Skorka.id(this@StartActivity, R.drawable.ok_gr_menu_filmy) to 2, Skorka.id(this@StartActivity, R.drawable.ok_gr_menu_seriale) to 3, Skorka.id(this@StartActivity, R.drawable.ok_gr_menu_radio) to 7, Skorka.id(this@StartActivity, R.drawable.ok_gr_menu_ulubione) to 6).forEach { (ik, z) ->
-            dol.addView(ImageView(this).apply {
-                setImageResource(ik); scaleType = ImageView.ScaleType.FIT_CENTER; setPadding(0, dp(9), 0, dp(9)); isFocusable = true; tag = z
+        dol = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(6), dp(6), dp(6), dp(6))
+            background = GradientDrawable().apply { cornerRadius = dp(34).toFloat(); setColor(0xEE24272D.toInt()); setStroke(dp(1), 0x22FFFFFF) } }
+        // 2.07: dolne menu jak w Netflixie - plywajaca pigulka, ikony z Canvy z podpisami, wybrana na jasnym tle
+        listOf(Triple(R.drawable.ok_gr_menu_start, 0, "Start"), Triple(R.drawable.ok_gr_menu_tv, 1, "TV"), Triple(R.drawable.ok_gr_menu_filmy, 2, "Filmy"), Triple(R.drawable.ok_gr_menu_seriale, 3, "Seriale"), Triple(R.drawable.ok_gr_menu_radio, 7, "Radio"), Triple(R.drawable.ok_gr_menu_ulubione, 6, "Ulubione")).forEach { (ik, z, n) ->
+            dol.addView(LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER; isFocusable = true; tag = z; setPadding(0, dp(6), 0, dp(6))
+                addView(ImageView(context).apply { setImageResource(Skorka.id(this@StartActivity, ik)); scaleType = ImageView.ScaleType.FIT_CENTER }, LinearLayout.LayoutParams(dp(26), dp(26)))
+                addView(tekst(n, 11f, 0xFFB0B4BA.toInt()).apply { gravity = Gravity.CENTER; setPadding(0, dp(3), 0, 0) })
                 setOnClickListener { pokaz(z) }
-            }, LinearLayout.LayoutParams(0, dp(66), 1f))
+            }, LinearLayout.LayoutParams(0, -2, 1f))
         }
-        root.addView(dol)
-        if (Skorka.wybrana(this) == "k") root.background = Skorka.tloZAkcentem(Skorka.akcent(this))
+        root.addView(dol, LinearLayout.LayoutParams(-1, -2).apply { setMargins(dp(14), dp(4), dp(14), dp(10)) })
+        root.background = Skorka.tloZAkcentem(Ust.prefs(this).getInt("kolor_plakatu", 0xFF2A6F7A.toInt()))
         setContentView(root)
         pokaz(0)
         laduj()
     }
 
     private fun pokazMenu(i: Int = zakladka) {
-        for (k in 0 until dol.childCount) (dol.getChildAt(k) as ImageView).apply {
-            val wyb = tag == i
-            if (Skorka.bialeIkony(this@StartActivity)) setColorFilter(if (wyb) Skorka.akcent(this@StartActivity) else 0xFFBFC3C9.toInt()) else clearColorFilter()
-            animate().alpha(if (wyb) 1f else 0.62f).scaleX(if (wyb) 1.15f else 0.95f).scaleY(if (wyb) 1.15f else 0.95f).setDuration(200).start()
+        for (k in 0 until dol.childCount) (dol.getChildAt(k) as? LinearLayout)?.let { el ->
+            val wyb = el.tag == i
+            el.background = if (wyb) GradientDrawable().apply { cornerRadius = dp(28).toFloat(); setColor(0x26FFFFFF) } else null
+            (el.getChildAt(0) as? ImageView)?.apply { if (Skorka.bialeIkony(this@StartActivity)) setColorFilter(if (wyb) Color.WHITE else 0xFF9AA0A6.toInt()) else clearColorFilter(); alpha = if (wyb) 1f else 0.7f }
+            (el.getChildAt(1) as? TextView)?.apply { setTextColor(if (wyb) Color.WHITE else 0xFF9AA0A6.toInt()); setTypeface(null, if (wyb) Typeface.BOLD else Typeface.NORMAL) }
         }
+        if (::tytulZakladki.isInitialized) tytulZakladki.text = when (i) { 0 -> "Strona główna"; 1 -> "Telewizja"; 2 -> "Filmy"; 3 -> "Seriale"; 5 -> "Szukaj"; 6 -> "Ulubione"; 7 -> "Radio"; 8 -> "Historia"; else -> "Ustawienia" }
     }
+    private lateinit var tytulZakladki: TextView
 
     private fun pokaz(i: Int) {
         if (i != 1 && i != 7 && ::gora2.isInitialized && gora2.visibility == View.VISIBLE) zwinGorny(true)
         zakladka = i
         pokazMenu(i)
-        if (false) for (k in 0 until dol.childCount) (dol.getChildAt(k) as ImageView).apply {
-            val wyb = tag == i
-            // 2.01: ikony 3D z Canvy - wybrana pelna i powiekszona, pozostale przygaszone.
-            if (Skorka.bialeIkony(this@StartActivity)) setColorFilter(if (wyb) Skorka.akcent(this@StartActivity) else 0xFFBFC3C9.toInt()) else clearColorFilter()
-            animate().alpha(if (wyb) 1f else 0.62f).scaleX(if (wyb) 1.15f else 0.95f).scaleY(if (wyb) 1.15f else 0.95f).setDuration(200).start()
-        }
         tresc.removeAllViews()
         // Wejscie w TV: obraz od razu na gorze (kanal z malego kwadratu albo ostatnio ogladany), pod nim lista - jak na zdjeciu.
         if (i == 1 && ::gora2.isInitialized && gora2.visibility != View.VISIBLE && kanaly.isNotEmpty()) {
@@ -317,7 +318,7 @@ class StartActivity : AppCompatActivity() {
     }
 
     /** Plakaty z tytulem (rok) pod spodem i paskiem obejrzenia. */
-    private fun rzadVod(k: LinearLayout, tytul: String, l: List<Vod>) {
+    private fun rzadVod(k: LinearLayout, tytul: String, l: List<Vod>, nowosc: Boolean = false) {
         if (l.isEmpty()) return
         k.addView(naglowek(tytul))
         val rv = poziomy()
@@ -330,6 +331,10 @@ class StartActivity : AppCompatActivity() {
                 fr.addView(android.widget.ProgressBar(p.context, null, android.R.attr.progressBarStyleHorizontal).apply {
                     max = 100; progressTintList = android.content.res.ColorStateList.valueOf(Skorka.akcent(this@StartActivity)); progressBackgroundTintList = android.content.res.ColorStateList.valueOf(0xFF333333.toInt())
                 }, FrameLayout.LayoutParams(-1, dp(4)).apply { gravity = Gravity.BOTTOM })
+                // plakietka jak w Netflixie: "Ostatnio dodany" na dole plakatu
+                if (nowosc) fr.addView(tekst("Ostatnio dodany", 11f, Color.WHITE, gruby = true).apply { gravity = Gravity.CENTER; setPadding(dp(8), dp(3), dp(8), dp(3))
+                    background = GradientDrawable().apply { cornerRadii = floatArrayOf(dp(4).toFloat(), dp(4).toFloat(), dp(4).toFloat(), dp(4).toFloat(), 0f, 0f, 0f, 0f); setColor(Skorka.akcent(this@StartActivity)) } },
+                    FrameLayout.LayoutParams(-2, -2).apply { gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL })
                 addView(fr, LinearLayout.LayoutParams(-1, dp(185)))
                 addView(tekst("", 14f).apply { gravity = Gravity.CENTER; maxLines = 2; ellipsize = android.text.TextUtils.TruncateAt.END; setPadding(0, dp(8), 0, 0) })
             }) {}
@@ -531,74 +536,63 @@ class StartActivity : AppCompatActivity() {
 
     /** Duzy baner jak w Netflix / Apple TV: plakat na cala szerokosc, sam sie zmienia co 5 s, Ogladaj / Moja lista / Info. */
     private fun baner(k: LinearLayout, l0: List<Vod>) {
+        // 2.07: baner jak w Netflixie - duza karta z plakatem, tytul i gatunki na srodku, pod spodem szeroki bialy "Odtworz" i szary "Moja lista";
+        // tlo calej aplikacji bierze kolor z plakatu.
         val l = l0.filter { it.okladka?.startsWith("http") == true }.take(8)
         if (l.isEmpty()) return
-        val w = resources.displayMetrics.widthPixels
-        val f = FrameLayout(this)
+        val w = resources.displayMetrics.widthPixels - dp(32)
+        val karta = FrameLayout(this).apply { clipToOutline = true; isFocusable = true
+            background = GradientDrawable().apply { cornerRadius = dp(16).toFloat(); setColor(0xFF111317.toInt()) }
+            foreground = GradientDrawable().apply { cornerRadius = dp(16).toFloat(); setColor(Color.TRANSPARENT); setStroke(dp(1), 0x55FFFFFF) } }
         val obrazy = List(2) { ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_CROP } }
-        obrazy.forEach { f.addView(it, FrameLayout.LayoutParams(-1, -1)) }
-        f.addView(View(this).apply { background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(0x55000000, 0x00000000, 0x33000000, 0xEE000000.toInt(), Color.BLACK)) }, FrameLayout.LayoutParams(-1, -1))
-        // Gorny pasek na banerze: zegar i pogoda
-        val gora = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(16), dp(12), dp(16), 0) }
-        gora.addView(android.widget.TextClock(this).apply { format24Hour = "HH:mm"; format12Hour = "HH:mm"; textSize = 15f; setTextColor(Color.WHITE); setTypeface(typeface, android.graphics.Typeface.BOLD); setShadowLayer(8f, 0f, 0f, Color.BLACK) })
-        val pog = tekst(pogodaPamiec?.let { "  ·  " + it.third + " " + it.second + "  " + it.first } ?: "", 14f).apply { setShadowLayer(8f, 0f, 0f, Color.BLACK) }
-        gora.addView(pog)
-        f.addView(gora, FrameLayout.LayoutParams(-1, -2).apply { gravity = Gravity.TOP })
-        if (pogodaPamiec == null) lifecycleScope.launch { withContext(Dispatchers.IO) { Dodatki.pogoda() }?.let { p -> pogodaPamiec = p; pog.text = "  ·  " + p.third + " " + p.second + "  " + p.first } }
-        val dol = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(18), 0, dp(18), dp(16)) }
-        val znacznik = tekst("", 12f, Skorka.akcent(this@StartActivity), gruby = true).apply { letterSpacing = 0.15f }
-        val tytul = tekst("", 28f, gruby = true).apply { maxLines = 2; ellipsize = android.text.TextUtils.TruncateAt.END; setShadowLayer(12f, 0f, 2f, Color.BLACK) }
-        val meta = tekst("", 13f, 0xFFDDDDDD.toInt()).apply { setPadding(0, dp(2), 0, dp(12)) }
-        dol.addView(znacznik); dol.addView(tytul); dol.addView(meta)
-        val przyciski = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        fun prz(t: String, bialy: Boolean) = tekst(t, 15f, if (bialy) Color.BLACK else Color.WHITE, gruby = true).apply {
-            gravity = Gravity.CENTER; setPadding(dp(20), dp(10), dp(20), dp(10)); isFocusable = true
-            background = GradientDrawable().apply { cornerRadius = dp(24).toFloat(); setColor(if (bialy) Color.WHITE else 0x40FFFFFF) } }
-        val ogladaj = prz("▶  Oglądaj", true); val lista = prz("＋ Moja lista", false); val info = prz("ⓘ", false)
-        przyciski.addView(ogladaj); przyciski.addView(lista, LinearLayout.LayoutParams(-2, -2).apply { marginStart = dp(8) }); przyciski.addView(info, LinearLayout.LayoutParams(-2, -2).apply { marginStart = dp(8) })
-        dol.addView(przyciski)
-        val kropki = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(12), 0, 0) }
-        dol.addView(kropki)
-        f.addView(dol, FrameLayout.LayoutParams(-1, -2).apply { gravity = Gravity.BOTTOM })
-        k.addView(f, LinearLayout.LayoutParams(-1, (w * 1.15).toInt().coerceAtMost((resources.displayMetrics.heightPixels * 0.62).toInt())))
+        obrazy.forEach { karta.addView(it, FrameLayout.LayoutParams(-1, -1)) }
+        karta.addView(View(this).apply { background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(0x00000000, 0x00000000, 0x66000000, 0xEE000000.toInt())) }, FrameLayout.LayoutParams(-1, -1))
+        val dol = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL; setPadding(dp(18), 0, dp(18), dp(18)) }
+        val tytul = tekst("", 30f, gruby = true).apply { gravity = Gravity.CENTER; maxLines = 2; ellipsize = android.text.TextUtils.TruncateAt.END; setShadowLayer(14f, 0f, 2f, Color.BLACK) }
+        val meta = tekst("", 14f, 0xFFDADADA.toInt()).apply { gravity = Gravity.CENTER; setPadding(0, dp(6), 0, dp(16)); maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END }
+        dol.addView(tytul, LinearLayout.LayoutParams(-1, -2)); dol.addView(meta, LinearLayout.LayoutParams(-1, -2))
+        fun prz(t: String, bialy: Boolean) = tekst(t, 17f, if (bialy) Color.BLACK else Color.WHITE, gruby = true).apply {
+            gravity = Gravity.CENTER; isFocusable = true
+            background = GradientDrawable().apply { cornerRadius = dp(5).toFloat(); setColor(if (bialy) Color.WHITE else 0x59808080) } }
+        val ogladaj = prz("▶   Odtwórz", true); val lista = prz("＋   Moja lista", false)
+        dol.addView(ogladaj, LinearLayout.LayoutParams(-1, dp(50)))
+        dol.addView(lista, LinearLayout.LayoutParams(-1, dp(50)).apply { topMargin = dp(10) })
+        karta.addView(dol, FrameLayout.LayoutParams(-1, -2).apply { gravity = Gravity.BOTTOM })
+        k.addView(karta, LinearLayout.LayoutParams(-1, (w * 1.38).toInt().coerceAtMost((resources.displayMetrics.heightPixels * 0.68).toInt())).apply { setMargins(dp(16), dp(14), dp(16), dp(6)) })
         var i = 0; var widoczny = 0
         fun pokazNr(n: Int, anim: Boolean) {
             val v = l[n]; val nowy = obrazy[1 - widoczny]; val stary = obrazy[widoczny]
-            // Plynne przejscie: nowy plakat wychodzi z lekkiego powiekszenia, stary gasnie (oba pod napisami).
-            nowy.alpha = 0f; nowy.scaleX = 1.08f; nowy.scaleY = 1.08f
+            nowy.alpha = 0f; nowy.scaleX = 1.06f; nowy.scaleY = 1.06f
             nowy.load(v.okladka) { allowHardware(false); listener(onSuccess = { _, r ->
-                // "Kolor z plakatu": akcent i poswiata tla biora kolor z plakatu
-                if (Skorka.wybrana(this@StartActivity) == "k") (r.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap?.let { bm ->
-                    val k = Skorka.zPlakatu(this@StartActivity, bm); znacznik.setTextColor(k)
-                    glowny?.background = Skorka.tloZAkcentem(k)
-                    if (::dol.isInitialized) pokazMenu()
+                (r.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap?.let { bm ->
+                    val kol = Skorka.zPlakatu(this@StartActivity, bm)
+                    Ust.prefs(this@StartActivity).edit().putInt("kolor_plakatu", kol).apply()
+                    glowny?.background = Skorka.tloZAkcentem(kol)
                 } }) }
             nowy.animate().alpha(1f).setDuration(if (anim) 700 else 0).start()
-            nowy.animate().scaleX(1f).scaleY(1f).setDuration(5200).start()
+            nowy.animate().scaleX(1f).scaleY(1f).setDuration(6000).start()
             stary.animate().alpha(0f).setDuration(if (anim) 700 else 0).start()
             widoczny = 1 - widoczny
-            znacznik.text = if (v.rodzaj == "s") "SERIAL · TOP" else "FILM · TOP"
-            tytul.text = v.nazwa
-            meta.text = listOfNotNull(nazwaKat(v.kat, if (v.rodzaj == "s") katS else katF).ifEmpty { null }, v.ocena.takeIf { it > 0 }?.let { "★ " + String.format(java.util.Locale.US, "%.1f", it) }).joinToString("  ·  ")
-            ogladaj.setOnClickListener { otworz(v) }; info.setOnClickListener { otworz(v) }
-            lista.setOnClickListener { Ust.przelaczUlubiony(this, v.rodzaj, v.id, v.nazwa, v.okladka, v.ext, ""); android.widget.Toast.makeText(this, Jezyk.t("Dodano do Ulubionych"), android.widget.Toast.LENGTH_SHORT).show() }
-            kropki.removeAllViews()
-            l.indices.forEach { j -> kropki.addView(View(this).apply { background = GradientDrawable().apply { cornerRadius = dp(2).toFloat(); setColor(if (j == n) Color.WHITE else 0x66FFFFFF) } },
-                LinearLayout.LayoutParams(if (j == n) dp(22) else dp(8), dp(4)).apply { marginEnd = dp(4) }) }
+            tytul.text = v.nazwa.replace(Regex("\\s*\\(\\d{4}\\).*$"), "")
+            val rok = Regex("\\((\\d{4})\\)").find(v.nazwa)?.groupValues?.get(1)
+            meta.text = listOfNotNull(if (v.rodzaj == "s") "Serial" else "Film", rok, nazwaKat(v.kat, if (v.rodzaj == "s") katS else katF).ifEmpty { null }?.take(28), v.ocena.takeIf { it > 0 }?.let { "★ " + String.format(java.util.Locale.US, "%.1f", it) }).joinToString("  •  ")
+            ogladaj.text = if (v.rodzaj == "s") "▶   Odtwórz serial" else "▶   Odtwórz film"
+            ogladaj.setOnClickListener { otworz(v) }
+            lista.setOnClickListener { Ust.przelaczUlubiony(this, v.rodzaj, v.id, v.nazwa, v.okladka, v.ext, ""); android.widget.Toast.makeText(this, Jezyk.t("Dodano do Mojej listy"), android.widget.Toast.LENGTH_SHORT).show() }
         }
         pokazNr(0, false)
-        val zmiana = object : Runnable { override fun run() { if (!f.isAttachedToWindow) return; i = (i + 1) % l.size; pokazNr(i, true); f.postDelayed(this, 5000) } }
-        f.postDelayed(zmiana, 5000)
-        f.setOnClickListener { otworz(l[i]) }
+        val zmiana = object : Runnable { override fun run() { if (!karta.isAttachedToWindow) return; i = (i + 1) % l.size; pokazNr(i, true); karta.postDelayed(this, 7000) } }
+        karta.postDelayed(zmiana, 7000)
+        karta.setOnClickListener { otworz(l[i]) }
     }
 
     /** Filtry pod banerem: szybkie przejscie do TV, filmow, seriali, radia, ulubionych. */
     private fun filtry(k: LinearLayout) {
         val rz = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(dp(14), dp(10), dp(14), dp(2)) }
-        listOf("Wszystko" to 0, "TV" to 1, "Filmy" to 2, "Seriale" to 3, "Radio" to 7, "Ulubione" to 6, "🕘 Historia" to 8).forEachIndexed { j, (t, z) ->
-            rz.addView(tekst(t, 14f, if (j == 0) Color.BLACK else Color.WHITE, gruby = j == 0).apply {
-                setPadding(dp(14), dp(7), dp(14), dp(7)); isFocusable = true
-                background = GradientDrawable().apply { cornerRadius = dp(18).toFloat(); setColor(if (j == 0) Color.WHITE else 0xFF24242C.toInt()) }
+        listOf("Seriale" to 3, "Filmy" to 2, "TV na żywo" to 1, "Radio" to 7, "Ulubione" to 6, "Historia" to 8).forEachIndexed { j, (t, z) ->
+            rz.addView(tekst(t, 15f, 0xFFE8E8E8.toInt(), gruby = true).apply {
+                setPadding(dp(18), dp(10), dp(18), dp(10)); isFocusable = true
+                background = GradientDrawable().apply { cornerRadius = dp(22).toFloat(); setColor(0x14FFFFFF); setStroke(dp(1), 0x55FFFFFF) }
                 setOnClickListener { if (z != 0) pokaz(z) }
             }, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(8) })
         }
@@ -660,8 +654,8 @@ class StartActivity : AppCompatActivity() {
         // Uklad Startu (Ustawienia -> Uklad Startu): kinowy (domyslny), ikony (jak IBO) albo klasyczny.
         val uklad = Ust.prefs(this).getString("uklad", "kinowy")
         if (uklad == "kinowy") {
-            baner(k, (pop(filmy).take(6) + pop(seriale).take(4)).shuffled(java.util.Random(System.currentTimeMillis() / 3_600_000)))
             filtry(k)
+            baner(k, (pop(filmy).take(6) + pop(seriale).take(4)).shuffled(java.util.Random(System.currentTimeMillis() / 3_600_000)))
         }
         if (uklad == "ikony") {
             k.addView(kartaZegara(), LinearLayout.LayoutParams(-1, -2).apply { setMargins(dp(12), dp(4), dp(12), dp(4)) })
@@ -678,8 +672,8 @@ class StartActivity : AppCompatActivity() {
         rzadVod(k, "Ulubione", ul)
         if (uklad != "kinowy") { rzadRanking(k, "Popularne filmy", pop(filmy), katF, false); rzadRanking(k, "Popularne seriale", pop(seriale), katS, true) }
         rzadKanalow(k, "Najnowsze kanały telewizyjne", kanaly.takeLast(20).reversed())
-        rzadVod(k, "Najnowsze VOD-y", filmy.takeLast(25).reversed())
-        rzadVod(k, "Najnowsze seriale telewizyjne", seriale.takeLast(25).reversed())
+        rzadVod(k, "Najnowsze filmy", filmy.takeLast(25).reversed(), true)
+        rzadVod(k, "Najnowsze seriale", seriale.takeLast(25).reversed(), true)
         // Opisy pierwszych plakatow pobierane w tle - otwieraja sie od razu.
         if (!wczesniejPobrane && filmy.isNotEmpty()) { wczesniejPobrane = true
             val l = pop(filmy).take(10) + filmy.takeLast(10).reversed() + pop(seriale).take(6) + Ust.ulubione(this).filter { it[0] != "k" }.map { Vod(it[1], it[2], it[3].ifEmpty { null }, it[5], 0.0, it[4], it[0]) }

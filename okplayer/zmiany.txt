@@ -1,6 +1,7 @@
-Nowy uniwersalny wygląd|różne skórki, błyski w tle|jeden spójny styl z Canvy (połączenie Netflix, Prime Video, Disney+, HBO): ciemny grafit, białe ikony, bursztynowy akcent – domyślny
-Ikony i menu|ikony 3D / neonowe|cienkie białe ikony z Canvy, wybrana świeci na bursztynowo
-Odtwarzacz|okrągłe przyciski|kwadratowe przyciski z Canvy (odtwórz, pauza, −10/+10 s, poprzedni/następny, opcje, pełny ekran)
-Plakietki, cyfry, ramki|stare|bursztynowe NA ŻYWO, konturowe cyfry Top 10 w bursztynie, ramka zaznaczenia w bursztynie
-Tło|napis „Tło aplikacji – ciemny grafit…” na dole ekranu|czyste tło bez napisu
-Skórki|–|poprzednie wyglądy dalej w Ustawienia → Skórka (wygląd)
+Układ jak Netflix|duży baner na całą szerokość, przyciski obok siebie|karta z plakatem w ramce, tytuł i gatunki na środku, pod spodem szeroki biały „▶ Odtwórz film/serial” i szary „+ Moja lista”
+Tło|stałe/grafitowe|kolor z plakatu na banerze (jak w Netflixie) – zmienia się razem z filmem
+Nagłówek|duże logo i wersja|małe logo + tytuł zakładki („Strona główna”, „Filmy”…) + szukaj i ustawienia
+Filtry|białe/szare pigułki|obrysowane pigułki nad banerem: Seriale, Filmy, TV na żywo, Radio, Ulubione, Historia
+Dolne menu|pasek z ikonami|pływająca pigułka z ikonami i podpisami, wybrana na jasnym tle
+Najnowsze|bez oznaczeń|plakietka „Ostatnio dodany” na plakatach w rzędach Najnowsze filmy/seriale
+Wygląd|z 2.06|ikony, przyciski i elementy z uniwersalnego zestawu Canvy (grafit + bursztyn)
