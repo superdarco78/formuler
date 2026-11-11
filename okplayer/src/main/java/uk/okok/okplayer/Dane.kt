@@ -214,19 +214,29 @@ object Serwer {
     fun infoZPamieci(c: Context, serial: Boolean, id: String): JSONObject? = try {
         val f = plikInfo(c, if (serial) "s" else "f", id); if (f.exists()) JSONObject(f.readText()) else null
     } catch (e: Exception) { null }
+    /** Ostatni powod niepowodzenia (pokazywany na ekranie i wysylany do serwera). */
+    @Volatile var bladInfo = ""
     private fun info(c: Context, serial: Boolean, id: String): JSONObject? {
-        val u = if (serial) api(c, "get_series_info") + "&series_id=$id&okp=1" else api(c, "get_vod_info") + "&vod_id=$id&okp=1"
-        repeat(3) { proba ->
+        val baza = if (serial) api(c, "get_series_info") + "&series_id=$id" else api(c, "get_vod_info") + "&vod_id=$id"
+        // 1) przez nasz serwer z dodatkami, 2) bez dodatkow (szybciej), 3) jeszcze raz z dodatkami
+        val adresy = listOf("$baza&okp=1", baza, "$baza&okp=1")
+        var zapas: JSONObject? = null
+        for ((proba, u) in adresy.withIndex()) {
             try {
-                val t = szybki.newCall(okhttp3.Request.Builder().url(u).build()).execute().use { it.body?.string() ?: "" }; val o = JSONObject(t)
-                if (o.optJSONObject("info") != null) { try { plikInfo(c, if (serial) "s" else "f", id).writeText(t) } catch (_: Exception) {}; return o }
-            } catch (_: Exception) {}
-            Thread.sleep(700L * (proba + 1))
+                szybki.newCall(okhttp3.Request.Builder().url(u).build()).execute().use { r ->
+                    val t = r.body?.string() ?: ""
+                    if (!r.isSuccessful) { bladInfo = "HTTP ${r.code}"; return@use }
+                    val o = JSONObject(t)
+                    if ((o.optJSONObject("info")?.length() ?: 0) > 0) { try { plikInfo(c, if (serial) "s" else "f", id).writeText(t) } catch (_: Exception) {}; return o }
+                    zapas = o; bladInfo = "serwer nie ma opisu tego tytułu"
+                }
+            } catch (e: Exception) { bladInfo = e.javaClass.simpleName.replace("Exception", "").ifEmpty { "błąd" } + (e.message?.let { " " + it.take(40) } ?: "") }
+            Thread.sleep(600L * (proba + 1))
         }
-        return null
+        return zapas
     }
-    /** Krotszy limit czasu dla opisow: 12 s na probe zamiast 45 s - bez dlugiego "Laduje...". */
-    private val szybki by lazy { http.newBuilder().callTimeout(12, TimeUnit.SECONDS).build() }
+    /** Limit czasu dla opisow: 25 s na probe. */
+    private val szybki by lazy { http.newBuilder().callTimeout(25, TimeUnit.SECONDS).build() }
     fun infoFilmu(c: Context, id: String): JSONObject? = info(c, false, id)
     fun infoSerialu(c: Context, id: String): JSONObject? = info(c, true, id)
     /** Wczesniejsze pobranie opisow (np. pierwszych plakatow na Starcie), zeby otwieraly sie od razu. */

@@ -104,6 +104,8 @@ class DetaleActivity : AppCompatActivity() {
             val o = withContext(Dispatchers.IO) { if (serial) Serwer.infoSerialu(this@DetaleActivity, id) else Serwer.infoFilmu(this@DetaleActivity, id) }
             if (o == null) {
                 if (zPam == null) { tabTresc.removeAllViews(); tabTresc.addView(tekst("Nie udało się pobrać opisu z serwera.", 15f, SZARY))
+                    tabTresc.addView(tekst("(" + Serwer.bladInfo + ")", 12f, 0xFF777777.toInt()))
+                    lifecycleScope.launch(Dispatchers.IO) { Serwer.raport(this@DetaleActivity, "opis blad $id ${Serwer.bladInfo}") }
                     tabTresc.addView(tekst("⟳  Spróbuj ponownie", 16f).apply { setPadding(0, dp(14), 0, dp(14)); setOnClickListener { recreate() } }) }
                 return@launch
             }
@@ -114,7 +116,10 @@ class DetaleActivity : AppCompatActivity() {
     private var dodatkiPobrane = false
     private fun pokazInfo(o: JSONObject, serial: Boolean, id: String, nazwa: String, plakat: ImageView, meta: TextView, ocena: TextView, opis: TextView) {
         lifecycleScope.launch {
-            val i = o.optJSONObject("info") ?: return@launch
+            // Gdy serwer nie ma opisu - pokazujemy to, co wiemy z listy (tytul, ocena), a zwiastun szukamy po tytule.
+            val i = o.optJSONObject("info")?.takeIf { it.length() > 0 } ?: JSONObject().put("name", nazwa)
+                .put("rating", intent.getDoubleExtra("ocena", 0.0).takeIf { it > 0 }?.toString() ?: "")
+                .put("plot", "Serwer nie ma jeszcze opisu tego tytułu.")
             info = i
             if (serial) {
                 val ep = o.optJSONObject("episodes")

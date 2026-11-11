@@ -1,2 +1,2 @@
-Archiwum|po wybraniu audycji z archiwum obraz potrafił stanąć na jednym kadrze|aplikacja pilnuje obrazu: gdy przez ok. 12 s stoi albo jest błąd, sama przełącza się na inny sposób pobrania archiwum (3 sposoby)
-Języki|tylko po polsku|język według ustawień telefonu lub dekodera (11 języków, inne → angielski)
+Opis filmu|„Nie udało się pobrać opisu” – pusta strona bez oceny i zwiastuna|3 różne próby po 25 s (z dodatkami i bez); gdy serwer nie ma opisu, pokazuje tytuł, ocenę z listy i szuka zwiastuna po tytule; pod komunikatem widać powód błędu
+Archiwum|obraz potrafił stanąć|strażnik: gdy obraz stoi ~12 s, sam przełącza na inny sposób (3 sposoby)
