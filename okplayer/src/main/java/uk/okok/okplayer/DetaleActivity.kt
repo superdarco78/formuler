@@ -268,7 +268,7 @@ class DetaleActivity : AppCompatActivity() {
 
     private fun grajFilm(id: String, nazwa: String) {
         val url = Serwer.adresFilmu(this, id, intent.getStringExtra("ext") ?: "mp4")
-        startActivity(Intent(this, OdtwarzaczActivity::class.java).putExtra("url", url).putExtra("nazwa", nazwa).putExtra("vod", true))
+        startActivity(Intent(this, OdtwarzaczActivity::class.java).putExtra("okladka", intent.getStringExtra("okladka")).putExtra("url", url).putExtra("nazwa", nazwa).putExtra("vod", true))
     }
 
     /** Krotki tytul odcinka: bez "Chicago Fire - S01E01 - ". */
@@ -279,7 +279,7 @@ class DetaleActivity : AppCompatActivity() {
     private fun grajOdcinek(serialId: String, tytul: String, s: Int, e: Int) {
         val o = odcinki.getOrNull(s)?.second?.getOrNull(e) ?: return
         Ust.zapiszOdcinek(this, serialId, odcinki[s].first + "|" + e)
-        startActivity(Intent(this, OdtwarzaczActivity::class.java).putExtra("url", adresOdc(o))
+        startActivity(Intent(this, OdtwarzaczActivity::class.java).putExtra("okladka", intent.getStringExtra("okladka")).putExtra("url", adresOdc(o))
             .putExtra("nazwa", "$tytul — S${odcinki[s].first} E${o.optString("episode_num")} " + krotki(o.optString("title"))).putExtra("vod", true))
     }
 

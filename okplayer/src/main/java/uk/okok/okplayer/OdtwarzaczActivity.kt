@@ -32,6 +32,13 @@ class OdtwarzaczActivity : AppCompatActivity() {
     private lateinit var napisLad: TextView
     private fun pokazLadowanie(t: String) {
         if (!::ladowanie.isInitialized) return
+        // Zamiast ikony aplikacji: plakat filmu / logo kanalu (gdy jest), pod spodem pelna nazwa.
+        val obraz = (biezacy?.logo ?: intent.getStringExtra("logo") ?: intent.getStringExtra("okladka"))?.takeIf { it.startsWith("http") }
+        val plakat = intent.getBooleanExtra("vod", false)
+        logoLad.scaleType = if (plakat) android.widget.ImageView.ScaleType.CENTER_CROP else android.widget.ImageView.ScaleType.FIT_CENTER
+        logoLad.background = android.graphics.drawable.GradientDrawable().apply { shape = android.graphics.drawable.GradientDrawable.OVAL; setColor(if (plakat || obraz == null) Color.TRANSPARENT else 0xFF1E1E1E.toInt()) }
+        logoLad.clipToOutline = true
+        if (obraz != null) logoLad.load(obraz) { crossfade(true); error(R.mipmap.ic_launcher) } else logoLad.setImageResource(R.mipmap.ic_launcher)
         napisLad.text = t; ladowanie.animate().cancel(); ladowanie.alpha = 0f; ladowanie.visibility = android.view.View.VISIBLE
         ladowanie.animate().alpha(1f).setDuration(200).start()
         pierscien.rotation = 0f
@@ -75,7 +82,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         logoLad = android.widget.ImageView(this).apply { setImageResource(R.mipmap.ic_launcher) }
         obreczIkona.addView(logoLad, FrameLayout.LayoutParams(130, 130).apply { gravity = Gravity.CENTER })
         srodek.addView(obreczIkona, android.widget.LinearLayout.LayoutParams(240, 240))
-        napisLad = TextView(this).apply { setTextColor(Color.WHITE); textSize = 17f; gravity = Gravity.CENTER; setPadding(24, 18, 24, 0); setTypeface(typeface, android.graphics.Typeface.BOLD) }
+        napisLad = TextView(this).apply { setTextColor(Color.WHITE); textSize = 17f; gravity = Gravity.CENTER; maxLines = 2; maxWidth = (resources.displayMetrics.widthPixels * 0.8).toInt(); setPadding(24, 18, 24, 0); setTypeface(typeface, android.graphics.Typeface.BOLD) }
         srodek.addView(napisLad)
         ladowanie.addView(srodek, FrameLayout.LayoutParams(-2, -2).apply { gravity = Gravity.CENTER })
         f.addView(ladowanie, FrameLayout.LayoutParams(-1, -1))

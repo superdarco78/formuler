@@ -1,4 +1,3 @@
-Obsada filmu i serialu|tylko kilku aktorów z serwera; braki uzupełniane tylko, gdy czegoś w ogóle nie było|pełna obsada: aktorzy z serwera + wszyscy pozostali z Wikidata (do 80), każdy ze zdjęciem i rolą; dotknij = strona aktora
-Reżyser|tylko nazwisko w Detalach|reżyser na początku Obsady ze zdjęciem, dotknij = jego strona
-Detale filmu|premiera, gatunek, reżyseria, kraj, czas|do tego scenariusz i muzyka
+Animacja ładowania filmu / kanału|w środku ikona aplikacji, nazwa ucięta do pierwszego słowa|w środku plakat filmu albo logo kanału (w kółku, z kręcącym się pierścieniem), pod spodem pełna nazwa
+Obsada filmu i serialu|kilku aktorów|pełna obsada z serwera + Wikidata, reżyser ze zdjęciem, scenariusz i muzyka (z 1.82)
 Małe okno i program|działa (1.80)|bez zmian
