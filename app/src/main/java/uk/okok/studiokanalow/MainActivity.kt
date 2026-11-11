@@ -302,6 +302,27 @@ class MainActivity : AppCompatActivity() {
                 val pops = if (sf.any { it.rating > 0 }) sf.sortedByDescending { it.rating }.take(10) else sf.takeLast(10).reversed()
                 dodajRzad("Popularne filmy", pop, { ch -> openDetails(ch) }, 130, true)
                 dodajRzad("Popularne seriale", pops, { ch -> openSeries(ch) }, 130, true)
+                // Rzedy serwisow (jak w MyTvOnline): filmy i seriale z kategorii o nazwie serwisu.
+                val serwisy = listOf(
+                    "Netflix" to Regex("netflix", RegexOption.IGNORE_CASE),
+                    "HBO Max" to Regex("\\bhbo|\\bmax\\b", RegexOption.IGNORE_CASE),
+                    "Disney+" to Regex("disney", RegexOption.IGNORE_CASE),
+                    "Amazon Prime Video" to Regex("amazon|prime video|\\bprime\\b", RegexOption.IGNORE_CASE),
+                    "Apple TV+" to Regex("apple", RegexOption.IGNORE_CASE),
+                    "SkyShowtime" to Regex("skyshowtime|sky showtime", RegexOption.IGNORE_CASE),
+                    "Canal+" to Regex("canal", RegexOption.IGNORE_CASE),
+                    "Player" to Regex("\\bplayer\\b", RegexOption.IGNORE_CASE),
+                    "Polsat Box Go" to Regex("polsat ?box|polsat go", RegexOption.IGNORE_CASE),
+                    "Paramount+" to Regex("paramount", RegexOption.IGNORE_CASE)
+                )
+                for ((nazwa, wz) in serwisy) {
+                    val idF = vc.filter { wz.containsMatchIn(it.name) }.map { it.id }.toSet()
+                    val idS = sc.filter { wz.containsMatchIn(it.name) }.map { it.id }.toSet()
+                    val filmy = vf.filter { it.categoryId in idF }.takeLast(30).reversed()
+                    val seriale = sf.filter { it.categoryId in idS }.takeLast(30).reversed()
+                    if (filmy.isNotEmpty()) dodajRzad("$nazwa — filmy", filmy, { ch -> openDetails(ch) })
+                    if (seriale.isNotEmpty()) dodajRzad("$nazwa — seriale", seriale, { ch -> openSeries(ch) })
+                }
                 dodajRzad("Najnowsze kanały telewizyjne", kan.takeLast(30).reversed(), { ch -> openPlayer(ch) })
                 dodajRzad("Nowo dodane filmy", vf.takeLast(30).reversed(), { ch -> openDetails(ch) })
             } catch (e: Exception) {
