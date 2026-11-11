@@ -19,6 +19,7 @@ import coil.load
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 
 /** Odtwarzacz kanalow na zywo: pelny ekran, strumien przez serwer tv.ok-ok.uk, gora/dol = nastepny/poprzedni kanal. */
@@ -28,6 +29,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
     private lateinit var napis: TextView
     private var grupa: List<Kanal> = emptyList()
     private var biezacy: Kanal? = null
+    private val limitEpg = kotlinx.coroutines.sync.Semaphore(4)
     private var proby = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,13 +38,13 @@ class OdtwarzaczActivity : AppCompatActivity() {
         widok = PlayerView(this).apply { useController = true; setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS); controllerShowTimeoutMs = 3000 }
         f.addView(widok, FrameLayout.LayoutParams(-1, -1))
         napis = TextView(this).apply {
-            setTextColor(Color.WHITE); textSize = 18f; setPadding(36, 24, 36, 24); setBackgroundColor(0x99000000.toInt())
+            setTextColor(Color.WHITE); textSize = 18f; setPadding(36, 24, 36, 24); setBackgroundColor(0x99000000.toInt()); visibility = android.view.View.GONE
         }
         f.addView(napis, FrameLayout.LayoutParams(-2, -2).apply { gravity = Gravity.TOP or Gravity.START; setMargins(24, 24, 24, 24) })
         val przyciski = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.HORIZONTAL }
         fun prz(t: String, a: () -> Unit) = TextView(this).apply { text = t; setTextColor(Color.WHITE); textSize = 15f; setPadding(32, 18, 32, 18); setBackgroundColor(0x99000000.toInt()); isFocusable = true; setOnClickListener { a() } }
         przyciski.addView(prz("⚙ Opcje") { opcje() })
-        if (!intent.getBooleanExtra("vod", false)) przyciski.addView(prz("☰ Program / archiwum") { program() }, android.widget.LinearLayout.LayoutParams(-2, -2).apply { marginStart = 16 })
+        if (!intent.getBooleanExtra("vod", false)) przyciski.addView(prz("☰ Program / archiwum") { program() }.also { progNaObrazie = it }, android.widget.LinearLayout.LayoutParams(-2, -2).apply { marginStart = 16 })
         widok.setControllerVisibilityListener(PlayerView.ControllerVisibilityListener { v -> przyciski.visibility = v })
         f.addView(przyciski, FrameLayout.LayoutParams(-2, -2).apply { gravity = Gravity.TOP or Gravity.END; setMargins(24, 24, 24, 24) })
         if (intent.getBooleanExtra("vod", false)) {
@@ -62,6 +64,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         terazTv = TextView(this).apply { setTextColor(0xFFDDDDDD.toInt()); textSize = 14f }
         potemTv = TextView(this).apply { setTextColor(0xFF9A9A9A.toInt()); textSize = 13f }
         opisy.addView(nazwaTv); opisy.addView(terazTv); opisy.addView(potemTv)
+        opisy.setOnClickListener { if (archiwumGra) biezacy?.let { przelacz(it) } }
         pn.addView(opisy, android.widget.LinearLayout.LayoutParams(0, -2, 1f))
         przyciskProgram = TextView(this).apply {
             text = "☰ Program"; setTextColor(Color.BLACK); textSize = 14f; setPadding(30, 18, 30, 18); isFocusable = true
@@ -79,6 +82,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
             requestedOrientation = if (pelny) android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
         }
         biezacy = Kanal(intent.getStringExtra("id") ?: "", intent.getStringExtra("nazwa") ?: "", intent.getStringExtra("logo"), intent.getStringExtra("kat") ?: "", 0)
+        trybNaZywo(true)
         ustawPanel()
         uloz(resources.configuration.orientation)
         lifecycleScope.launch {
@@ -90,6 +94,25 @@ class OdtwarzaczActivity : AppCompatActivity() {
     }
 
     private var ramka: FrameLayout? = null
+    private var progNaObrazie: TextView? = null
+    private var archiwumGra = false
+
+    /** W panelu pod obrazem widac, co leci z archiwum, i jak wrocic na zywo. */
+    private fun naArchiwum(w: Wpis) {
+        if (panel == null) return
+        val fmt = java.text.SimpleDateFormat("EEE d.MM HH:mm", java.util.Locale("pl"))
+        terazTv.text = "⏪ Archiwum: " + fmt.format(java.util.Date(w.start * 1000)) + "  " + w.tytul
+        potemTv.text = "▶ Dotknij tutaj, aby wrócić na żywo"
+    }
+
+    /** Na zywo: bez paska czasu i przewijania (jak w innych aplikacjach IPTV); w archiwum pasek i przewijanie wracaja. */
+    private fun trybNaZywo(naZywo: Boolean) {
+        archiwumGra = !naZywo
+        widok.setShowPreviousButton(false); widok.setShowNextButton(false)
+        widok.setShowRewindButton(!naZywo); widok.setShowFastForwardButton(!naZywo)
+        for (n in listOf(androidx.media3.ui.R.id.exo_progress, androidx.media3.ui.R.id.exo_position, androidx.media3.ui.R.id.exo_duration, androidx.media3.ui.R.id.exo_time))
+            widok.findViewById<android.view.View>(n)?.visibility = if (naZywo) android.view.View.GONE else android.view.View.VISIBLE
+    }
     private var przewodnik: android.widget.LinearLayout? = null
     private lateinit var przyciskProgram: TextView
     private var przewodnikOtwarty = false
@@ -157,7 +180,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
                 }, android.widget.LinearLayout.LayoutParams(0, -2, 1f))
                 setOnClickListener {
                     when {
-                        archiwum -> { val u = Serwer.adresArchiwum(this@OdtwarzaczActivity, biezacy!!.id, w); intent.putExtra("url", u); pokazNapis("Archiwum: " + w.tytul); proby = 0; graj(u) }
+                        archiwum -> { val u = Serwer.adresArchiwum(this@OdtwarzaczActivity, biezacy!!.id, w); intent.putExtra("url", u); pokazNapis("Archiwum: " + w.tytul); proby = 0; trybNaZywo(false); graj(u); naArchiwum(w) }
                         teraz -> { val u = Serwer.adresKanalu(this@OdtwarzaczActivity, biezacy!!.id); intent.putExtra("url", u); pokazNapis("Na żywo"); graj(u) }
                         else -> pokazNapis(if (w.start > t) "Audycja jeszcze się nie zaczęła" else "Ta audycja nie ma archiwum")
                     }
@@ -181,6 +204,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         val poziomo = o == android.content.res.Configuration.ORIENTATION_LANDSCAPE
         f.layoutParams = android.widget.LinearLayout.LayoutParams(-1, if (poziomo) -1 else resources.displayMetrics.widthPixels * 9 / 16)
         panel?.visibility = if (poziomo) android.view.View.GONE else android.view.View.VISIBLE
+        progNaObrazie?.visibility = if (poziomo) android.view.View.VISIBLE else android.view.View.GONE
         listaTv?.visibility = if (poziomo || przewodnikOtwarty) android.view.View.GONE else android.view.View.VISIBLE
         przewodnik?.visibility = if (!poziomo && przewodnikOtwarty) android.view.View.VISIBLE else android.view.View.GONE
         val c = androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)
@@ -220,14 +244,30 @@ class OdtwarzaczActivity : AppCompatActivity() {
                 orientation = android.widget.LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(32, 20, 32, 20); isFocusable = true
                 layoutParams = androidx.recyclerview.widget.RecyclerView.LayoutParams(-1, -2)
                 addView(android.widget.ImageView(p.context).apply { scaleType = android.widget.ImageView.ScaleType.FIT_CENTER }, android.widget.LinearLayout.LayoutParams(130, 80))
-                addView(TextView(p.context).apply { setTextColor(Color.WHITE); textSize = 16f; setPadding(28, 0, 0, 0); maxLines = 1 }, android.widget.LinearLayout.LayoutParams(0, -2, 1f))
+                addView(android.widget.LinearLayout(p.context).apply {
+                    orientation = android.widget.LinearLayout.VERTICAL; setPadding(28, 0, 0, 0)
+                    addView(TextView(p.context).apply { setTextColor(Color.WHITE); textSize = 16f; maxLines = 1 })
+                    addView(TextView(p.context).apply { setTextColor(0xFF9A9A9A.toInt()); textSize = 13f; maxLines = 1 })
+                    addView(android.widget.ProgressBar(p.context, null, android.R.attr.progressBarStyleHorizontal).apply {
+                        max = 100; progressTintList = android.content.res.ColorStateList.valueOf(0xFFE0245E.toInt()); progressBackgroundTintList = android.content.res.ColorStateList.valueOf(0xFF333333.toInt())
+                    }, android.widget.LinearLayout.LayoutParams(-1, 10).apply { topMargin = 8 })
+                }, android.widget.LinearLayout.LayoutParams(0, -2, 1f))
             }
             return object : androidx.recyclerview.widget.RecyclerView.ViewHolder(w) {}
         }
         override fun onBindViewHolder(h: androidx.recyclerview.widget.RecyclerView.ViewHolder, i: Int) {
             val w = h.itemView as android.widget.LinearLayout; val ch = grupa[i]
             (w.getChildAt(0) as android.widget.ImageView).apply { setImageDrawable(null); if (ch.logo != null) load(ch.logo) }
-            (w.getChildAt(1) as TextView).text = ch.nazwa
+            val opis = w.getChildAt(1) as android.widget.LinearLayout
+            (opis.getChildAt(0) as TextView).text = ch.nazwa
+            val tt = opis.getChildAt(1) as TextView; val pb = opis.getChildAt(2) as android.widget.ProgressBar
+            tt.text = ""; pb.visibility = android.view.View.INVISIBLE; tt.tag = ch.id
+            lifecycleScope.launch {
+                val t = limitEpg.withPermit { withContext(Dispatchers.IO) { Serwer.terazLeci(this@OdtwarzaczActivity, ch.id) } }
+                if (tt.tag != ch.id) return@launch
+                tt.text = if (t.isEmpty()) "" else "Teraz: $t"
+                val pr = Serwer.postep(ch.id); if (pr >= 0) { pb.progress = pr; pb.visibility = android.view.View.VISIBLE }
+            }
             w.setBackgroundColor(if (ch.id == biezacy?.id) 0xFF2A2A2A.toInt() else Color.TRANSPARENT)
             w.setOnClickListener { przelacz(ch) }
         }
@@ -238,7 +278,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         Ust.zapiszOstatni(this, n)
         val url = Serwer.adresKanalu(this, n.id)
         intent.putExtra("url", url)
-        pokazNapis(n.nazwa); graj(url); ustawPanel()
+        pokazNapis(n.nazwa); trybNaZywo(true); graj(url); ustawPanel()
         if (przewodnikOtwarty) otworzPrzewodnik()
         listaTv?.adapter?.notifyDataSetChanged()
     }
@@ -351,7 +391,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
             val nazwy = wid.map { w -> fmt.format(java.util.Date(w.start * 1000)) + "  " + w.tytul + (if (w.archiwum && w.koniec < teraz) "  ⏪" else if (w.start <= teraz && w.koniec > teraz) "  ● teraz" else "") }
             androidx.appcompat.app.AlertDialog.Builder(this@OdtwarzaczActivity).setTitle(ch.nazwa + " — program (⏪ = archiwum)").setItems(nazwy.toTypedArray()) { _, i ->
                 val w = wid[i]
-                if (w.archiwum && w.start < teraz) { val u = Serwer.adresArchiwum(this@OdtwarzaczActivity, ch.id, w); intent.putExtra("url", u); pokazNapis("Archiwum: " + w.tytul); graj(u) }
+                if (w.archiwum && w.start < teraz) { val u = Serwer.adresArchiwum(this@OdtwarzaczActivity, ch.id, w); intent.putExtra("url", u); pokazNapis("Archiwum: " + w.tytul); trybNaZywo(false); graj(u); naArchiwum(w) }
                 else pokazNapis("Ta audycja nie ma archiwum")
             }.setNegativeButton("Zamknij", null).show()
         }

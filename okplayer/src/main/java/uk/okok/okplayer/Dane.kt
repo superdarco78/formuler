@@ -140,6 +140,10 @@ object Serwer {
 
     /** "Teraz leci" dla kanalu (EPG), z pamiecia na 10 min. */
     private val teraz = java.util.concurrent.ConcurrentHashMap<String, Pair<Long, String>>()
+    /** Czas trwania biezacej audycji (start, koniec w sekundach) - do paska postepu. */
+    val okno = java.util.concurrent.ConcurrentHashMap<String, Pair<Long, Long>>()
+    fun postep(id: String): Int { val (a, b) = okno[id] ?: return -1; val t = System.currentTimeMillis() / 1000; return if (b > a && t in a..b) ((t - a) * 100 / (b - a)).toInt() else -1 }
+
     fun terazLeci(c: Context, id: String): String {
         val now = System.currentTimeMillis()
         teraz[id]?.let { if (now - it.first < 600_000) return it.second }
@@ -148,7 +152,7 @@ object Serwer {
             fun dek(x: String) = try { String(android.util.Base64.decode(x, android.util.Base64.DEFAULT), Charsets.UTF_8) } catch (e: Exception) { x }
             val sek = now / 1000
             var out = ""
-            if (arr != null) for (i in 0 until arr.length()) { val o = arr.getJSONObject(i); val en = o.optString("stop_timestamp").toLongOrNull() ?: 0; if (en in 1..sek) continue; out = dek(o.optString("title")); break }
+            if (arr != null) for (i in 0 until arr.length()) { val o = arr.getJSONObject(i); val en = o.optString("stop_timestamp").toLongOrNull() ?: 0; if (en in 1..sek) continue; out = dek(o.optString("title")); okno[id] = (o.optString("start_timestamp").toLongOrNull() ?: 0L) to en; break }
             out
         } catch (e: Exception) { "" }
         teraz[id] = now to w
