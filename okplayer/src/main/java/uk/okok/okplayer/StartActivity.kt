@@ -656,9 +656,9 @@ class StartActivity : AppCompatActivity() {
         dol.addView(lista, LinearLayout.LayoutParams(-1, dp(50)).apply { topMargin = dp(10) })
         karta.addView(dol, FrameLayout.LayoutParams(-1, -2).apply { gravity = Gravity.BOTTOM })
         k.addView(karta, LinearLayout.LayoutParams(-1, (w * 1.38).toInt().coerceAtMost((resources.displayMetrics.heightPixels * 0.68).toInt())).apply { setMargins(dp(16), dp(14), dp(16), dp(6)) })
-        var i = 0; var widoczny = 0
+        var i = 0; var widoczny = 0; var czekajDo = 0L
         fun pokazNr(n: Int, anim: Boolean) {
-            stopZwiastun()
+            stopZwiastun(); czekajDo = System.currentTimeMillis() + 6000
             val v = l[n]; val nowy = obrazy[1 - widoczny]; val stary = obrazy[widoczny]
             // 2.12: zajawka - po 3 s na banerze leci wyciety losowy fragment z samego filmu (bez dzwieku, ok. 20 s)
             karta.postDelayed({
@@ -677,13 +677,17 @@ class StartActivity : AppCompatActivity() {
                                 val d = duration
                                 if (d > 120_000) seekTo((d * (0.15 + Math.random() * 0.55)).toLong())
                                 playWhenReady = true
-                                karta.postDelayed({ if (i == n) zwiastunWidok.animate().alpha(0f).setDuration(900).start() }, czasZajawki("czas_baner", 55) * 1000L)
+                                karta.postDelayed({ if (i == n && zwiastun != null) zwiastunWidok.animate().alpha(0f).setDuration(900).withEndAction { stopZwiastun() }.start() }, czasZajawki("czas_baner", 55) * 1000L)
                             }
                         }
                         override fun onIsPlayingChanged(gra: Boolean) { if (gra && przewiniete && zwiastunWidok.alpha == 0f) zwiastunWidok.animate().alpha(1f).setStartDelay(300).setDuration(900).start() }
                         override fun onPlayerError(e: androidx.media3.common.PlaybackException) { Zajawki.zglos(this@StartActivity, "baner", e); stopZwiastun() } })
                 }
                 zwiastunWidok.player = zwiastun
+                val tenGracz = zwiastun
+                karta.postDelayed({ if (zwiastun === tenGracz && zwiastunWidok.alpha == 0f) {
+                    android.widget.Toast.makeText(this@StartActivity, "Zajawka (baner): film nie ruszył w 25 s", android.widget.Toast.LENGTH_LONG).show()
+                    kotlin.concurrent.thread { Serwer.raport(this@StartActivity, "zajawka baner: timeout 25s") }; stopZwiastun() } }, 25_000)
                 }
             }, 3000)
             nowy.alpha = 0f; nowy.scaleX = 1f; nowy.scaleY = 1f; nowy.translationX = 0f
@@ -715,8 +719,11 @@ class StartActivity : AppCompatActivity() {
             lista.setOnClickListener { Ust.przelaczUlubiony(this, v.rodzaj, v.id, v.nazwa, v.okladka, v.ext, ""); android.widget.Toast.makeText(this, Jezyk.t("Dodano do Mojej listy"), android.widget.Toast.LENGTH_SHORT).show() }
         }
         pokazNr(0, false)
-        val zmiana = object : Runnable { override fun run() { if (!karta.isAttachedToWindow) return; i = (i + 1) % l.size; pokazNr(i, true); karta.postDelayed(this, if (zwiastun != null) czasZajawki("czas_baner", 55) * 1000L + 5000L else czasZajawki("czas_plakatu_banera", 9) * 1000L) } }
-        karta.postDelayed(zmiana, 7000)
+        // 2.28: baner nie przeskakuje, dopoki laduje sie albo gra zajawka (wczesniej przeskakiwal po 7-9 s, zanim zajawka zdazyla ruszyc)
+        val zmiana = object : Runnable { override fun run() { if (!karta.isAttachedToWindow) return
+            if (zwiastun != null || System.currentTimeMillis() < czekajDo) { karta.postDelayed(this, 1000); return }
+            i = (i + 1) % l.size; pokazNr(i, true); karta.postDelayed(this, czasZajawki("czas_plakatu_banera", 9) * 1000L) } }
+        karta.postDelayed(zmiana, czasZajawki("czas_plakatu_banera", 9) * 1000L)
         karta.setOnClickListener { otworz(l[i], karta) }
     }
 
