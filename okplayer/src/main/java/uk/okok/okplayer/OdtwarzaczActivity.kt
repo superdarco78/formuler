@@ -242,8 +242,42 @@ class OdtwarzaczActivity : AppCompatActivity() {
         // Przewijanie programu (lista na obrazie) to nie zmiana kanalu - gest liczy sie tylko na samym obrazie.
         val pr = android.graphics.Rect()
         val naLiscie = przewodnik?.let { it.visibility == android.view.View.VISIBLE && it.getGlobalVisibleRect(pr) && pr.contains(ev.rawX.toInt(), ev.rawY.toInt()) } == true
+        if (!naLiscie && r.contains(ev.rawX.toInt(), ev.rawY.toInt()) && boczny(ev, r)) return true
         if (!naLiscie && r.contains(ev.rawX.toInt(), ev.rawY.toInt()) && gest.onTouchEvent(ev) && ev.actionMasked != android.view.MotionEvent.ACTION_DOWN) return true
         return super.dispatchTouchEvent(ev)
+    }
+
+    // Gesty jak w MX Player: lewa krawedz obrazu palcem w gore/dol = jasnosc, prawa = glosnosc. Srodek bez zmian (zmiana kanalu).
+    private var bokStrona = 0; private var bokY = 0f; private var bokStart = 0f; private var bokAktywny = false
+    private fun boczny(ev: android.view.MotionEvent, r: android.graphics.Rect): Boolean {
+        val x = ev.rawX - r.left; val w = r.width().coerceAtLeast(1)
+        when (ev.actionMasked) {
+            android.view.MotionEvent.ACTION_DOWN -> {
+                bokAktywny = false; bokY = ev.rawY
+                bokStrona = if (x < w * 0.28f) -1 else if (x > w * 0.72f) 1 else 0
+                bokStart = if (bokStrona < 0) (window.attributes.screenBrightness.takeIf { it >= 0 } ?: 0.5f)
+                    else { val am = getSystemService(android.media.AudioManager::class.java); am.getStreamVolume(android.media.AudioManager.STREAM_MUSIC).toFloat() / am.getStreamMaxVolume(android.media.AudioManager.STREAM_MUSIC) }
+                return false
+            }
+            android.view.MotionEvent.ACTION_MOVE -> {
+                if (bokStrona == 0) return false
+                val dy = bokY - ev.rawY
+                if (!bokAktywny && Math.abs(dy) < 40) return false
+                bokAktywny = true
+                val v = (bokStart + dy / (r.height().coerceAtLeast(1) * 0.8f)).coerceIn(0.02f, 1f)
+                if (bokStrona < 0) {
+                    window.attributes = window.attributes.also { it.screenBrightness = v }
+                    pokazNapis("☀  Jasność " + (v * 100).toInt() + "%")
+                } else {
+                    val am = getSystemService(android.media.AudioManager::class.java); val mx = am.getStreamMaxVolume(android.media.AudioManager.STREAM_MUSIC)
+                    am.setStreamVolume(android.media.AudioManager.STREAM_MUSIC, (v * mx).toInt().coerceIn(0, mx), 0)
+                    pokazNapis("🔊  Głośność " + (v * 100).toInt() + "%")
+                }
+                return true
+            }
+            android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> { val b = bokAktywny; bokAktywny = false; bokStrona = 0; return b }
+        }
+        return bokAktywny
     }
 
     /** W panelu pod obrazem widac, co leci z archiwum, i jak wrocic na zywo. */

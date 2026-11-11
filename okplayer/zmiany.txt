@@ -1,5 +1,3 @@
-Poprzedni kanał|nie było|przycisk „⇄ Poprzedni” na odtwarzaczu i klawisz LAST na pilocie – skok do kanału oglądanego przed chwilą
-Numer kanału z pilota|nie było|wpisz cyfry na pilocie (np. 1, 2) – po 1,5 s przełącza na ten numer w grupie
-Informacje o obrazie|nie było|Opcje → Informacje o obrazie: rozdzielczość (SD/HD/Full HD/4K), klatki, kodek, przepływność, dźwięk
-Dane filmu|–|tytuł oryginalny, wytwórnia, budżet, box office, nagrody; fioletowe strzałki przewijania (z 1.87)
+Jasność i głośność palcem|nie było|na obrazie: lewa krawędź palcem w górę/dół = jasność, prawa krawędź = głośność (jak MX Player); środek obrazu dalej zmienia kanał
+Poprzedni kanał, numer z pilota, informacje o obrazie|–|z 1.88
 Małe okno i program|działa (1.80)|bez zmian
