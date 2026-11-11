@@ -19,7 +19,11 @@ object Session {
     private const val K_USER = "login"
     private const val K_PASS = "haslo"
 
-    private fun prefs(ctx: Context): SharedPreferences {
+    // Zaszyfrowane ustawienia tworzone RAZ (wczesniej przy kazdym odczycie - wolny Keystore blokowal aplikacje).
+    @Volatile private var cache: SharedPreferences? = null
+    private fun prefs(ctx: Context): SharedPreferences = cache ?: synchronized(this) { cache ?: prefsNowe(ctx.applicationContext).also { cache = it } }
+
+    private fun prefsNowe(ctx: Context): SharedPreferences {
         val key = MasterKey.Builder(ctx)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
             .build()

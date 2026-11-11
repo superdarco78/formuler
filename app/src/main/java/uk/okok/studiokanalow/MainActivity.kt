@@ -274,7 +274,7 @@ class MainActivity : AppCompatActivity() {
         if (!demo) {
             val wiersze = ArrayList<Channel>()
             if (last != null) wiersze.add(Channel("last", Session.lastName(this).ifEmpty { "Ostatni kanał" },
-                Session.lastLogo(this) ?: liveCache?.firstOrNull { it.name == Session.lastName(this) }?.logo, null, 0, last))
+                Session.lastLogo(this) ?: Session.lastName(this).let { ln -> liveCache?.firstOrNull { it.name == ln }?.logo }, null, 0, last))
             Session.kontynuuj(this).forEach { a ->
                 val u = a[0] as String
                 if (u != last) wiersze.add(Channel("k" + wiersze.size, (a[1] as String) + "  •  " + a[3] + "%", (a[2] as String).ifEmpty { null }, null, 0, u))
@@ -315,7 +315,7 @@ class MainActivity : AppCompatActivity() {
                 hideBusy()
                 koniecAnimacjiStartu()
                 if (wersja != wersjaEkranu) return@launch
-                if (Session.lastLogo(this@MainActivity) == null) kan.firstOrNull { it.name == Session.lastName(this@MainActivity) }?.logo?.let { lg ->
+                if (Session.lastLogo(this@MainActivity) == null) Session.lastName(this@MainActivity).let { ln -> kan.firstOrNull { it.name == ln } }?.logo?.let { lg ->
                     Session.lastUrl(this@MainActivity)?.let { lu -> Session.saveLast(this@MainActivity, lu, Session.lastName(this@MainActivity), lg) }
                 }
                 // Liczenie rzedow w tle (duze listy) - ekran nie zamarza.
