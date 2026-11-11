@@ -44,6 +44,9 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private var ostatniBlad = ""
+    private fun czyLiveUrl() = (intent.getStringExtra("url") ?: "").contains("/live/")
+    private var statusTv: android.widget.TextView? = null
+    private fun status(t: String) { statusTv?.let { it.text = t; it.visibility = if (t.isEmpty()) android.view.View.GONE else android.view.View.VISIBLE } }
     private fun raport(t: String) {
         try {
             val n = try { title?.toString() ?: "" } catch (e: Exception) { "" }
@@ -72,14 +75,15 @@ class PlayerActivity : AppCompatActivity() {
         czuwak = lifecycleScope.launch {
             kotlinx.coroutines.delay(12000)
             if (p.playbackState != androidx.media3.common.Player.STATE_READY) {
-                raport("brak obrazu po 20 s, stan=" + p.playbackState)
-                if (rozwiazany.isNotEmpty()) raport(sonda(rozwiazany))
-                awaria()
+                raport("brak obrazu po 12 s, stan=" + p.playbackState)
+                if (rozwiazany.isNotEmpty()) { val sd = sonda(rozwiazany); raport(sd); if (!czyLiveUrl()) status("Serwer: " + sd.take(70)) }
+                if (czyLiveUrl()) awaria() else status("Film wczytuje się dłużej niż zwykle…")
             }
         }
     }
     private fun awaria() {
         val p = player ?: return
+        if (!czyLiveUrl()) return
         if (intent.getBooleanExtra("demo", false) || !Session.optBool(this, "failover", true)) return
         if (proby < 2) { proby++; p.prepare(); p.playWhenReady = true; return }
         if (szukam) return
@@ -167,6 +171,14 @@ class PlayerActivity : AppCompatActivity() {
             requestedOrientation = if (pelny) android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
         }
         // Odtwarzacz otwiera sie w pionie (obraz u gory, lista kanalow pod spodem); pelny ekran dopiero po przycisku.
+        if (!czyLiveUrl()) {
+            statusTv = android.widget.TextView(this).apply {
+                setTextColor(0xFFFFFFFF.toInt()); textSize = 14f; setPadding(24, 14, 24, 14); setBackgroundColor(0x99000000.toInt()); visibility = android.view.View.GONE
+            }
+            val lp = android.widget.FrameLayout.LayoutParams(-2, -2); lp.gravity = android.view.Gravity.BOTTOM or android.view.Gravity.START; lp.setMargins(24, 0, 24, 140)
+            b.playerView.overlayFrameLayout?.addView(statusTv, lp)
+            status("Ładowanie…")
+        }
         val fp = (intent.getStringExtra("url") ?: "")
         // Filmy i seriale od razu na pelnym ekranie (poziomo); kanaly na zywo w pionie z lista kanalow.
         requestedOrientation = if (fp.contains("/movie/") || fp.contains("/series/")) android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
@@ -404,8 +416,8 @@ class PlayerActivity : AppCompatActivity() {
         probowane.clear(); proby = 0
         try { probowane.add(Session.server(this) + "|" + Session.user(this)) } catch (e: Exception) { }
         p.addListener(object : androidx.media3.common.Player.Listener {
-            override fun onPlayerError(error: androidx.media3.common.PlaybackException) { if (rozwiazany.isNotEmpty() && proby == 0) lifecycleScope.launch { raport(sonda(rozwiazany)) }; raport("blad " + error.errorCodeName + " " + (error.cause?.message ?: "").take(120)); ostatniBlad = error.errorCodeName + " " + (error.cause?.javaClass?.simpleName ?: "") + " " + (error.cause?.message ?: "").take(80); awaria() }
-            override fun onPlaybackStateChanged(state: Int) { raport("stan=" + state + " gra=" + p.isPlaying); if (state == androidx.media3.common.Player.STATE_READY) { proby = 0; czuwak?.cancel() } }
+            override fun onPlayerError(error: androidx.media3.common.PlaybackException) { if (!czyLiveUrl()) status("Błąd: " + error.errorCodeName + " " + (error.cause?.message ?: "").take(60)); if (rozwiazany.isNotEmpty() && proby == 0) lifecycleScope.launch { raport(sonda(rozwiazany)) }; raport("blad " + error.errorCodeName + " " + (error.cause?.message ?: "").take(120)); ostatniBlad = error.errorCodeName + " " + (error.cause?.javaClass?.simpleName ?: "") + " " + (error.cause?.message ?: "").take(80); awaria() }
+            override fun onPlaybackStateChanged(state: Int) { if (!czyLiveUrl()) { if (state == androidx.media3.common.Player.STATE_BUFFERING) status("Ładowanie…") else if (state == androidx.media3.common.Player.STATE_READY) status("") }; raport("stan=" + state + " gra=" + p.isPlaying); if (state == androidx.media3.common.Player.STATE_READY) { proby = 0; czuwak?.cancel() } }
             override fun onVideoSizeChanged(v: androidx.media3.common.VideoSize) { raport("obraz " + v.width + "x" + v.height) }
             override fun onTracksChanged(t: androidx.media3.common.Tracks) {
                 val o = t.groups.joinToString(",") { g -> g.mediaTrackGroup.getFormat(0).sampleMimeType.toString() + (if (g.isSelected) "+" else "-") + (if (g.isSupported) "ok" else "NIEOBSLUG") }
