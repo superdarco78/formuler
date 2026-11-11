@@ -1,3 +1,4 @@
+Diagnostyka zajawek|zajawka znikała bez śladu|gdy zajawka nie ruszy, na dole pokazuje się powód (np. HTTP 403) i raport idzie na serwer
 Zajawka w ekranie filmu|po wejściu w film stał sam plakat|po 2,5 s plakat na górze zamienia się w fragment filmu (serial: 1. odcinek), bez dźwięku
 Baner w Filmach i Serialach|na zakładkach Filmy i Seriale tylko siatka plakatów|na górze duży baner z zajawką (Top 10 z danej zakładki), przewija się razem z plakatami
 Ekran powitalny|nowy klient od razu lądował w aplikacji|3 plansze powitalne przy pierwszym uruchomieniu (włączane w panelu)

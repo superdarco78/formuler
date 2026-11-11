@@ -276,6 +276,17 @@ object Dodatki {
 
 /** 2.26: wspolny odtwarzacz zajawek (jak glowny: VLC user-agent, przekierowania http<->https). */
 object Zajawki {
+    /** 2.27: opis bledu zajawki (do napisu na ekranie i raportu na serwer). */
+    fun opis(e: androidx.media3.common.PlaybackException): String {
+        var c: Throwable? = e.cause; var kod = ""
+        while (c != null) { if (c is androidx.media3.datasource.HttpDataSource.InvalidResponseCodeException) { kod = "HTTP " + c.responseCode; break }; c = c.cause }
+        return e.errorCodeName.removePrefix("ERROR_CODE_") + (if (kod.isNotEmpty()) " ($kod)" else "")
+    }
+    fun zglos(c: android.content.Context, gdzie: String, e: androidx.media3.common.PlaybackException) {
+        val t = opis(e)
+        kotlin.concurrent.thread { Serwer.raport(c, "zajawka $gdzie: $t") }
+        android.os.Handler(android.os.Looper.getMainLooper()).post { android.widget.Toast.makeText(c, "Zajawka ($gdzie): $t", android.widget.Toast.LENGTH_LONG).show() }
+    }
     fun gracz(c: android.content.Context) = androidx.media3.exoplayer.ExoPlayer.Builder(c)
         .setMediaSourceFactory(androidx.media3.exoplayer.source.DefaultMediaSourceFactory(
             androidx.media3.datasource.DefaultHttpDataSource.Factory().setUserAgent("VLC/3.0.20 LibVLC/3.0.20").setAllowCrossProtocolRedirects(true)

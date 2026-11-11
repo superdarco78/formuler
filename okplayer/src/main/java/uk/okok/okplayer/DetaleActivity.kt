@@ -360,7 +360,7 @@ class DetaleActivity : AppCompatActivity() {
                 override fun onPlaybackStateChanged(st: Int) { if (st == androidx.media3.common.Player.STATE_READY && !gotowe) { gotowe = true
                     if (duration > 120_000) seekTo((duration * (0.15 + Math.random() * 0.55)).toLong()); playWhenReady = true } }
                 override fun onIsPlayingChanged(gra: Boolean) { if (gra && pv.alpha == 0f) pv.animate().alpha(1f).setStartDelay(250).setDuration(900).start() }
-                override fun onPlayerError(e: androidx.media3.common.PlaybackException) { stopZajawki() } })
+                override fun onPlayerError(e: androidx.media3.common.PlaybackException) { Zajawki.zglos(this@DetaleActivity, "film", e); stopZajawki() } })
         }
         pv.player = zajawka
     }
