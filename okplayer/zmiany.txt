@@ -1,5 +1,3 @@
-TV z listy|otwierał się osobny ekran z drugą, taką samą listą kanałów (lista była 2 razy)|obraz pojawia się na górze zakładki TV, a pod nim jest ta sama, jedna lista kanałów z grupami – jak w starej aplikacji
-Zmiana kanału|każdy kanał otwierał nowy ekran|dotknij innego kanału na liście – obraz na górze przełącza się od razu, bieżący kanał jest podświetlony
-Pod obrazem|–|logo, nazwa, „Teraz”, pasek ile minęło, godziny i ile zostało, przycisk „☰ Program” (EPG z archiwum)
-Wstecz / inna zakładka|–|obraz zmienia się w mały kwadrat w rogu i gra dalej; dotknij kwadratu = pełny ekran
-Pełny ekran|–|przycisk ⛶ na obrazie (płynnie, bez ładowania od nowa)
+Ikona TV na dole|pokazywała samą listę – trzeba było wybrać kanał|od razu obraz na górze (ostatnio oglądany kanał albo ten z małego kwadratu), pod nim program i jedna lista kanałów – jak na zdjęciu
+Mały kwadrat → ikona TV|kwadrat zostawał w rogu|kwadrat „rozkłada się” w obraz na górze zakładki TV, bez ładowania od nowa
+TV z listy|osobny ekran z drugą, taką samą listą (lista 2 razy)|jedna lista: obraz na górze, kanały pod spodem, dotknięcie kanału przełącza od razu

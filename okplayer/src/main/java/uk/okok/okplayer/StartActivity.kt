@@ -170,6 +170,16 @@ class StartActivity : AppCompatActivity() {
             background = if (wyb) android.graphics.drawable.LayerDrawable(arrayOf(GradientDrawable().apply { setColor(AKCENT) })).apply { setLayerHeight(0, dp(3)); setLayerGravity(0, Gravity.TOP); setLayerInsetLeft(0, dp(22)); setLayerInsetRight(0, dp(22)) } else null
         }
         tresc.removeAllViews()
+        // Wejscie w TV: obraz od razu na gorze (kanal z malego kwadratu albo ostatnio ogladany), pod nim lista - jak na zdjeciu.
+        if (i == 1 && ::gora2.isInitialized && gora2.visibility != View.VISIBLE && kanaly.isNotEmpty()) {
+            val zMini = miniKanal; val ost = Ust.ostatni(this)
+            val ch = zMini ?: ost?.let { o -> kanaly.firstOrNull { it.id == o.id } }
+            if (ch != null) {
+                if (zMini != null) { Ust.prefs(this).edit().remove("mini").apply(); miniWidok.player = null; miniGracz = null; miniKanal = null; mini.visibility = View.GONE }
+                graj(kanaly.firstOrNull { it.id == ch.id } ?: ch)
+                listaKanalow(); return
+            }
+        }
         when (i) { 0 -> start(); 1 -> listaKanalow(); 2 -> siatkaVod(filmy, katF, "f"); 3 -> siatkaVod(seriale, katS, "s"); 5 -> szukaj(); 6 -> ulubioneEkran(); else -> ustawienia() }
     }
 
@@ -602,7 +612,7 @@ class StartActivity : AppCompatActivity() {
         WspolnyGracz.wlasciciel = "gora"
         val g = WspolnyGracz.pobierz(this)
         gornyWidok.player = g
-        WspolnyGracz.graj(this, Serwer.adresKanalu(this, ch.id), odNowa = true)
+        WspolnyGracz.graj(this, Serwer.adresKanalu(this, ch.id))
         gora2.visibility = View.VISIBLE
         ustawGornyPanel(ch)
         if (zakladka != 1) pokaz(1) else (tresc.getChildAt(0) as? LinearLayout)?.let { odswiezZaznaczenie() }
