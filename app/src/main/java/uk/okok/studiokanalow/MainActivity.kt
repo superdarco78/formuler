@@ -267,7 +267,8 @@ class MainActivity : AppCompatActivity() {
         val last = try { Session.lastUrl(this) } catch (e: Exception) { null }
         if (last != null && !demo) {
             dodajRzad("Kontynuuj oglądanie",
-                listOf(Channel("last", Session.lastName(this).ifEmpty { "Ostatni kanał" }, null, null, 0, last)),
+                listOf(Channel("last", Session.lastName(this).ifEmpty { "Ostatni kanał" },
+                    Session.lastLogo(this) ?: liveCache?.firstOrNull { it.name == Session.lastName(this) }?.logo, null, 0, last)),
                 { ch -> openPlayer(ch) })
         }
         if (demo) {
@@ -287,6 +288,9 @@ class MainActivity : AppCompatActivity() {
                 val kan = liveCache ?: try { Api.liveStreams(s(), u(), p(), null).also { liveCache = it } } catch (e: Exception) { emptyList() }
                 hideBusy()
                 if (wersja != wersjaEkranu) return@launch
+                if (Session.lastLogo(this@MainActivity) == null) kan.firstOrNull { it.name == Session.lastName(this@MainActivity) }?.logo?.let { lg ->
+                    Session.lastUrl(this@MainActivity)?.let { lu -> Session.saveLast(this@MainActivity, lu, Session.lastName(this@MainActivity), lg) }
+                }
                 fun ok(l: List<Channel>, c: List<Category>, r: String): List<Channel> {
                     val dozw = Filtr.kategorie(this@MainActivity, r, c).map { it.id }.toSet()
                     return if (c.isEmpty()) l else l.filter { it.categoryId in dozw }

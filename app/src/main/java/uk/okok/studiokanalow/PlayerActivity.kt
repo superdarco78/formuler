@@ -223,7 +223,7 @@ class PlayerActivity : AppCompatActivity() {
         intent.putExtra("url", url); intent.putExtra("name", ch.name)
         ladujNaglowek(url, ch.name, ch.streamId, ch.logo)
         zamknijPrzewodnik()
-        try { Session.saveLast(this, url, ch.name) } catch (e: Exception) { }
+        try { Session.saveLast(this, url, ch.name, ch.logo) } catch (e: Exception) { }
         proby = 0; probowane.clear()
         try { probowane.add(Session.server(this) + "|" + Session.user(this)) } catch (e: Exception) { }
         lifecycleScope.launch {
@@ -414,7 +414,7 @@ class PlayerActivity : AppCompatActivity() {
         super.onStart()
         val url = intent.getStringExtra("url") ?: return
         if (!intent.getBooleanExtra("demo", false)) {
-            try { Session.saveLast(this, url, intent.getStringExtra("name") ?: "") } catch (e: Exception) { }
+            try { Session.saveLast(this, url, intent.getStringExtra("name") ?: "", intent.getStringExtra("logo")) } catch (e: Exception) { }
         }
         // Nazwa jak w VLC - dostawca czesto podaje prawdziwy strumien tylko takim odtwarzaczom.
         val http = androidx.media3.datasource.DefaultHttpDataSource.Factory()
