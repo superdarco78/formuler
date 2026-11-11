@@ -1,3 +1,4 @@
+Zajawki w rzędach|w Top filmach i polecanych same plakaty|na zaznaczonym plakacie (TV) lub pierwszym widocznym po przewinięciu (telefon) leci fragment filmu bez dźwięku
 Zajawka na banerze|po 3 s zwiastun z internetu|po 3 s leci wycięty losowy fragment z samego filmu (bez dźwięku, ok. 20 s), za każdym razem inny
 Wejście w film|ekran filmu wjeżdżał ze środka ekranu|plakat płynnie powiększa się z miejsca kliknięcia na cały ekran (jak Apple TV)
 Baner na górze|stał w miejscu, zawsze te same filmy po kolei|paralaksa przy przewijaniu, plakat powoli się przybliża i przesuwa, nr 1 pierwszy, reszta losowo

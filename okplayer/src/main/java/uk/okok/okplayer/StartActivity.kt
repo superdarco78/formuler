@@ -301,13 +301,67 @@ class StartActivity : AppCompatActivity() {
                     // obrys cyfry jak w MyTvOnline: biala kreska, czarny srodek
                     paint.style = android.graphics.Paint.Style.STROKE; paint.strokeWidth = dp(2).toFloat(); setTextColor(Color.WHITE)
                 }
-                f.setOnClickListener { otworz(v, kol.getChildAt(0)) }
+                f.setOnClickListener { stopPodglad(); otworz(v, kol.getChildAt(0)) }
+                val lpP = FrameLayout.LayoutParams(sz, wy).apply { leftMargin = dp(40) }
+                f.tag = Runnable { podglad(f, lpP, v) }
+                f.setOnFocusChangeListener { _, ma -> if (ma) podglad(f, lpP, v) else stopPodglad() }
             }
         }
+        zajawkiWRzedzie(rv)
         k.addView(rv, LinearLayout.LayoutParams(-1, -2))
     }
 
     /** Plakaty z tytulem (rok) pod spodem i paskiem obejrzenia. */
+    // 2.12: zajawki na plakatach w rzedach (Top filmy, polecane) - jedna naraz, z losowego miejsca filmu, bez dzwieku
+    private var podgladGracz: androidx.media3.exoplayer.ExoPlayer? = null
+    private var podgladWidok: View? = null
+    private val podgladH = android.os.Handler(android.os.Looper.getMainLooper())
+    private fun stopPodglad() {
+        podgladH.removeCallbacksAndMessages(null)
+        podgladWidok?.let { (it.parent as? ViewGroup)?.removeView(it) }; podgladWidok = null
+        podgladGracz?.release(); podgladGracz = null
+    }
+    private fun podglad(kont: FrameLayout, lp: FrameLayout.LayoutParams, v: Vod) {
+        if (v.rodzaj != "f") return
+        stopPodglad()
+        podgladH.postDelayed({
+            if (!kont.isAttachedToWindow) return@postDelayed
+            stopBaner?.invoke()
+            val pv = (layoutInflater.inflate(R.layout.mini_gracz, null) as androidx.media3.ui.PlayerView).apply {
+                useController = false; resizeMode = androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_ZOOM; alpha = 0f
+                setShutterBackgroundColor(Color.TRANSPARENT); isClickable = false; isFocusable = false
+                clipToOutline = true; outlineProvider = object : android.view.ViewOutlineProvider() {
+                    override fun getOutline(w: View, o: android.graphics.Outline) { o.setRoundRect(0, 0, w.width, w.height, dp(8).toFloat()) } } }
+            kont.addView(pv, lp)
+            podgladWidok = pv
+            var gotowe = false
+            podgladGracz = androidx.media3.exoplayer.ExoPlayer.Builder(this).build().apply {
+                volume = 0f; setMediaItem(androidx.media3.common.MediaItem.fromUri(Serwer.adresFilmu(this@StartActivity, v.id, v.ext))); prepare()
+                addListener(object : androidx.media3.common.Player.Listener {
+                    override fun onPlaybackStateChanged(st: Int) {
+                        if (st == androidx.media3.common.Player.STATE_READY && !gotowe) { gotowe = true
+                            if (duration > 120_000) seekTo((duration * (0.15 + Math.random() * 0.55)).toLong()); playWhenReady = true
+                            podgladH.postDelayed({ pv.animate().alpha(0f).setDuration(700).withEndAction { stopPodglad() }.start() }, 16_000) }
+                    }
+                    override fun onIsPlayingChanged(gra: Boolean) { if (gra && pv.alpha == 0f) pv.animate().alpha(1f).setStartDelay(250).setDuration(700).start() }
+                    override fun onPlayerError(e: androidx.media3.common.PlaybackException) { stopPodglad() } })
+            }
+            pv.player = podgladGracz
+        }, 1500)
+    }
+    /** Telefon: gdy rzad sie zatrzyma, zajawka rusza na pierwszym w calosci widocznym plakacie. TV: na zaznaczonym. */
+    private fun zajawkiWRzedzie(rv: RecyclerView) {
+        if (Pilot.czyTv(this)) return
+        rv.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrollStateChanged(r: RecyclerView, st: Int) {
+                if (st == RecyclerView.SCROLL_STATE_DRAGGING) stopPodglad()
+                if (st != RecyclerView.SCROLL_STATE_IDLE) return
+                val lm = r.layoutManager as? LinearLayoutManager ?: return
+                val p = lm.findFirstCompletelyVisibleItemPosition().takeIf { it >= 0 } ?: return
+                (lm.findViewByPosition(p)?.tag as? Runnable)?.run()
+            } })
+    }
+
     private fun rzadVod(k: LinearLayout, tytul: String, l: List<Vod>, nowosc: Boolean = false) {
         if (l.isEmpty()) return
         k.addView(naglowek(tytul))
@@ -337,9 +391,12 @@ class StartActivity : AppCompatActivity() {
                 val poz = if (url.isEmpty()) 0 else Ust.pozycja(this@StartActivity, url); val dl = if (url.isEmpty()) 0 else Ust.dlugosc(this@StartActivity, url)
                 if (poz > 0) { pb.visibility = View.VISIBLE; pb.progress = if (dl > 0) (poz * 100 / dl).toInt().coerceIn(3, 100) else 10 } else pb.visibility = View.GONE
                 (w.getChildAt(1) as TextView).text = v.nazwa
-                w.setOnClickListener { otworz(v, fr) }
+                w.setOnClickListener { stopPodglad(); otworz(v, fr) }
+                w.tag = Runnable { podglad(fr, FrameLayout.LayoutParams(-1, -1), v) }
+                w.setOnFocusChangeListener { _, f -> if (f) podglad(fr, FrameLayout.LayoutParams(-1, -1), v) else stopPodglad() }
             }
         }
+        zajawkiWRzedzie(rv)
         k.addView(rv, LinearLayout.LayoutParams(-1, -2))
     }
 
@@ -567,7 +624,7 @@ class StartActivity : AppCompatActivity() {
             val v = l[n]; val nowy = obrazy[1 - widoczny]; val stary = obrazy[widoczny]
             // 2.12: zajawka - po 3 s na banerze leci wyciety losowy fragment z samego filmu (bez dzwieku, ok. 20 s)
             if (v.rodzaj == "f") karta.postDelayed({
-                if (i != n || !karta.isAttachedToWindow) return@postDelayed
+                if (i != n || !karta.isAttachedToWindow || podgladGracz != null) return@postDelayed
                 var przewiniete = false
                 zwiastun = androidx.media3.exoplayer.ExoPlayer.Builder(this@StartActivity).build().apply {
                     volume = 0f
@@ -676,7 +733,7 @@ class StartActivity : AppCompatActivity() {
 
     private var banerObrazy: List<ImageView>? = null
     private var stopBaner: (() -> Unit)? = null
-    override fun onPause() { stopBaner?.invoke(); super.onPause() }
+    override fun onPause() { stopBaner?.invoke(); stopPodglad(); super.onPause() }
     private fun start() {
         val sv = ScrollView(this)
         val k = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(0, 0, 0, dp(16)) }
