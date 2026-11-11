@@ -109,13 +109,41 @@ class OdtwarzaczActivity : AppCompatActivity() {
     private var archiwumGra = false
     private var terazWpis: Wpis? = null
 
+    // ---- Archiwum ze straznikiem: gdy obraz stoi albo jest blad, sam probuje kolejnego sposobu ----
+    private var warianty: List<String> = emptyList()
+    private var wariant = 0
+    private var ostPoz = -1L
+    private var stoi = 0
+    private val straznik = object : Runnable {
+        override fun run() {
+            val g = gracz ?: return
+            if (!archiwumGra) return
+            val poz = g.currentPosition
+            if (g.playWhenReady && poz == ostPoz) stoi++ else stoi = 0
+            ostPoz = poz
+            if (stoi >= 4) { stoi = 0; nastepnyWariant() }   // ok. 12 s bez ruchu
+            widok.postDelayed(this, 3000)
+        }
+    }
+    private fun grajArchiwum(id: String, w: Wpis) {
+        warianty = Serwer.adresyArchiwum(this, id, w); wariant = 0; ostPoz = -1; stoi = 0
+        proby = 0; trybNaZywo(false)
+        intent.putExtra("url", warianty[0]); graj(warianty[0])
+        widok.removeCallbacks(straznik); widok.postDelayed(straznik, 3000)
+    }
+    private fun nastepnyWariant(): Boolean {
+        if (!archiwumGra || wariant + 1 >= warianty.size) return false
+        wariant++; ostPoz = -1
+        pokazNapis("Archiwum: inny sposób " + (wariant + 1) + "/" + warianty.size + "…")
+        intent.putExtra("url", warianty[wariant]); graj(warianty[wariant]); return true
+    }
+
     /** Od poczatku: biezaca audycja z archiwum od jej pierwszej minuty (czego nie ma MyTvOnline). */
     private fun odPoczatku() {
         val w = terazWpis; val ch = biezacy
         if (w == null || ch == null) { pokazNapis("Brak programu dla tego kanału"); return }
         if (!w.archiwum) { pokazNapis("Ten kanał nie ma archiwum"); return }
-        val u = Serwer.adresArchiwum(this, ch.id, w.copy(koniec = System.currentTimeMillis() / 1000))
-        intent.putExtra("url", u); proby = 0; trybNaZywo(false); graj(u); naArchiwum(w)
+        grajArchiwum(ch.id, w.copy(koniec = System.currentTimeMillis() / 1000)); naArchiwum(w)
         pokazNapis("⏮ Od początku: " + w.tytul)
     }
 
@@ -246,7 +274,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
                 }
                 setOnClickListener {
                     when {
-                        archiwum -> { val u = Serwer.adresArchiwum(this@OdtwarzaczActivity, biezacy!!.id, w); intent.putExtra("url", u); pokazNapis("Archiwum: " + w.tytul); proby = 0; trybNaZywo(false); graj(u); naArchiwum(w) }
+                        archiwum -> { pokazNapis("Archiwum: " + w.tytul); grajArchiwum(biezacy!!.id, w); naArchiwum(w) }
                         teraz -> { biezacy?.let { przelacz(it) } }
                         else -> pokazNapis(if (w.start > t) "Audycja jeszcze się nie zaczęła" else "Ta audycja nie ma archiwum")
                     }
@@ -390,6 +418,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         sluchacz = object : Player.Listener {
             override fun onPlayerError(error: PlaybackException) {
                 lifecycleScope.launch(Dispatchers.IO) { Serwer.raport(this@OdtwarzaczActivity, "graj blad " + error.errorCodeName + " " + (biezacy?.nazwa ?: "")) }
+                if (archiwumGra && nastepnyWariant()) return
                 if (proby < 3) {
                     proby++; pokazNapis("Ponawiam… ($proby/3)")
                     lifecycleScope.launch { delay(1500); graj(intent.getStringExtra("url") ?: return@launch) }
@@ -481,7 +510,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
             val nazwy = wid.map { w -> fmt.format(java.util.Date(w.start * 1000)) + "  " + w.tytul + (if (w.archiwum && w.koniec < teraz) "  ⏪" else if (w.start <= teraz && w.koniec > teraz) "  ● teraz" else "") }
             androidx.appcompat.app.AlertDialog.Builder(this@OdtwarzaczActivity).setTitle(ch.nazwa + " — program (⏪ = archiwum)").setItems(nazwy.toTypedArray()) { _, i ->
                 val w = wid[i]
-                if (w.archiwum && w.start < teraz) { val u = Serwer.adresArchiwum(this@OdtwarzaczActivity, ch.id, w); intent.putExtra("url", u); pokazNapis("Archiwum: " + w.tytul); trybNaZywo(false); graj(u); naArchiwum(w) }
+                if (w.archiwum && w.start < teraz) { pokazNapis("Archiwum: " + w.tytul); grajArchiwum(ch.id, w); naArchiwum(w) }
                 else pokazNapis("Ta audycja nie ma archiwum")
             }.setNegativeButton("Zamknij", null).show().also { Jezyk.okno(it) }
         }

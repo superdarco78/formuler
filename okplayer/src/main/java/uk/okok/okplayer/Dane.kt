@@ -184,6 +184,15 @@ object Serwer {
         return "$BAZA/timeshift/app/${Ust.klucz(c)}/$min/$t/$id.ts?okp=1"
     }
 
+    /** Kilka sposobow pobrania archiwum - gdy pierwszy stoi (zawieszony obraz), aplikacja sama probuje nastepnego. */
+    fun adresyArchiwum(c: Context, id: String, w: Wpis): List<String> {
+        val ts = adresArchiwum(c, id, w)
+        val min = ((w.koniec - w.start) / 60).toInt().coerceAtLeast(1)
+        val t = ts.substringAfter("/$min/").substringBefore("/")
+        return listOf(ts, ts.replace("/$id.ts?", "/$id.m3u8?"),
+            "$BAZA/streaming/timeshift.php?username=app&password=${Ust.klucz(c)}&stream=$id&start=$t&duration=$min&okp=1")
+    }
+
     fun kategorie(c: Context, akcja: String): List<Kat> {
         val out = ArrayList<Kat>()
         strumien(api(c, akcja)) { o -> out.add(Kat(o["category_id"] ?: "", o["category_name"] ?: "")) }

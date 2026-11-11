@@ -1,3 +1,2 @@
-Języki|aplikacja była tylko po polsku|język aplikacji ustawia się sam według języka telefonu lub dekodera: polski, angielski, niemiecki, ukraiński, rosyjski, hiszpański, francuski, włoski, czeski, litewski, rumuński; każdy inny język → angielski
-Daty w programie TV|zawsze po polsku (pon., wt.)|dni tygodnia w języku urządzenia
-Pilot (dekoder)|nie było widać zaznaczenia|biała ramka na zaznaczonym elemencie, OK otwiera
+Archiwum|po wybraniu audycji z archiwum obraz potrafił stanąć na jednym kadrze|aplikacja pilnuje obrazu: gdy przez ok. 12 s stoi albo jest błąd, sama przełącza się na inny sposób pobrania archiwum (3 sposoby)
+Języki|tylko po polsku|język według ustawień telefonu lub dekodera (11 języków, inne → angielski)

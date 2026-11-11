@@ -24,7 +24,14 @@ jobs:
           java-version: '17'
       - name: Wrapper Gradle
         run: gradle wrapper --gradle-version 8.7
+      - name: Prywatny klucz podpisu (jesli dodany w ustawieniach GitHuba)
+        env:
+          KLUCZ_APK: ${{ secrets.KLUCZ_APK }}
+        run: |
+          if [ -n "$KLUCZ_APK" ]; then echo "$KLUCZ_APK" | base64 -d > "$RUNNER_TEMP/okplayer.jks"; echo "KLUCZ_PLIK=$RUNNER_TEMP/okplayer.jks" >> "$GITHUB_ENV"; echo "Podpis: klucz prywatny"; else echo "Podpis: stary klucz"; fi
       - name: Zbuduj OK Player
+        env:
+          HASLO_APK: ${{ secrets.HASLO_APK }}
         run: ./gradlew :okplayer:assembleRelease --no-daemon --stacktrace
       - name: Przygotuj pliki
         run: |

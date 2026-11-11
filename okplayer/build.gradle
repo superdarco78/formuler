@@ -12,16 +12,25 @@ android {
         applicationId "uk.okok.okplayer"
         minSdk 26
         targetSdk 34
-        versionCode 46
-        versionName "1.45"
+        versionCode 47
+        versionName "1.46"
     }
 
     signingConfigs {
+        // Prywatny klucz z ukrytych ustawien GitHuba (KLUCZ_APK + HASLO_APK); gdy ich brak - stary klucz.
         stala {
-            storeFile file("../app/studio.keystore")
-            storePassword "studio123"
-            keyAlias "studio"
-            keyPassword "studio123"
+            def prywatny = System.getenv("KLUCZ_PLIK")
+            if (prywatny != null && new File(prywatny).exists()) {
+                storeFile file(prywatny)
+                storePassword System.getenv("HASLO_APK")
+                keyAlias "okplayer"
+                keyPassword System.getenv("HASLO_APK")
+            } else {
+                storeFile file("../app/studio.keystore")
+                storePassword "studio123"
+                keyAlias "studio"
+                keyPassword "studio123"
+            }
         }
     }
 
