@@ -5,7 +5,8 @@ import android.content.Context
 /** 2.03: skorki wygladu z grafik Canvy (bez neonu). a = grafit/srebro (domyslna), b = zloto, c = morski, d = blekit, r = roz. */
 object Skorka {
     val lista = listOf("u" to "Uniwersalna – grafit i bursztyn (domyślna)", "a" to "Grafit i srebro", "k" to "Kolor z plakatu (biała, nowa)", "b" to "Złoto", "c" to "Morski turkus", "d" to "Błękit", "r" to "Róż (stara)")
-    fun wybrana(c: Context) = Ust.prefs(c).getString("skorka", "u") ?: "u"
+    /** 2.10: jeden uniwersalny wyglad - bez wariantow. */
+    fun wybrana(c: Context) = "u"
     fun nazwa(c: Context) = lista.firstOrNull { it.first == wybrana(c) }?.second ?: lista[0].second
     private fun przyrostek(c: Context) = when (wybrana(c)) { "b" -> "__b"; "c" -> "__c"; "d" -> "__d"; "r" -> "__r"; "k" -> "__k"; "u" -> "__u"; else -> "" }
     /** Skorki z bialymi ikonami barwionymi akcentem. */

@@ -262,8 +262,7 @@ class StartActivity : AppCompatActivity() {
     private fun naglowekTmdb(t: String) = LinearLayout(this).apply {
         orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(16), dp(22), dp(16), dp(10))
         addView(tekst(t, 19f, gruby = true), LinearLayout.LayoutParams(0, -2, 1f))
-        addView(tekst("TMDB", 17f, 0xFF1ED98A.toInt(), gruby = true).apply { letterSpacing = 0.15f })
-        addView(View(context).apply { background = tlo(0xFF01B4E4.toInt(), 8) }, LinearLayout.LayoutParams(dp(44), dp(14)).apply { marginStart = dp(6) })
+
     }
 
     /** Ranking 1, 2, 3... z duza cyfra przy plakacie (szeroko = karta pozioma dla seriali). */
@@ -1116,12 +1115,6 @@ class StartActivity : AppCompatActivity() {
         }
         wiersz("Blokada zrzutów ekranu", if (Ust.prefs(this).getBoolean("blokada_zrzutow", true)) "Włączona – nie da się zrobić zrzutu ani nagrać ekranu aplikacji (jak w Netflixie)" else "Wyłączona – zrzuty ekranu działają") {
             Ust.prefs(this).edit().putBoolean("blokada_zrzutow", !Ust.prefs(this).getBoolean("blokada_zrzutow", true)).apply(); Pilot.wlacz(this); pokaz(4)
-        }
-        wiersz("Skórka (wygląd)", Skorka.nazwa(this)) {
-            val ter = Skorka.lista.indexOfFirst { it.first == Skorka.wybrana(this) }
-            androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Skórka").setSingleChoiceItems(Skorka.lista.map { it.second }.toTypedArray(), ter) { d, i ->
-                Ust.prefs(this).edit().putString("skorka", Skorka.lista[i].first).apply(); d.dismiss(); recreate() }
-                .setNegativeButton("Zamknij", null).show().also { Jezyk.okno(it) }
         }
         wiersz("Kontrola rodzicielska", if (pin().isEmpty()) "Wyłączona – ustaw PIN, żeby blokować grupy (np. dla dorosłych)" else "Włączona – zablokowanych grup: " + zablokowaneGrupy().size) { kontrolaRodzicielska() }
         wiersz("Odśwież listę", "Pobiera świeżą listę kanałów, filmów i seriali z serwera") { laduj() }
