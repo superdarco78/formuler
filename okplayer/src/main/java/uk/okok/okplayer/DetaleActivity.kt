@@ -20,6 +20,7 @@ import coil.load
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONObject
 
 /** Ekran filmu / serialu jak w MyTvOnline: plakat, rok, gatunek, TMDb %, czas, Ogladaj, opis z Wiecej, Obsada/Nosnik/Detale, sezony. */
@@ -216,6 +217,20 @@ class DetaleActivity : AppCompatActivity() {
                 if (zwiastun.isNotEmpty()) {
                     im.load("https://img.youtube.com/vi/$zwiastun/hqdefault.jpg")
                     ramka.setOnClickListener { startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.youtube.com/watch?v=$zwiastun"))) }
+                } else {
+                    // Brak na serwerze i w Wikidata: zwiastun z iTunes; gdy i tam brak - wyszukanie na YouTube (nigdy nie wisi "Szukam").
+                    intent.getStringExtra("okladka")?.let { im.load(it) }
+                    val yt = "https://www.youtube.com/results?search_query=" + java.net.URLEncoder.encode((intent.getStringExtra("nazwa") ?: "") + " zwiastun trailer", "UTF-8")
+                    lifecycleScope.launch {
+                        val u = withTimeoutOrNull(8000) { withContext(Dispatchers.IO) { Dodatki.zwiastunItunes(intent.getStringExtra("nazwa") ?: "") } } ?: ""
+                        if (u.isNotEmpty()) {
+                            nap.text = "▶"; nap.textSize = 54f
+                            ramka.setOnClickListener { startActivity(Intent(Intent.ACTION_VIEW).setDataAndType(android.net.Uri.parse(u), "video/*")) }
+                        } else {
+                            nap.text = "▶  Zwiastun na YouTube"; nap.textSize = 18f
+                            ramka.setOnClickListener { startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(yt))) }
+                        }
+                    }
                 }
                 tabTresc.addView(ramka, LinearLayout.LayoutParams(-1, resources.displayMetrics.widthPixels * 9 / 16))
             }

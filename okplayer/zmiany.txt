@@ -1,3 +1,4 @@
-Animacja ładowania filmu / kanału|w środku ikona aplikacji, nazwa ucięta do pierwszego słowa|w środku plakat filmu albo logo kanału (w kółku, z kręcącym się pierścieniem), pod spodem pełna nazwa
-Obsada filmu i serialu|kilku aktorów|pełna obsada z serwera + Wikidata, reżyser ze zdjęciem, scenariusz i muzyka (z 1.82)
+Zwiastun filmu|przy nowych filmach wisiało „Szukam zwiastuna…”|gdy serwer i Wikipedia go nie mają: zwiastun z iTunes (odtwarza się od razu), a gdy i tam brak – przycisk „Zwiastun na YouTube”; tło z plakatem
+Animacja ładowania|ikona aplikacji, ucięta nazwa|plakat filmu / logo kanału i pełna nazwa (z 1.83)
+Obsada|kilku aktorów|pełna obsada, reżyser ze zdjęciem, scenariusz, muzyka (z 1.82)
 Małe okno i program|działa (1.80)|bez zmian

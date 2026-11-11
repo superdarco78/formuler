@@ -115,6 +115,21 @@ object Dodatki {
     fun klucz(t: String): String = t.lowercase().replace(rePrzedrostek, "").replace(reRok, "").replace(reZnaki, "")
 
     /** Zapas jak w starej aplikacji: opis, gatunek, rok i okladka z publicznej bazy iTunes (bez klucza). */
+    /** Zwiastun z iTunes (krotki film .m4v), gdy nie ma go na serwerze ani w Wikidata. Zwraca adres filmu albo "". */
+    fun zwiastunItunes(tytul: String): String = try {
+        val czysty = tytul.replace(Regex("\\(\\d{4}\\)"), " ").replace(Regex("^[A-Z]{2,3}\\s*[-|:]\\s*"), "")
+            .replace(Regex("\\b(napisy|lektor|dubbing|pl|4k|hd|fhd|uhd)\\b", RegexOption.IGNORE_CASE), " ").replace(Regex("\\s+"), " ").trim()
+        fun n(x: String) = x.lowercase().replace(Regex("[^\\p{L}\\p{N}]"), "")
+        var u = ""
+        for (kraj in listOf(KRAJ, "US")) {
+            val arr = JSONObject(tekst("https://itunes.apple.com/search?term=" + java.net.URLEncoder.encode(czysty, "UTF-8") + "&media=movie&entity=movie&country=$kraj&limit=8")).optJSONArray("results") ?: continue
+            for (i in 0 until arr.length()) { val o = arr.getJSONObject(i); val p = o.optString("previewUrl")
+                if (p.startsWith("http") && (n(o.optString("trackName")).contains(n(czysty)) || n(czysty).contains(n(o.optString("trackName"))))) { u = p; break } }
+            if (u.isNotEmpty()) break
+        }
+        u
+    } catch (e: Exception) { "" }
+
     fun itunes(tytul: String, serial: Boolean): JSONObject? = try {
         val rok = Regex("\\((\\d{4})\\)").find(tytul)?.groupValues?.get(1)?.toIntOrNull()
         val czysty = tytul.replace(Regex("\\(\\d{4}\\)"), " ").replace(Regex("^[A-Z]{2,3}\\s*[-|:]\\s*"), "")
