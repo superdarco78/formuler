@@ -622,7 +622,7 @@ class MainActivity : AppCompatActivity() {
         android.animation.ObjectAnimator.ofFloat(pasek, "translationX", -dp(60).toFloat(), dp(160).toFloat()).apply {
             duration = 900; repeatCount = android.animation.ValueAnimator.INFINITE; interpolator = android.view.animation.AccelerateDecelerateInterpolator(); start() }
         // zabezpieczenie: najdluzej 8 s
-        nakladka.postDelayed({ koniecAnimacjiStartu() }, 8000)
+        nakladka.postDelayed({ koniecAnimacjiStartu() }, 5000)
     }
 
     /** Wywolywane, gdy Start jest gotowy: animacja znika plynnie (nie wczesniej niz po 1,2 s). */

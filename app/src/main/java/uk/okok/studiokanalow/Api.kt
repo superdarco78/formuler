@@ -89,20 +89,10 @@ object Api {
         withContext(Dispatchers.IO) {
             var url = "${baseUrl(server)}/player_api.php?username=$user&password=$pass&action=get_live_streams"
             if (!categoryId.isNullOrEmpty()) url += "&category_id=$categoryId"
-            val arr = JSONArray(get(url))
             val out = ArrayList<Channel>()
-            for (i in 0 until arr.length()) {
-                val o = arr.getJSONObject(i)
-                val logo = o.optString("stream_icon").takeIf { it.isNotEmpty() && it != "null" }
-                out.add(
-                    Channel(
-                        streamId = o.optString("stream_id"),
-                        name = o.optString("name"),
-                        logo = logo,
-                        categoryId = o.optString("category_id"),
-                        num = o.optInt("num", i + 1)
-                    )
-                )
+            strumienListy(url) { o ->
+                out.add(Channel(o.s("stream_id"), o.s("name"), o.s("stream_icon").ifEmpty { null }, o.s("category_id"),
+                    o.s("num").toIntOrNull() ?: (out.size + 1)))
             }
             out
         }
@@ -157,30 +147,52 @@ object Api {
             }
         }
 
+    /**
+     * Czyta duza liste JSON strumieniowo (obiekt po obiekcie), bez trzymania calego tekstu w pamieci.
+     * Duze listy filmow nie zapychaja pamieci i aplikacja sie nie zawiesza.
+     */
+    private fun strumienListy(url: String, naObiekt: (Map<String, String>) -> Unit) {
+        val req = Request.Builder().url(url).header("User-Agent", "StudioKanalow/1.0").build()
+        client.newCall(req).execute().use { resp ->
+            if (!resp.isSuccessful) throw RuntimeException("HTTP ${resp.code}")
+            val r = android.util.JsonReader(resp.body!!.charStream())
+            r.isLenient = true
+            if (r.peek() != android.util.JsonToken.BEGIN_ARRAY) { r.skipValue(); return }
+            r.beginArray()
+            val m = HashMap<String, String>()
+            while (r.hasNext()) {
+                if (r.peek() != android.util.JsonToken.BEGIN_OBJECT) { r.skipValue(); continue }
+                m.clear(); r.beginObject()
+                while (r.hasNext()) {
+                    val k = r.nextName()
+                    when (r.peek()) {
+                        android.util.JsonToken.STRING -> m[k] = r.nextString()
+                        android.util.JsonToken.NUMBER -> m[k] = r.nextString()
+                        android.util.JsonToken.BOOLEAN -> m[k] = r.nextBoolean().toString()
+                        else -> r.skipValue()
+                    }
+                }
+                r.endObject()
+                naObiekt(m)
+            }
+        }
+    }
+
+    private fun Map<String, String>.s(k: String) = this[k]?.takeIf { it != "null" } ?: ""
+
     /** Lista filmow (VOD). Kazdy film ma gotowy adres do odtwarzania w directUrl. */
     suspend fun vodStreams(server: String, user: String, pass: String, categoryId: String?): List<Channel> =
         withContext(Dispatchers.IO) {
             var url = "${baseUrl(server)}/player_api.php?username=$user&password=$pass&action=get_vod_streams"
             if (!categoryId.isNullOrEmpty()) url += "&category_id=$categoryId"
-            val arr = JSONArray(get(url))
             val out = ArrayList<Channel>()
-            for (i in 0 until arr.length()) {
-                val o = arr.getJSONObject(i)
-                val id = o.optString("stream_id")
-                val ext = o.optString("container_extension").ifEmpty { "mp4" }
-                val poster = o.optString("stream_icon").takeIf { it.isNotEmpty() && it != "null" }
-                val movieUrl = "${baseUrl(server)}/movie/$user/$pass/$id.$ext"
-                out.add(
-                    Channel(
-                        streamId = id,
-                        name = o.optString("name"),
-                        logo = poster,
-                        categoryId = o.optString("category_id"),
-                        num = o.optInt("num", i + 1),
-                        directUrl = movieUrl,
-                        rating = o.optString("rating_5based").toDoubleOrNull() ?: o.optString("rating").toDoubleOrNull() ?: 0.0
-                    )
-                )
+            val baza = baseUrl(server)
+            strumienListy(url) { o ->
+                val id = o.s("stream_id")
+                val ext = o.s("container_extension").ifEmpty { "mp4" }
+                out.add(Channel(id, o.s("name"), o.s("stream_icon").ifEmpty { null }, o.s("category_id"),
+                    o.s("num").toIntOrNull() ?: (out.size + 1), "$baza/movie/$user/$pass/$id.$ext",
+                    o.s("rating_5based").toDoubleOrNull() ?: o.s("rating").toDoubleOrNull() ?: 0.0))
             }
             out
         }
@@ -204,14 +216,10 @@ object Api {
     /** Lista seriali (bez odcinkow). */
     suspend fun seriesList(server: String, user: String, pass: String): List<Channel> =
         withContext(Dispatchers.IO) {
-            val arr = JSONArray(get("${baseUrl(server)}/player_api.php?username=$user&password=$pass&action=get_series"))
             val out = ArrayList<Channel>()
-            for (i in 0 until arr.length()) {
-                val o = arr.getJSONObject(i)
-                val cover = o.optString("cover").takeIf { it.isNotEmpty() && it != "null" }
-                out.add(Channel(o.optString("series_id"), o.optString("name"), cover,
-                    o.optString("category_id"), i + 1, null,
-                    o.optString("rating_5based").toDoubleOrNull() ?: o.optString("rating").toDoubleOrNull() ?: 0.0))
+            strumienListy("${baseUrl(server)}/player_api.php?username=$user&password=$pass&action=get_series") { o ->
+                out.add(Channel(o.s("series_id"), o.s("name"), o.s("cover").ifEmpty { null }, o.s("category_id"), out.size + 1, null,
+                    o.s("rating_5based").toDoubleOrNull() ?: o.s("rating").toDoubleOrNull() ?: 0.0))
             }
             out
         }
