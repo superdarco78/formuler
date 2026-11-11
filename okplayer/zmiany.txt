@@ -1,2 +1,4 @@
-Animacja przy uruchomieniu|krótka (ok. 1 s): logo się obracało i znikało|nowa, dłuższa (ok. 2,5 s): kolorowe fale rozchodzą się od środka, logo wpada z góry z odbiciem i pulsuje, napis „OK Player” składa się z rozsuniętych liter, pod nim „Telewizja • Filmy • Seriale” i kolorowy pasek ładowania, na koniec płynne wejście do aplikacji
-Kanał z listy TV|otwierał się od razu na pełnym ekranie|obraz na górze, pod nim program (EPG) i lista kanałów – jak w starej aplikacji
+Opis filmu i serialu|czasem kręciło się „Ładuję…” bez końca i nie było opisu, gatunku ani oceny|opis zapamiętuje się w telefonie – przy kolejnym otwarciu pokazuje się natychmiast, a świeży dociąga się w tle
+Pobieranie opisu|jedna próba – gdy serwer nie odpowiedział, ekran zostawał pusty|3 próby; gdy dalej nic, napis „Nie udało się pobrać opisu” i przycisk „Spróbuj ponownie”
+Start|opis pobierał się dopiero po dotknięciu plakatu|opisy popularnych i najnowszych filmów, seriali i ulubionych pobierają się w tle zaraz po uruchomieniu – otwierają się od razu
+Animacja przy uruchomieniu|krótka|dłuższa: fale, logo z odbiciem, składany napis i pasek ładowania

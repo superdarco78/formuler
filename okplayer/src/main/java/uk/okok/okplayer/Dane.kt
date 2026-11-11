@@ -198,8 +198,26 @@ object Serwer {
         strumien(api(c, "get_series")) { o -> out.add(Vod(o["series_id"] ?: "", o["name"] ?: "", o["cover"]?.takeIf { it.startsWith("http") }, o["category_id"] ?: "", ocena(o), "", "s")) }
         return out
     }
-    fun infoFilmu(c: Context, id: String): JSONObject? = try { JSONObject(tekst(api(c, "get_vod_info") + "&vod_id=$id&okp=1")) } catch (e: Exception) { null }
-    fun infoSerialu(c: Context, id: String): JSONObject? = try { JSONObject(tekst(api(c, "get_series_info") + "&series_id=$id&okp=1")) } catch (e: Exception) { null }
+    /** Opis filmu/serialu: z pamieci telefonu od razu (zapamietany na 7 dni), z serwera w tle; 3 proby przy bledzie. */
+    private fun plikInfo(c: Context, r: String, id: String) = File(File(c.filesDir, "info").apply { mkdirs() }, "${r}_$id.json")
+    fun infoZPamieci(c: Context, serial: Boolean, id: String): JSONObject? = try {
+        val f = plikInfo(c, if (serial) "s" else "f", id); if (f.exists()) JSONObject(f.readText()) else null
+    } catch (e: Exception) { null }
+    private fun info(c: Context, serial: Boolean, id: String): JSONObject? {
+        val u = if (serial) api(c, "get_series_info") + "&series_id=$id&okp=1" else api(c, "get_vod_info") + "&vod_id=$id&okp=1"
+        repeat(3) { proba ->
+            try {
+                val t = tekst(u); val o = JSONObject(t)
+                if (o.optJSONObject("info") != null) { try { plikInfo(c, if (serial) "s" else "f", id).writeText(t) } catch (_: Exception) {}; return o }
+            } catch (_: Exception) {}
+            Thread.sleep(700L * (proba + 1))
+        }
+        return null
+    }
+    fun infoFilmu(c: Context, id: String): JSONObject? = info(c, false, id)
+    fun infoSerialu(c: Context, id: String): JSONObject? = info(c, true, id)
+    /** Wczesniejsze pobranie opisow (np. pierwszych plakatow na Starcie), zeby otwieraly sie od razu. */
+    fun wczesniej(c: Context, l: List<Vod>) { for (v in l) { val f = plikInfo(c, if (v.rodzaj == "s") "s" else "f", v.id); if (f.exists() && System.currentTimeMillis() - f.lastModified() < 7 * 86_400_000L) continue; info(c, v.rodzaj == "s", v.id) } }
 }
 
 /** Pamiec list na dysku: Start pokazuje sie od razu, swieze dane dociagaja sie w tle. */

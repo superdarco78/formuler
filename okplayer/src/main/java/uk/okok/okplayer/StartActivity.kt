@@ -317,6 +317,7 @@ class StartActivity : AppCompatActivity() {
         k.addView(rv, LinearLayout.LayoutParams(-1, -2))
     }
 
+    private var wczesniejPobrane = false
     private fun start() {
         val sv = ScrollView(this)
         val k = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(0, 0, 0, dp(16)) }
@@ -332,6 +333,10 @@ class StartActivity : AppCompatActivity() {
         rzadKanalow(k, "Najnowsze kanały telewizyjne", kanaly.takeLast(20).reversed())
         rzadVod(k, "Najnowsze VOD-y", filmy.takeLast(25).reversed())
         rzadVod(k, "Najnowsze seriale telewizyjne", seriale.takeLast(25).reversed())
+        // Opisy pierwszych plakatow pobierane w tle - otwieraja sie od razu.
+        if (!wczesniejPobrane && filmy.isNotEmpty()) { wczesniejPobrane = true
+            val l = pop(filmy).take(10) + filmy.takeLast(10).reversed() + pop(seriale).take(6) + Ust.ulubione(this).filter { it[0] != "k" }.map { Vod(it[1], it[2], it[3].ifEmpty { null }, it[5], 0.0, it[4], it[0]) }
+            lifecycleScope.launch(Dispatchers.IO) { Serwer.wczesniej(this@StartActivity, l) } }
     }
 
     private fun naglowek(t: String) = tekst(t, 19f, gruby = true).apply { setPadding(dp(16), dp(20), dp(16), dp(10)) }

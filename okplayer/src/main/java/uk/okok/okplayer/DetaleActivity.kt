@@ -96,8 +96,23 @@ class DetaleActivity : AppCompatActivity() {
         wybierz(0)
 
         lifecycleScope.launch {
+            // Najpierw z pamieci telefonu (od razu), potem swieze z serwera.
+            val zPam = withContext(Dispatchers.IO) { Serwer.infoZPamieci(this@DetaleActivity, serial, id) }
+            if (zPam != null) pokazInfo(zPam, serial, id, nazwa, plakat, meta, ocena, opis)
             val o = withContext(Dispatchers.IO) { if (serial) Serwer.infoSerialu(this@DetaleActivity, id) else Serwer.infoFilmu(this@DetaleActivity, id) }
-            val i = o?.optJSONObject("info") ?: return@launch
+            if (o == null) {
+                if (zPam == null) { tabTresc.removeAllViews(); tabTresc.addView(tekst("Nie udało się pobrać opisu z serwera.", 15f, SZARY))
+                    tabTresc.addView(tekst("⟳  Spróbuj ponownie", 16f).apply { setPadding(0, dp(14), 0, dp(14)); setOnClickListener { recreate() } }) }
+                return@launch
+            }
+            pokazInfo(o, serial, id, nazwa, plakat, meta, ocena, opis)
+        }
+    }
+
+    private var dodatkiPobrane = false
+    private fun pokazInfo(o: JSONObject, serial: Boolean, id: String, nazwa: String, plakat: ImageView, meta: TextView, ocena: TextView, opis: TextView) {
+        lifecycleScope.launch {
+            val i = o.optJSONObject("info") ?: return@launch
             info = i
             if (serial) {
                 val ep = o.optJSONObject("episodes")
@@ -124,6 +139,8 @@ class DetaleActivity : AppCompatActivity() {
             zwiastun = t("youtube_trailer").let { y -> Regex("([A-Za-z0-9_-]{11})$").find(y.substringBefore("&"))?.groupValues?.get(1) ?: "" }
             wybierz(akt)
             // Zwiastun i role z Wikidata, a gdy brak - zwiastun z YouTube po tytule.
+            if (dodatkiPobrane) return@launch
+            dodatkiPobrane = true
             val (yt, r) = withContext(Dispatchers.IO) { Dodatki.wikidata(t("tmdb_id").ifEmpty { t("tmdb") }) }
             role = r
             if (zwiastun.isEmpty()) zwiastun = yt
