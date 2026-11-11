@@ -2,6 +2,7 @@ package uk.okok.studiokanalow
 
 import android.content.Intent
 import android.os.Bundle
+import coil.load
 import androidx.appcompat.app.AppCompatActivity
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
@@ -115,20 +116,8 @@ class PlayerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         b = ActivityPlayerBinding.inflate(layoutInflater)
         setContentView(b.root)
-        b.tvName.text = intent.getStringExtra("name") ?: ""
-        run {
-            val u0 = intent.getStringExtra("url") ?: ""
-            val m = Regex("/live/[^/]+/[^/]+/(\\d+)").find(u0)
-            if (m != null && !intent.getBooleanExtra("demo", false)) {
-                b.tvEpg.text = "Program TV: ładowanie…"
-                lifecycleScope.launch {
-                    val l = try { Api.programTv(Session.server(this@PlayerActivity), Session.user(this@PlayerActivity), Session.pass(this@PlayerActivity), m.groupValues[1], 3) } catch (e: Exception) { raport("epg blad " + e.javaClass.simpleName + " " + (e.message ?: "").take(60)); emptyList() }
-                    if (l.isEmpty()) { b.tvEpg.text = "Program TV: brak danych dla tego kanału"; return@launch }
-                    pokazProgram(l)
-                    raport("epg " + l.size + " pozycji")
-                }
-            }
-        }
+        if (!intent.getBooleanExtra("demo", false)) ladujNaglowek(intent.getStringExtra("url") ?: "", intent.getStringExtra("name") ?: "")
+        else b.tvName.text = intent.getStringExtra("name") ?: ""
         run {
             val u0 = intent.getStringExtra("url") ?: ""
             val m = Regex("/live/[^/]+/[^/]+/(\\d+)").find(u0)
@@ -141,7 +130,6 @@ class PlayerActivity : AppCompatActivity() {
                 val lp = android.widget.FrameLayout.LayoutParams(-2, -2)
                 lp.gravity = android.view.Gravity.TOP or android.view.Gravity.END; lp.setMargins(0, 80, 24, 0)
                 b.playerView.overlayFrameLayout?.addView(bt, lp)
-                b.tvEpg.setOnClickListener { pokazPrzewodnik(m.groupValues[1]) }
             }
         }
         if (Kontekst.kanaly.isNotEmpty() && !intent.getBooleanExtra("demo", false)) {
@@ -165,8 +153,8 @@ class PlayerActivity : AppCompatActivity() {
         val p = player ?: return
         val url = ch.directUrl ?: Api.liveStreamUrl(Session.server(this), Session.user(this), Session.pass(this), ch.streamId)
         intent.putExtra("url", url); intent.putExtra("name", ch.name)
-        b.tvName.text = ch.name
-        b.tvEpg.text = "Program TV: ładowanie…"
+        ladujNaglowek(url, ch.name, ch.streamId, ch.logo)
+        zamknijPrzewodnik()
         try { Session.saveLast(this, url, ch.name) } catch (e: Exception) { }
         proby = 0; probowane.clear()
         try { probowane.add(Session.server(this) + "|" + Session.user(this)) } catch (e: Exception) { }
@@ -174,8 +162,6 @@ class PlayerActivity : AppCompatActivity() {
             val u2 = rozwiaz(url)
             rozwiazany = u2
             p.setMediaItem(MediaItem.fromUri(u2)); p.prepare(); czuwajNad(p); p.playWhenReady = true
-            val l = try { Api.programTv(Session.server(this@PlayerActivity), Session.user(this@PlayerActivity), Session.pass(this@PlayerActivity), ch.streamId, 3) } catch (e: Exception) { emptyList() }
-            if (l.isEmpty()) b.tvEpg.text = "Program TV: brak danych dla tego kanału" else pokazProgram(l)
         }
     }
 
@@ -212,31 +198,124 @@ class PlayerActivity : AppCompatActivity() {
         }
     }
 
+    private var biezacyId = ""
+    private var wpisy: List<Api.Wpis> = emptyList()
+    private var wybranyDzien = ""
+    private var przewodnikOtwarty = false
+
+    /** Naglowek jak w MOL: logo, nazwa kanalu, audycja, godziny i pasek postepu. */
+    private fun ladujNaglowek(url: String, nazwa: String, idPodane: String = "", logo: String? = null) {
+        b.tvName.text = nazwa
+        val id = if (idPodane.isNotEmpty()) idPodane else (Regex("/live/[^/]+/[^/]+/(\\d+)").find(url)?.groupValues?.get(1) ?: "")
+        biezacyId = id; wpisy = emptyList()
+        val lg = logo ?: Kontekst.kanaly.firstOrNull { it.streamId == id }?.logo
+        if (!lg.isNullOrEmpty()) b.ivLogo.load(lg) else b.ivLogo.setImageResource(R.drawable.ic_movie)
+        b.pbEpg.visibility = android.view.View.GONE
+        if (id.isEmpty() || intent.getBooleanExtra("demo", false)) { b.tvEpg.text = ""; b.btnPrzewodnik.visibility = android.view.View.GONE; return }
+        b.btnPrzewodnik.visibility = android.view.View.VISIBLE
+        b.btnPrzewodnik.setOnClickListener { if (przewodnikOtwarty) zamknijPrzewodnik() else otworzPrzewodnik() }
+        b.tvEpg.text = "Program TV: ładowanie…"
+        lifecycleScope.launch {
+            val l = try { Api.programTv(Session.server(this@PlayerActivity), Session.user(this@PlayerActivity), Session.pass(this@PlayerActivity), id, 3) } catch (e: Exception) { raport("epg blad " + e.javaClass.simpleName + " " + (e.message ?: "").take(60)); emptyList() }
+            if (id != biezacyId) return@launch
+            if (l.isEmpty()) { b.tvEpg.text = "Program TV: brak danych dla tego kanału"; return@launch }
+            pokazProgram(l)
+            raport("epg " + l.size + " pozycji")
+        }
+    }
+
     private fun pokazProgram(l: List<Api.Audycja>) {
         val fmt = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
         val teraz = System.currentTimeMillis() / 1000
+        val akt = l.firstOrNull { it.start <= teraz } ?: l.first()
+        val nast = l.firstOrNull { it.start > teraz }
         val sb = android.text.SpannableStringBuilder()
-        fun dodaj(t: String, kolor: Int, rozm: Float, gruby: Boolean) {
-            val a = sb.length; sb.append(t)
-            sb.setSpan(android.text.style.ForegroundColorSpan(kolor), a, sb.length, 0)
-            sb.setSpan(android.text.style.RelativeSizeSpan(rozm), a, sb.length, 0)
-            if (gruby) sb.setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), a, sb.length, 0)
-        }
-        l.forEachIndexed { i, au ->
-            if (i > 0) sb.append("\n")
-            val trwa = au.start <= teraz
-            if (trwa) {
-                dodaj("TERAZ  ", 0xFF4F7BFF.toInt(), 0.9f, true)
-                dodaj(au.tytul, 0xFFFFFFFF.toInt(), 1.15f, true)
-                if (au.koniec > 0) dodaj("   " + fmt.format(java.util.Date(au.start * 1000)) + " – " + fmt.format(java.util.Date(au.koniec * 1000)), 0xFF9A9A9A.toInt(), 0.9f, false)
-                sb.append("\n")
-            } else {
-                dodaj(fmt.format(java.util.Date(au.start * 1000)) + "   ", 0xFF4F7BFF.toInt(), 1f, true)
-                dodaj(au.tytul, 0xFFD0D0D0.toInt(), 1f, false)
-            }
-        }
-        b.tvEpg.setLineSpacing(0f, 1.3f)
+        sb.append(akt.tytul); sb.setSpan(android.text.style.ForegroundColorSpan(0xFFFFFFFF.toInt()), 0, sb.length, 0)
+        if (akt.koniec > 0) sb.append("   " + fmt.format(java.util.Date(akt.start * 1000)) + " – " + fmt.format(java.util.Date(akt.koniec * 1000)))
+        if (nast != null) sb.append("\nDalej: " + fmt.format(java.util.Date(nast.start * 1000)) + "  " + nast.tytul)
         b.tvEpg.text = sb
+        if (akt.koniec > akt.start) {
+            b.pbEpg.progress = (((teraz - akt.start) * 100) / (akt.koniec - akt.start)).toInt().coerceIn(0, 100)
+            b.pbEpg.visibility = android.view.View.VISIBLE
+        }
+    }
+
+    private fun zamknijPrzewodnik() {
+        przewodnikOtwarty = false
+        b.guideScroll.visibility = android.view.View.GONE; b.dniScroll.visibility = android.view.View.GONE
+        b.rvKanaly.visibility = if (Kontekst.kanaly.isNotEmpty() && !intent.getBooleanExtra("demo", false)) android.view.View.VISIBLE else android.view.View.GONE
+        b.btnPrzewodnik.text = "☰ Program"
+    }
+
+    /** Przewodnik w panelu (jak w MOL): dni u gory, lista audycji, archiwum po dotknieciu. */
+    private fun otworzPrzewodnik() {
+        val id = biezacyId; if (id.isEmpty()) return
+        przewodnikOtwarty = true
+        b.rvKanaly.visibility = android.view.View.GONE
+        b.guideScroll.visibility = android.view.View.VISIBLE; b.dniScroll.visibility = android.view.View.VISIBLE
+        b.btnPrzewodnik.text = "▤ Kanały"
+        lifecycleScope.launch {
+            if (wpisy.isEmpty()) {
+                b.guideList.removeAllViews()
+                b.guideList.addView(android.widget.TextView(this@PlayerActivity).apply { text = "Ładowanie programu…"; setTextColor(0xFFB0B0B0.toInt()); setPadding(0, 24, 0, 0) })
+                wpisy = try { Api.przewodnik(Session.server(this@PlayerActivity), Session.user(this@PlayerActivity), Session.pass(this@PlayerActivity), id) } catch (e: Exception) { raport("przewodnik blad " + e.javaClass.simpleName + " " + (e.message ?: "").take(60)); emptyList() }
+                if (id != biezacyId) return@launch
+                raport("przewodnik " + wpisy.size + " pozycji, archiwum " + wpisy.count { it.archiwum })
+            }
+            if (wpisy.isEmpty()) {
+                b.guideList.removeAllViews()
+                b.guideList.addView(android.widget.TextView(this@PlayerActivity).apply { text = "Brak programu dla tego kanału"; setTextColor(0xFFB0B0B0.toInt()); setPadding(0, 24, 0, 0) })
+                return@launch
+            }
+            val dz = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+            val dni = wpisy.map { dz.format(java.util.Date(it.start * 1000)) }.distinct().sorted()
+            val dzis = dz.format(java.util.Date())
+            if (wybranyDzien !in dni) wybranyDzien = if (dzis in dni) dzis else dni.last()
+            rysujDni(dni, dzis, dz)
+            rysujAudycje(dz)
+        }
+    }
+
+    private fun rysujDni(dni: List<String>, dzis: String, dz: java.text.SimpleDateFormat) {
+        b.dniRow.removeAllViews()
+        val nazwa = java.text.SimpleDateFormat("EEE dd.MM", java.util.Locale("pl"))
+        for (d in dni) {
+            val wybrany = d == wybranyDzien
+            b.dniRow.addView(android.widget.TextView(this).apply {
+                text = if (d == dzis) "Dziś" else nazwa.format(dz.parse(d)!!)
+                textSize = 14f; setPadding(32, 14, 32, 14)
+                setTextColor(if (wybrany) 0xFFFFFFFF.toInt() else 0xFFB0B0B0.toInt())
+                setBackgroundColor(if (wybrany) 0xFF4F7BFF.toInt() else 0xFF2A2A2A.toInt())
+                val lp = android.widget.LinearLayout.LayoutParams(-2, -2); lp.setMargins(0, 0, 12, 0); layoutParams = lp
+                setOnClickListener { wybranyDzien = d; rysujDni(dni, dzis, dz); rysujAudycje(dz) }
+            })
+        }
+    }
+
+    private fun rysujAudycje(dz: java.text.SimpleDateFormat) {
+        val teraz = System.currentTimeMillis() / 1000
+        val fmt = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+        val srv = Session.server(this); val usr = Session.user(this); val pw = Session.pass(this)
+        b.guideList.removeAllViews()
+        var scrollDo: android.view.View? = null
+        for (w in wpisy.filter { dz.format(java.util.Date(it.start * 1000)) == wybranyDzien }) {
+            val trwa = w.start <= teraz && (w.koniec == 0L || w.koniec > teraz)
+            val przeszla = w.koniec in 1..teraz
+            val wiersz = android.widget.TextView(this).apply {
+                text = fmt.format(java.util.Date(w.start * 1000)) + "   " + w.tytul + (if (przeszla && w.archiwum) "   ▶ archiwum" else "")
+                textSize = 16f; setPadding(0, 20, 0, 20)
+                setTextColor(if (trwa) 0xFF4F7BFF.toInt() else if (przeszla && !w.archiwum) 0xFF707070.toInt() else 0xFFE0E0E0.toInt())
+                if (trwa) setTypeface(typeface, android.graphics.Typeface.BOLD)
+                if (przeszla && w.archiwum) setOnClickListener {
+                    val i2 = Intent(this@PlayerActivity, PlayerActivity::class.java)
+                    i2.putExtra("url", Api.archiwumUrl(srv, usr, pw, biezacyId, w)); i2.putExtra("name", w.tytul); i2.putExtra("demo", false)
+                    startActivity(i2)
+                }
+            }
+            if (trwa) scrollDo = wiersz
+            b.guideList.addView(wiersz)
+        }
+        scrollDo?.let { v -> b.guideScroll.post { b.guideScroll.scrollTo(0, (v.top - 40).coerceAtLeast(0)) } }
     }
 
     override fun onConfigurationChanged(c: android.content.res.Configuration) {

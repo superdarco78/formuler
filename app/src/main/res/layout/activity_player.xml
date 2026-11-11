@@ -22,22 +22,99 @@
         android:background="#FF1C1C1C"
         android:paddingHorizontal="12dp" android:paddingTop="14dp">
 
-        <TextView
-            android:id="@+id/tvName"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="#FFFFFFFF"
-            android:textSize="22sp" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
-        <TextView
-            android:id="@+id/tvEpg"
+            <ImageView
+                android:id="@+id/ivLogo"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
+                android:padding="4dp"
+                android:background="#FF2A2A2A"
+                android:scaleType="fitCenter" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="#FFFFFFFF"
+                    android:textStyle="bold"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:textSize="18sp" />
+
+                <TextView
+                    android:id="@+id/tvEpg"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textColor="#FFB0B0B0"
+                    android:textSize="14sp"
+                    android:maxLines="2"
+                    android:ellipsize="end"
+                    android:text="Program TV: ładowanie…" />
+
+                <ProgressBar
+                    android:id="@+id/pbEpg"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="3dp"
+                    android:layout_marginTop="6dp"
+                    android:max="100"
+                    android:progressTint="#FF4F7BFF"
+                    android:visibility="gone" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/btnPrzewodnik"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:padding="12dp"
+                android:text="☰ Program"
+                android:textColor="#FF4F7BFF"
+                android:textStyle="bold"
+                android:textSize="14sp"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <HorizontalScrollView
+            android:id="@+id/dniScroll"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:textColor="#FF9A9A9A"
-            android:textSize="15sp"
-            android:maxLines="4"
-            android:text="Program TV: dostępny po dodaniu źródła EPG" />
+            android:layout_marginTop="10dp"
+            android:scrollbars="none"
+            android:visibility="gone">
+            <LinearLayout
+                android:id="@+id/dniRow"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal" />
+        </HorizontalScrollView>
+
+        <ScrollView
+            android:id="@+id/guideScroll"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginTop="6dp"
+            android:visibility="gone">
+            <LinearLayout
+                android:id="@+id/guideList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+        </ScrollView>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvKanaly"
