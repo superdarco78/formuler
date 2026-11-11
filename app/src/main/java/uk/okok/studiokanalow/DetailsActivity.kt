@@ -140,7 +140,41 @@ class DetailsActivity : AppCompatActivity() {
         b.tvRating.text = listOf(
             if (v.rating.isNotEmpty()) "★ ${v.rating}" else "", v.duration
         ).filter { it.isNotEmpty() }.joinToString(" • ")
-        b.tvPlot.text = v.plot
+        ustawOpis(v.plot)
+    }
+
+    private var opisRozwiniety = false
+
+    /** Opis jak w MyTvOnline: 3 linie z "… Więcej", po kliknieciu calosc z "Mniej". */
+    private fun ustawOpis(pelny: String) {
+        val tv = b.tvPlot
+        tv.maxLines = Int.MAX_VALUE
+        if (pelny.isEmpty()) { tv.text = ""; return }
+        fun zDopiskiem(t: String, dop: String): CharSequence {
+            val sb = android.text.SpannableStringBuilder(t).append("  ")
+            val st = sb.length
+            sb.append(dop)
+            sb.setSpan(android.text.style.ForegroundColorSpan(0xFFFFFFFF.toInt()), st, sb.length, 0)
+            sb.setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), st, sb.length, 0)
+            return sb
+        }
+        tv.setOnClickListener { opisRozwiniety = !opisRozwiniety; ustawOpis(pelny) }
+        if (opisRozwiniety) { tv.text = zDopiskiem(pelny, "Mniej"); return }
+        tv.text = pelny
+        tv.post {
+            val l = tv.layout ?: return@post
+            if (l.lineCount <= 3) { tv.setOnClickListener(null); return@post }
+            var koniec = l.getLineEnd(2)
+            var krotki: CharSequence
+            do {
+                krotki = zDopiskiem(pelny.substring(0, koniec).trimEnd() + "…", "Więcej")
+                val sl = android.text.StaticLayout(krotki, tv.paint, l.width,
+                    android.text.Layout.Alignment.ALIGN_NORMAL, tv.lineSpacingMultiplier, tv.lineSpacingExtra, tv.includeFontPadding)
+                if (sl.lineCount <= 3) break
+                koniec -= 2
+            } while (koniec > 10)
+            tv.text = krotki
+        }
     }
 
     /** Szuka zwiastuna na YouTube (telefon laczy sie z YouTube bezposrednio) i otwiera pierwszy wynik. */
