@@ -13,9 +13,8 @@ import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
 /**
- * Sprawdzanie aktualizacji (lekka wersja, bez specjalnych uprawnien).
- * Jesli jest nowsza wersja, pokazuje okno z przyciskiem "Pobierz", ktory otwiera
- * strone z plikiem. Nie zada uprawnienia do instalowania (to uspokaja Play Protect).
+ * Sprawdzanie aktualizacji. Jesli jest nowsza wersja, pokazuje okno "Nowa wersja";
+ * po "Zainstaluj" aktualizacja pobiera sie i instaluje sama w tle.
  */
 object Updater {
 
@@ -59,7 +58,7 @@ object Updater {
                 pokazane = true
                 androidx.appcompat.app.AlertDialog.Builder(act)
                     .setTitle("Nowa wersja $remoteName")
-                    .setMessage("Dostępna jest nowa wersja aplikacji. Zainstalować teraz? Twoje dane i logowanie zostaną zachowane.")
+                    .setMessage("Dostępna jest nowa wersja aplikacji. Po kliknięciu „Zainstaluj” zaktualizuje się sama w tle i uruchomi ponownie. Dane i logowanie zostaną zachowane.")
                     .setPositiveButton("Zainstaluj") { _, _ -> pobierzIZainstaluj(act, url) }
                     .setNegativeButton("Później", null)
                     .setOnDismissListener { pokazane = false }
@@ -73,32 +72,73 @@ object Updater {
         }
     }
 
-    /** Pobiera APK do pamieci podrecznej i uruchamia systemowy instalator (aktualizacja na wierzch). */
+    /**
+     * Cicha aktualizacja: pobiera APK w tle i instaluje przez PackageInstaller.
+     * Na Androidzie 12+ aplikacja aktualizuje sama siebie bez dodatkowych okien
+     * (jedyne potwierdzenie to "Zainstaluj" w naszym oknie). Na starszych systemach
+     * system pokaze swoje okno instalacji.
+     */
     private fun pobierzIZainstaluj(act: Activity, url: String) {
-        android.widget.Toast.makeText(act, "Pobieranie aktualizacji…", android.widget.Toast.LENGTH_LONG).show()
+        val app = act.applicationContext
         (act as? androidx.lifecycle.LifecycleOwner)?.lifecycleScope?.launch {
             try {
-                val plik = withContext(Dispatchers.IO) {
-                    val f = java.io.File(act.cacheDir, "aktualizacja.apk")
-                    client.newCall(Request.Builder().url(url).build()).execute().use { r ->
-                        if (!r.isSuccessful) throw java.io.IOException("HTTP " + r.code)
-                        r.body!!.byteStream().use { i -> f.outputStream().use { o -> i.copyTo(o) } }
-                    }
-                    f
+                withContext(Dispatchers.IO) {
+                    val pi = app.packageManager.packageInstaller
+                    val params = android.content.pm.PackageInstaller.SessionParams(
+                        android.content.pm.PackageInstaller.SessionParams.MODE_FULL_INSTALL)
+                    params.setAppPackageName(app.packageName)
+                    if (android.os.Build.VERSION.SDK_INT >= 31)
+                        params.setRequireUserAction(android.content.pm.PackageInstaller.SessionParams.USER_ACTION_NOT_REQUIRED)
+                    val id = pi.createSession(params)
+                    val sesja = pi.openSession(id)
+                    try {
+                        client.newCall(Request.Builder().url(url).build()).execute().use { r ->
+                            if (!r.isSuccessful) throw java.io.IOException("HTTP " + r.code)
+                            val dl = r.body!!.contentLength()
+                            r.body!!.byteStream().use { i ->
+                                sesja.openWrite("okplayer.apk", 0, dl).use { o ->
+                                    i.copyTo(o); sesja.fsync(o)
+                                }
+                            }
+                        }
+                        val flagi = android.app.PendingIntent.FLAG_UPDATE_CURRENT or
+                            (if (android.os.Build.VERSION.SDK_INT >= 31) android.app.PendingIntent.FLAG_MUTABLE else 0)
+                        val pint = android.app.PendingIntent.getBroadcast(app, id,
+                            Intent(app, InstalacjaReceiver::class.java), flagi)
+                        sesja.commit(pint.intentSender)
+                    } catch (e: Exception) { sesja.abandon(); throw e }
+                    finally { sesja.close() }
                 }
-                if (android.os.Build.VERSION.SDK_INT >= 26 && !act.packageManager.canRequestPackageInstalls()) {
-                    android.widget.Toast.makeText(act, "Zezwól tej aplikacji na instalowanie, potem wybierz aktualizację jeszcze raz", android.widget.Toast.LENGTH_LONG).show()
-                    act.startActivity(Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + act.packageName)))
-                    return@launch
-                }
-                val uri = androidx.core.content.FileProvider.getUriForFile(act, act.packageName + ".fileprovider", plik)
-                act.startActivity(Intent(Intent.ACTION_VIEW).apply {
-                    setDataAndType(uri, "application/vnd.android.package-archive")
-                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
-                })
+                rap(act, "cicha instalacja wyslana")
             } catch (e: Exception) {
+                rap(act, "blad instalacji " + e.javaClass.simpleName + " " + (e.message ?: "").take(80))
                 android.widget.Toast.makeText(act, "Nie udało się pobrać aktualizacji", android.widget.Toast.LENGTH_LONG).show()
             }
         }
+    }
+}
+
+/** Odbiera wynik instalacji. Gdy system wymaga potwierdzenia (np. brak zgody na instalowanie), pokazuje jego okno. */
+class InstalacjaReceiver : android.content.BroadcastReceiver() {
+    override fun onReceive(c: android.content.Context, i: Intent) {
+        val st = i.getIntExtra(android.content.pm.PackageInstaller.EXTRA_STATUS, -999)
+        if (st == android.content.pm.PackageInstaller.STATUS_PENDING_USER_ACTION) {
+            @Suppress("DEPRECATION")
+            val potw = i.getParcelableExtra<Intent>(Intent.EXTRA_INTENT)
+            if (potw != null) try { c.startActivity(potw.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } catch (_: Exception) {}
+        } else if (st != android.content.pm.PackageInstaller.STATUS_SUCCESS) {
+            val m = i.getStringExtra(android.content.pm.PackageInstaller.EXTRA_STATUS_MESSAGE) ?: ""
+            android.widget.Toast.makeText(c, "Aktualizacja nieudana: " + m.take(60), android.widget.Toast.LENGTH_LONG).show()
+        }
+    }
+}
+
+/** Po cichej aktualizacji uruchamia aplikacje ponownie. */
+class AktualizacjaReceiver : android.content.BroadcastReceiver() {
+    override fun onReceive(c: android.content.Context, i: Intent) {
+        if (i.action != Intent.ACTION_MY_PACKAGE_REPLACED) return
+        try {
+            c.startActivity(Intent(c, LoginActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        } catch (_: Exception) {}
     }
 }
