@@ -1,1 +1,6 @@
-Komunikat błędu odtwarzania|„Kanał nie działa” i sam kod, także przy filmach|przy filmie „Film nie działa” z powodem (np. HTTP 403), ten sam powód idzie do raportów
+Przyciski odtwarzacza z Canvy|zwykłe płaskie ikony (zabarwione na różowo)|okrągłe neonowe przyciski z Canvy: odtwórz, pauza, −10 s, +10 s, poprzedni, następny, opcje, pełny ekran
+Pasek odtwarzacza|szary pasek|ciemne neonowe tło z Canvy pod przyciskami i paskiem czasu
+Plakietka NA ŻYWO|brak|na kanale na żywo (gdy widać przyciski) plakietka NA ŻYWO z Canvy
+Przyciski na obrazie|szare prostokąty (Od początku, Poprzedni, Opcje, Program)|szklane pigułki z Canvy, zaznaczony przycisk świeci na różowo (pilot)
+Panel pod obrazem (pionowo)|czarny pasek|tło z neonową falą z Canvy, przycisk ☰ Program to różowa pigułka z Canvy
+Z 1.98 i 1.99|–|bez zmian: aktualizacja po powrocie do aplikacji, komunikat błędu z powodem
