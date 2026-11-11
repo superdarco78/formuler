@@ -479,7 +479,9 @@ class OdtwarzaczActivity : AppCompatActivity() {
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
         if (przewodnikOtwarty && panel != null && resources.configuration.orientation != android.content.res.Configuration.ORIENTATION_LANDSCAPE) { zamknijPrzewodnik(); return }
+        // Pelny ekran -> Wstecz: od razu do mini-okna w aplikacji (bez posredniego widoku w pionie).
         if (resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE && panel != null) {
+            if (!archiwumGra && Ust.prefs(this).getBoolean("okienko", true)) { requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT; doMini(); return }
             requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT; return
         }
         if (!intent.getBooleanExtra("vod", false) && !archiwumGra && Ust.prefs(this).getBoolean("okienko", true)) { doMini(); return }

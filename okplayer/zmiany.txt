@@ -1,4 +1,4 @@
-• Dotknięcie mini-okna: otwierało TV w pionie z listą → teraz od razu pełny ekran (poziomo)
-• Wstecz z pełnego ekranu → widok z listą kanałów → jeszcze raz Wstecz → mini-okno
-• Dolny pasek: same ikonki zamiast napisów; lupa, zębatka i przyciski mini-okna jako białe ikony
-• Duży ekran ↔ mini-okno: płynnie, bez ładowania od nowa
+• Pełny ekran → Wstecz: było przejście do widoku w pionie z listą → teraz od razu mini-okno w aplikacji
+• Dotknięcie mini-okna: od razu pełny ekran
+• Małe ✕ w mini-oknie: zamyka TV całkiem
+• Przejścia pełny ekran ↔ mini-okno: płynnie, obraz gra bez przerwy
