@@ -1,3 +1,3 @@
-⚽ Mecze i sport na żywo (nowość)|trzeba było szukać po kanałach, gdzie leci mecz|na Starcie rząd kanałów sportowych, które właśnie nadają mecz lub transmisję: logo, „● NA ŻYWO”, co leci, godziny i pasek – dotknij i oglądasz
-📻 Radio (nowość)|stacje radiowe były tylko w grupach na liście TV|na Starcie osobny rząd „Radio” ze wszystkimi stacjami – dotknij i gra
-Włączanie kanału / filmu|czarny ekran|animacja z logo i kolorowym pierścieniem
+Przełączanie zakładek|treść pojawiała się od razu, „skokiem”|płynne wejście: ekran lekko wjeżdża od dołu, a rzędy i listy pojawiają się po kolei
+Otwieranie filmu / serialu / aktora|nowy ekran wskakiwał od razu|płynne przybliżenie; plakat delikatnie się przybliża, a tytuł, przyciski i opis wjeżdżają jeden po drugim
+Start|–|nowe rzędy: Mecze i sport na żywo, Radio

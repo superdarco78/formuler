@@ -185,6 +185,7 @@ class StartActivity : AppCompatActivity() {
             }
         }
         when (i) { 0 -> start(); 1 -> listaKanalow(); 2 -> siatkaVod(filmy, katF, "f"); 3 -> siatkaVod(seriale, katS, "s"); 5 -> szukaj(); 6 -> ulubioneEkran(); else -> ustawienia() }
+        animujZakladke()
     }
 
     /** Dane: najpierw z pamieci telefonu (od razu), potem swieze z serwera w tle. */
@@ -379,6 +380,22 @@ class StartActivity : AppCompatActivity() {
         }
     }
 
+    /** Plynne wejscie zakladki: tresc wjezdza lekko od dolu i sie rozjasnia, rzedy/listy pojawiaja sie po kolei. */
+    private fun animujZakladke() {
+        tresc.alpha = 0f; tresc.translationY = dp(18).toFloat()
+        tresc.animate().alpha(1f).translationY(0f).setDuration(260).setInterpolator(android.view.animation.DecelerateInterpolator()).start()
+        tresc.post { animujListy(tresc) }
+    }
+    private fun animujListy(v: View) {
+        if (v is RecyclerView) {
+            v.layoutAnimation = android.view.animation.LayoutAnimationController(
+                android.view.animation.AnimationSet(true).apply {
+                    addAnimation(android.view.animation.AlphaAnimation(0f, 1f)); addAnimation(android.view.animation.TranslateAnimation(0f, 0f, dp(24).toFloat(), 0f))
+                    duration = 280; interpolator = android.view.animation.DecelerateInterpolator() }, 0.08f)
+            v.scheduleLayoutAnimation()
+        } else if (v is ViewGroup) for (i in 0 until v.childCount) animujListy(v.getChildAt(i))
+    }
+
     private var wczesniejPobrane = false
     private fun start() {
         val sv = ScrollView(this)
@@ -519,6 +536,7 @@ class StartActivity : AppCompatActivity() {
     private fun otworz(v: Vod) {
         startActivity(Intent(this, DetaleActivity::class.java).putExtra("id", v.id).putExtra("nazwa", v.nazwa)
             .putExtra("okladka", v.okladka).putExtra("ext", v.ext).putExtra("rodzaj", v.rodzaj).putExtra("ocena", v.ocena))
+        overridePendingTransition(R.anim.wejscie_zoom, android.R.anim.fade_out)
     }
 
     /** Plakaty filmow/seriali. szer = -1 -> do siatki (dopasuj szerokosc). */

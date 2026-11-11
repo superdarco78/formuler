@@ -96,6 +96,11 @@ class DetaleActivity : AppCompatActivity() {
             FrameLayout.LayoutParams(-2, -2).apply { setMargins(dp(14), dp(14), 0, 0) })
         setContentView(f)
         wybierz(0)
+        // Wejscie: plakat delikatnie sie przybliza, tytul, przyciski i opis wjezdzaja po kolei.
+        plakat.scaleX = 1.12f; plakat.scaleY = 1.12f; plakat.alpha = 0.4f
+        plakat.animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(700).setInterpolator(android.view.animation.DecelerateInterpolator()).start()
+        for (n in 1 until kol.childCount) kol.getChildAt(n).apply { alpha = 0f; translationY = dp(20).toFloat()
+            animate().alpha(1f).translationY(0f).setStartDelay(120L + n * 60L).setDuration(320).start() }
 
         lifecycleScope.launch {
             // Najpierw z pamieci telefonu (od razu), potem swieze z serwera.
@@ -209,7 +214,7 @@ class DetaleActivity : AppCompatActivity() {
                         k.addView(tekst(a, 16f).apply { setPadding(0, dp(6), 0, 0) })
                         role[a]?.let { k.addView(tekst(it, 14f, SZARY)) }
                         k.isFocusable = true; k.isClickable = true
-                        k.setOnClickListener { startActivity(Intent(this, AktorActivity::class.java).putExtra("aktor", a).putExtra("rola", role[a] ?: "")) }
+                        k.setOnClickListener { startActivity(Intent(this, AktorActivity::class.java).putExtra("aktor", a).putExtra("rola", role[a] ?: "")); overridePendingTransition(R.anim.wejscie_zoom, android.R.anim.fade_out) }
                         rz.addView(k, LinearLayout.LayoutParams(0, -2, 1f))
                     }
                     if (para.size == 1) rz.addView(android.view.View(this), LinearLayout.LayoutParams(0, 1, 1f))
