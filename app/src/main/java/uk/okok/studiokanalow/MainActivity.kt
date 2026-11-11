@@ -26,6 +26,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var b: ActivityMainBinding
     private lateinit var channelAdapter: ChannelAdapter
     private var demo = false
+    private var zPamieci = false
+    private var pamiecWczytana = false
     private var vodCache: List<Channel>? = null
     private var vodCats: List<Category>? = null
     private var serCache: List<Channel>? = null
@@ -290,6 +292,18 @@ class MainActivity : AppCompatActivity() {
         showBusy()
         lifecycleScope.launch {
             try {
+                // Listy z poprzedniego uruchomienia (czytane w tle, nie blokuja ekranu) - Start od razu gotowy.
+                if (vodCache == null && !pamiecWczytana) {
+                    pamiecWczytana = true
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        val ctx = this@MainActivity
+                        val v0 = Session.wczytajKanaly(ctx, "vod")
+                        if (v0 != null) {
+                            vodCache = v0; serCache = Session.wczytajKanaly(ctx, "ser"); liveCache = Session.wczytajKanaly(ctx, "live")
+                            vodCats = Session.wczytajKategorie(ctx, "vod"); serCats = Session.wczytajKategorie(ctx, "ser"); zPamieci = true
+                        }
+                    }
+                }
                 // Wszystko naraz (rownolegle), a nie po kolei - Start laduje sie kilka razy szybciej.
                 val dv = async { vodCache ?: Api.vodStreams(s(), u(), p(), null).also { vodCache = it } }
                 val dvc = async { vodCats ?: try { Api.vodCategories(s(), u(), p()).also { vodCats = it } } catch (e: Exception) { emptyList() } }
@@ -297,44 +311,56 @@ class MainActivity : AppCompatActivity() {
                 val dsc = async { serCats ?: try { Api.seriesCategories(s(), u(), p()).also { serCats = it } } catch (e: Exception) { emptyList() } }
                 val dkan = async { liveCache ?: try { Api.liveStreams(s(), u(), p(), null).also { liveCache = it } } catch (e: Exception) { emptyList() } }
                 val v = dv.await(); val vc = dvc.await(); val sr = dsr.await(); val sc = dsc.await(); val kan = dkan.await()
+                if (!zPamieci) launch(kotlinx.coroutines.Dispatchers.IO) { zapiszListy() } else { zPamieci = false; odswiezWTle() }
                 hideBusy()
                 koniecAnimacjiStartu()
                 if (wersja != wersjaEkranu) return@launch
                 if (Session.lastLogo(this@MainActivity) == null) kan.firstOrNull { it.name == Session.lastName(this@MainActivity) }?.logo?.let { lg ->
                     Session.lastUrl(this@MainActivity)?.let { lu -> Session.saveLast(this@MainActivity, lu, Session.lastName(this@MainActivity), lg) }
                 }
-                fun ok(l: List<Channel>, c: List<Category>, r: String): List<Channel> {
-                    val dozw = Filtr.kategorie(this@MainActivity, r, c).map { it.id }.toSet()
-                    return if (c.isEmpty()) l else l.filter { it.categoryId in dozw }
+                // Liczenie rzedow w tle (duze listy) - ekran nie zamarza.
+                val rzedy = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                    fun ok(l: List<Channel>, c: List<Category>, r: String): List<Channel> {
+                        val dozw = Filtr.kategorie(this@MainActivity, r, c).map { it.id }.toSet()
+                        return if (c.isEmpty()) l else l.filter { it.categoryId in dozw }
+                    }
+                    val vf = ok(v, vc, "vod"); val sf = ok(sr, sc, "ser")
+                    val out = ArrayList<Triple<String, List<Channel>, Int>>()  // 0 film, 1 serial, 2 kanal
+                    out.add(Triple("Popularne filmy", if (vf.any { it.rating > 0 }) vf.sortedByDescending { it.rating }.take(10) else vf.takeLast(10).reversed(), 10))
+                    out.add(Triple("Popularne seriale", if (sf.any { it.rating > 0 }) sf.sortedByDescending { it.rating }.take(10) else sf.takeLast(10).reversed(), 11))
+                    val serwisy = listOf(
+                        "Netflix" to Regex("netflix", RegexOption.IGNORE_CASE),
+                        "HBO Max" to Regex("\\bhbo|\\bmax\\b", RegexOption.IGNORE_CASE),
+                        "Disney+" to Regex("disney", RegexOption.IGNORE_CASE),
+                        "Amazon Prime Video" to Regex("amazon|prime video|\\bprime\\b", RegexOption.IGNORE_CASE),
+                        "Apple TV+" to Regex("apple", RegexOption.IGNORE_CASE),
+                        "SkyShowtime" to Regex("skyshowtime|sky showtime", RegexOption.IGNORE_CASE),
+                        "Canal+" to Regex("canal", RegexOption.IGNORE_CASE),
+                        "Player" to Regex("\\bplayer\\b", RegexOption.IGNORE_CASE),
+                        "Polsat Box Go" to Regex("polsat ?box|polsat go", RegexOption.IGNORE_CASE),
+                        "Paramount+" to Regex("paramount", RegexOption.IGNORE_CASE)
+                    )
+                    for ((nazwa, wz) in serwisy) {
+                        val idF = vc.filter { wz.containsMatchIn(it.name) }.map { it.id }.toSet()
+                        val idS = sc.filter { wz.containsMatchIn(it.name) }.map { it.id }.toSet()
+                        if (idF.isNotEmpty()) vf.filter { it.categoryId in idF }.takeLast(30).reversed().takeIf { it.isNotEmpty() }?.let { out.add(Triple("$nazwa — filmy", it, 0)) }
+                        if (idS.isNotEmpty()) sf.filter { it.categoryId in idS }.takeLast(30).reversed().takeIf { it.isNotEmpty() }?.let { out.add(Triple("$nazwa — seriale", it, 1)) }
+                    }
+                    out.add(Triple("Najnowsze kanały telewizyjne", kan.takeLast(30).reversed(), 2))
+                    out.add(Triple("Nowo dodane filmy", vf.takeLast(30).reversed(), 0))
+                    out
                 }
-                val vf = ok(v, vc, "vod"); val sf = ok(sr, sc, "ser")
-                val pop = if (vf.any { it.rating > 0 }) vf.sortedByDescending { it.rating }.take(10) else vf.takeLast(10).reversed()
-                val pops = if (sf.any { it.rating > 0 }) sf.sortedByDescending { it.rating }.take(10) else sf.takeLast(10).reversed()
-                dodajRzad("Popularne filmy", pop, { ch -> openDetails(ch) }, 130, true)
-                dodajRzad("Popularne seriale", pops, { ch -> openSeries(ch) }, 130, true)
-                // Rzedy serwisow (jak w MyTvOnline): filmy i seriale z kategorii o nazwie serwisu.
-                val serwisy = listOf(
-                    "Netflix" to Regex("netflix", RegexOption.IGNORE_CASE),
-                    "HBO Max" to Regex("\\bhbo|\\bmax\\b", RegexOption.IGNORE_CASE),
-                    "Disney+" to Regex("disney", RegexOption.IGNORE_CASE),
-                    "Amazon Prime Video" to Regex("amazon|prime video|\\bprime\\b", RegexOption.IGNORE_CASE),
-                    "Apple TV+" to Regex("apple", RegexOption.IGNORE_CASE),
-                    "SkyShowtime" to Regex("skyshowtime|sky showtime", RegexOption.IGNORE_CASE),
-                    "Canal+" to Regex("canal", RegexOption.IGNORE_CASE),
-                    "Player" to Regex("\\bplayer\\b", RegexOption.IGNORE_CASE),
-                    "Polsat Box Go" to Regex("polsat ?box|polsat go", RegexOption.IGNORE_CASE),
-                    "Paramount+" to Regex("paramount", RegexOption.IGNORE_CASE)
-                )
-                for ((nazwa, wz) in serwisy) {
-                    val idF = vc.filter { wz.containsMatchIn(it.name) }.map { it.id }.toSet()
-                    val idS = sc.filter { wz.containsMatchIn(it.name) }.map { it.id }.toSet()
-                    val filmy = vf.filter { it.categoryId in idF }.takeLast(30).reversed()
-                    val seriale = sf.filter { it.categoryId in idS }.takeLast(30).reversed()
-                    if (filmy.isNotEmpty()) dodajRzad("$nazwa — filmy", filmy, { ch -> openDetails(ch) })
-                    if (seriale.isNotEmpty()) dodajRzad("$nazwa — seriale", seriale, { ch -> openSeries(ch) })
+                if (wersja != wersjaEkranu) return@launch
+                for ((tytul, lista, typ) in rzedy) {
+                    if (lista.isEmpty()) continue
+                    when (typ) {
+                        10 -> dodajRzad(tytul, lista, { ch -> openDetails(ch) }, 130, true)
+                        11 -> dodajRzad(tytul, lista, { ch -> openSeries(ch) }, 130, true)
+                        0 -> dodajRzad(tytul, lista, { ch -> openDetails(ch) })
+                        1 -> dodajRzad(tytul, lista, { ch -> openSeries(ch) })
+                        else -> dodajRzad(tytul, lista, { ch -> openPlayer(ch) })
+                    }
                 }
-                dodajRzad("Najnowsze kanały telewizyjne", kan.takeLast(30).reversed(), { ch -> openPlayer(ch) })
-                dodajRzad("Nowo dodane filmy", vf.takeLast(30).reversed(), { ch -> openDetails(ch) })
             } catch (e: Exception) {
                 hideBusy(); koniecAnimacjiStartu(); info(getString(R.string.err_net))
             }
@@ -518,6 +544,31 @@ class MainActivity : AppCompatActivity() {
         b.header.setBackgroundColor(0xFF000000.toInt())
         b.bottomNav.setBackgroundColor(0xFF000000.toInt())
         b.tvTitle.setTextColor(Color.WHITE)
+    }
+
+    private fun zapiszListy() {
+        vodCache?.let { Session.zapiszKanaly(this, "vod", it) }; serCache?.let { Session.zapiszKanaly(this, "ser", it) }
+        liveCache?.let { Session.zapiszKanaly(this, "live", it) }
+        vodCats?.let { Session.zapiszKategorie(this, "vod", it) }; serCats?.let { Session.zapiszKategorie(this, "ser", it) }
+    }
+
+    /** Pobiera swieze listy w tle (Start juz pokazany z pamieci) i zapisuje je na nastepny raz. */
+    private fun odswiezWTle() {
+        lifecycleScope.launch {
+            try {
+                val dv = async { Api.vodStreams(s(), u(), p(), null) }
+                val dvc = async { try { Api.vodCategories(s(), u(), p()) } catch (e: Exception) { null } }
+                val dsr = async { try { Api.seriesList(s(), u(), p()) } catch (e: Exception) { null } }
+                val dsc = async { try { Api.seriesCategories(s(), u(), p()) } catch (e: Exception) { null } }
+                val dk = async { try { Api.liveStreams(s(), u(), p(), null) } catch (e: Exception) { null } }
+                dv.await().takeIf { it.isNotEmpty() }?.let { vodCache = it }
+                dvc.await()?.takeIf { it.isNotEmpty() }?.let { vodCats = it }
+                dsr.await()?.takeIf { it.isNotEmpty() }?.let { serCache = it }
+                dsc.await()?.takeIf { it.isNotEmpty() }?.let { serCats = it }
+                dk.await()?.takeIf { it.isNotEmpty() }?.let { liveCache = it }
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { zapiszListy() }
+            } catch (e: Exception) { }
+        }
     }
 
     private var nakladkaStartu: android.view.View? = null
