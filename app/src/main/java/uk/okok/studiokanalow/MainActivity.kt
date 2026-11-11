@@ -304,13 +304,13 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                 }
-                // Wszystko naraz (rownolegle), a nie po kolei - Start laduje sie kilka razy szybciej.
-                val dv = async { vodCache ?: Api.vodStreams(s(), u(), p(), null).also { vodCache = it } }
-                val dvc = async { vodCats ?: try { Api.vodCategories(s(), u(), p()).also { vodCats = it } } catch (e: Exception) { emptyList() } }
-                val dsr = async { serCache ?: try { Api.seriesList(s(), u(), p()).also { serCache = it } } catch (e: Exception) { emptyList() } }
-                val dsc = async { serCats ?: try { Api.seriesCategories(s(), u(), p()).also { serCats = it } } catch (e: Exception) { emptyList() } }
-                val dkan = async { liveCache ?: try { Api.liveStreams(s(), u(), p(), null).also { liveCache = it } } catch (e: Exception) { emptyList() } }
-                val v = dv.await(); val vc = dvc.await(); val sr = dsr.await(); val sc = dsc.await(); val kan = dkan.await()
+                // Po kolei (nie naraz): przy duzej liscie naraz zapychalo pamiec i aplikacja "nie odpowiadala".
+                // Szybkosc daje pamiec list na dysku - za drugim razem Start jest od razu.
+                val v = vodCache ?: Api.vodStreams(s(), u(), p(), null).also { vodCache = it }
+                val vc = vodCats ?: try { Api.vodCategories(s(), u(), p()).also { vodCats = it } } catch (e: Exception) { emptyList() }
+                val sr = serCache ?: try { Api.seriesList(s(), u(), p()).also { serCache = it } } catch (e: Exception) { emptyList() }
+                val sc = serCats ?: try { Api.seriesCategories(s(), u(), p()).also { serCats = it } } catch (e: Exception) { emptyList() }
+                val kan = liveCache ?: try { Api.liveStreams(s(), u(), p(), null).also { liveCache = it } } catch (e: Exception) { emptyList() }
                 if (!zPamieci) launch(kotlinx.coroutines.Dispatchers.IO) { zapiszListy() } else { zPamieci = false; odswiezWTle() }
                 hideBusy()
                 koniecAnimacjiStartu()
@@ -556,16 +556,11 @@ class MainActivity : AppCompatActivity() {
     private fun odswiezWTle() {
         lifecycleScope.launch {
             try {
-                val dv = async { Api.vodStreams(s(), u(), p(), null) }
-                val dvc = async { try { Api.vodCategories(s(), u(), p()) } catch (e: Exception) { null } }
-                val dsr = async { try { Api.seriesList(s(), u(), p()) } catch (e: Exception) { null } }
-                val dsc = async { try { Api.seriesCategories(s(), u(), p()) } catch (e: Exception) { null } }
-                val dk = async { try { Api.liveStreams(s(), u(), p(), null) } catch (e: Exception) { null } }
-                dv.await().takeIf { it.isNotEmpty() }?.let { vodCache = it }
-                dvc.await()?.takeIf { it.isNotEmpty() }?.let { vodCats = it }
-                dsr.await()?.takeIf { it.isNotEmpty() }?.let { serCache = it }
-                dsc.await()?.takeIf { it.isNotEmpty() }?.let { serCats = it }
-                dk.await()?.takeIf { it.isNotEmpty() }?.let { liveCache = it }
+                Api.vodStreams(s(), u(), p(), null).takeIf { it.isNotEmpty() }?.let { vodCache = it }
+                try { Api.vodCategories(s(), u(), p()) } catch (e: Exception) { null }?.takeIf { it.isNotEmpty() }?.let { vodCats = it }
+                try { Api.seriesList(s(), u(), p()) } catch (e: Exception) { null }?.takeIf { it.isNotEmpty() }?.let { serCache = it }
+                try { Api.seriesCategories(s(), u(), p()) } catch (e: Exception) { null }?.takeIf { it.isNotEmpty() }?.let { serCats = it }
+                try { Api.liveStreams(s(), u(), p(), null) } catch (e: Exception) { null }?.takeIf { it.isNotEmpty() }?.let { liveCache = it }
                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { zapiszListy() }
             } catch (e: Exception) { }
         }
