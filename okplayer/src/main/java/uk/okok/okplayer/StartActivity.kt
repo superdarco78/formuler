@@ -113,23 +113,38 @@ class StartActivity : AppCompatActivity() {
         gora.addView(ImageView(this).apply { setImageResource(R.drawable.ik_ustawienia); scaleType = ImageView.ScaleType.FIT_CENTER; isFocusable = true; setPadding(dp(9), dp(9), dp(9), dp(9)); setOnClickListener { pokaz(4) } }, LinearLayout.LayoutParams(dp(46), dp(46)).apply { marginEnd = dp(8) })
         gora.addView(tekst("v$wersja", 12f, SZARY))
         root.addView(gora)
+        // Tresc zakladek + mini-okno TV plywajace nad nia (kwadrat z obrazem, bez opisu; dotknij = pelny ekran, X = zamknij).
+        val obszar = FrameLayout(this)
         tresc = FrameLayout(this)
-        root.addView(tresc, LinearLayout.LayoutParams(-1, 0, 1f))
-        mini = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setBackgroundColor(0xFF1C1C1C.toInt()); visibility = View.GONE; isFocusable = true }
-        miniWidok = androidx.media3.ui.PlayerView(this).apply { useController = false; setBackgroundColor(Color.BLACK) }
-        mini.addView(miniWidok, LinearLayout.LayoutParams(dp(150), dp(84)))
-        val mOpis = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), 0, dp(6), 0) }
-        miniNazwa = tekst("", 16f, gruby = true).apply { maxLines = 1 }
-        miniTeraz = tekst("", 13f, SZARY).apply { maxLines = 1 }
-        mOpis.addView(miniNazwa); mOpis.addView(miniTeraz)
-        mini.addView(mOpis, LinearLayout.LayoutParams(0, -2, 1f))
-        mini.addView(ImageView(this).apply { setImageResource(R.drawable.ik_pauza); scaleType = ImageView.ScaleType.CENTER; isFocusable = true
-            setOnClickListener { miniGracz?.let { g -> g.playWhenReady = !g.playWhenReady; setImageResource(if (g.playWhenReady) R.drawable.ik_pauza else R.drawable.ik_graj) } } }, LinearLayout.LayoutParams(dp(44), dp(84)))
-        mini.addView(ImageView(this).apply { setImageResource(R.drawable.ik_pelny); scaleType = ImageView.ScaleType.CENTER; isFocusable = true
-            setOnClickListener { miniKanal?.let { miniNaDuzy(it, true) } } }, LinearLayout.LayoutParams(dp(44), dp(84)))
-        mini.addView(ImageView(this).apply { setImageResource(R.drawable.ik_zamknij); scaleType = ImageView.ScaleType.CENTER; isFocusable = true; setOnClickListener { zamknijMini() } }, LinearLayout.LayoutParams(dp(50), dp(84)))
-        mini.setOnClickListener { miniKanal?.let { miniNaDuzy(it, true) } }
-        root.addView(mini, LinearLayout.LayoutParams(-1, -2))
+        obszar.addView(tresc, FrameLayout.LayoutParams(-1, -1))
+        mini = FrameLayout(this).apply {
+            visibility = View.GONE; isFocusable = true; elevation = dp(10).toFloat()
+            background = tlo(Color.BLACK, 12); clipToOutline = true
+        }
+        miniWidok = androidx.media3.ui.PlayerView(this).apply { useController = false; setBackgroundColor(Color.BLACK); resizeMode = androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_ZOOM }
+        mini.addView(miniWidok, FrameLayout.LayoutParams(-1, -1))
+        mini.addView(ImageView(this).apply {
+            setImageResource(R.drawable.ik_zamknij); scaleType = ImageView.ScaleType.FIT_CENTER; setPadding(dp(5), dp(5), dp(5), dp(5)); isFocusable = true
+            background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(0xCC000000.toInt()) }
+            setOnClickListener { zamknijMini() }
+        }, FrameLayout.LayoutParams(dp(30), dp(30)).apply { gravity = Gravity.TOP or Gravity.END; setMargins(0, dp(6), dp(6), 0) })
+        miniNazwa = tekst("", 1f); miniTeraz = tekst("", 1f)
+        // Dotkniecie = pelny ekran; przeciagniecie palcem = przesuwanie okienka.
+        var x0 = 0f; var y0 = 0f; var ruch = false
+        mini.setOnTouchListener { v, e ->
+            when (e.actionMasked) {
+                android.view.MotionEvent.ACTION_DOWN -> { x0 = e.rawX - v.translationX; y0 = e.rawY - v.translationY; ruch = false; true }
+                android.view.MotionEvent.ACTION_MOVE -> {
+                    val nx = e.rawX - x0; val ny = e.rawY - y0
+                    if (Math.abs(nx - v.translationX) > dp(4) || Math.abs(ny - v.translationY) > dp(4)) ruch = true
+                    if (ruch) { v.translationX = nx; v.translationY = ny }; true
+                }
+                android.view.MotionEvent.ACTION_UP -> { if (!ruch) miniKanal?.let { miniNaDuzy(it, true) }; true }
+                else -> false
+            }
+        }
+        obszar.addView(mini, FrameLayout.LayoutParams(dp(208), dp(117)).apply { gravity = Gravity.BOTTOM or Gravity.END; setMargins(0, 0, dp(12), dp(12)) })
+        root.addView(obszar, LinearLayout.LayoutParams(-1, 0, 1f))
         dol = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setBackgroundColor(0xFF0D0D0D.toInt()) }
         // Dolne menu jak w MyTvOnline: same ikonki (Start, TV, Filmy, Seriale, Ulubione)
         listOf(R.drawable.ik_start to 0, R.drawable.ik_tv to 1, R.drawable.ik_filmy to 2, R.drawable.ik_seriale to 3, R.drawable.ik_ulubione to 6).forEach { (ik, z) ->
@@ -486,7 +501,7 @@ class StartActivity : AppCompatActivity() {
     }
 
     // ---------------- Mini-odtwarzacz na dole ----------------
-    private lateinit var mini: LinearLayout
+    private lateinit var mini: FrameLayout
     private lateinit var miniWidok: androidx.media3.ui.PlayerView
     private lateinit var miniNazwa: TextView
     private lateinit var miniTeraz: TextView
@@ -535,7 +550,7 @@ class StartActivity : AppCompatActivity() {
 
     /** Mini-okno gra, a Ty wychodzisz do ekranu telefonu: TV zostaje w plywajacym okienku (jak wczesniej). */
     private var glowny: LinearLayout? = null
-    private var miniRodzic: LinearLayout? = null
+    private var miniRodzic: ViewGroup? = null
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
         if (miniGracz?.isPlaying != true || !Ust.prefs(this).getBoolean("okienko", true)) return
@@ -545,12 +560,12 @@ class StartActivity : AppCompatActivity() {
     override fun onPictureInPictureModeChanged(w: Boolean, c: android.content.res.Configuration) {
         super.onPictureInPictureModeChanged(w, c)
         if (w) {
-            miniRodzic = miniWidok.parent as? LinearLayout
+            miniRodzic = miniWidok.parent as? ViewGroup
             miniRodzic?.removeView(miniWidok)
             setContentView(FrameLayout(this).apply { setBackgroundColor(Color.BLACK); addView(miniWidok, FrameLayout.LayoutParams(-1, -1)) })
         } else {
             (miniWidok.parent as? ViewGroup)?.removeView(miniWidok)
-            miniRodzic?.addView(miniWidok, 0, LinearLayout.LayoutParams(dp(150), dp(84)))
+            miniRodzic?.addView(miniWidok, 0, FrameLayout.LayoutParams(-1, -1))
             glowny?.let { (it.parent as? ViewGroup)?.removeView(it); setContentView(it) }
             // Powiekszenie okienka -> TV na caly ekran; zamkniecie (X) -> koniec grania.
             window.decorView.postDelayed({
@@ -560,7 +575,7 @@ class StartActivity : AppCompatActivity() {
         }
     }
 
-    private fun graj(ch: Kanal, pelny: Boolean = false) {
+    private fun graj(ch: Kanal, pelny: Boolean = true) {
         if (Ust.prefs(this).contains("mini")) { Ust.prefs(this).edit().remove("mini").apply(); if (::miniWidok.isInitialized) miniWidok.player = null; miniGracz = null; miniKanal = null; mini.visibility = View.GONE; WspolnyGracz.wlasciciel = "duzy" }
         Ust.zapiszOstatni(this, ch)
         startActivity(Intent(this, OdtwarzaczActivity::class.java)

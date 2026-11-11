@@ -1,4 +1,5 @@
-• Pełny ekran → Wstecz: było przejście do widoku w pionie z listą → teraz od razu mini-okno w aplikacji
-• Dotknięcie mini-okna: od razu pełny ekran
-• Małe ✕ w mini-oknie: zamyka TV całkiem
-• Przejścia pełny ekran ↔ mini-okno: płynnie, obraz gra bez przerwy
+• Kanał z listy: otwierał się w pionie z listą → teraz od razu pełny ekran
+• Wstecz na pełnym ekranie: od razu mini-okno (bez drugiego cofania)
+• Mini-okno: był pasek na całą szerokość z opisem i przyciskami → teraz mały kwadrat z samym obrazem, pływa nad aplikacją w prawym dolnym rogu
+• Mini-okno: dotknij = pełny ekran; małe ✕ w rogu = zamknij; przeciągnij palcem = przesuń w inne miejsce
+• Program/archiwum na pełnym ekranie: przycisk „☰ Program / archiwum” u góry obrazu
