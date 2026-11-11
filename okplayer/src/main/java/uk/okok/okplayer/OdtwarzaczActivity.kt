@@ -1,6 +1,7 @@
 package uk.okok.okplayer
 
 import android.graphics.Color
+import android.content.Intent
 import android.os.Bundle
 import android.view.Gravity
 import android.view.KeyEvent
@@ -79,7 +80,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         pn.addView(TextView(this).apply {
             text = "⧉"; setTextColor(Color.WHITE); textSize = 20f; gravity = Gravity.CENTER; isFocusable = true
             background = android.graphics.drawable.GradientDrawable().apply { shape = android.graphics.drawable.GradientDrawable.OVAL; setColor(0xFF333333.toInt()) }
-            setOnClickListener { wejdzWOkienko(true) }
+            setOnClickListener { if (wejdzWOkienko(true)) startActivity(Intent(this@OdtwarzaczActivity, StartActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)) }
         }, android.widget.LinearLayout.LayoutParams(110, 110).apply { marginStart = 16 })
         korzen.addView(pn); panel = pn
         przewodnik = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.VERTICAL; visibility = android.view.View.GONE }
@@ -447,17 +448,33 @@ class OdtwarzaczActivity : AppCompatActivity() {
     }
 
     /** Okienko (obraz w obrazie): po wyjsciu do ekranu glownego telefonu TV gra dalej w malym okienku. */
-    private fun wejdzWOkienko(reczne: Boolean = false) {
-        if (!reczne && gracz?.isPlaying != true) return
-        if (!reczne && !Ust.prefs(this).getBoolean("okienko", true)) return
+    private fun wejdzWOkienko(reczne: Boolean = false): Boolean {
+        if (!reczne && gracz?.isPlaying != true) return false
+        if (!reczne && !Ust.prefs(this).getBoolean("okienko", true)) return false
         try {
             val b = android.app.PictureInPictureParams.Builder().setAspectRatio(android.util.Rational(16, 9))
             if (android.os.Build.VERSION.SDK_INT >= 31) b.setAutoEnterEnabled(true).setSeamlessResizeEnabled(true)
-            enterPictureInPictureMode(b.build())
-        } catch (e: Exception) { }
+            return enterPictureInPictureMode(b.build())
+        } catch (e: Exception) { return false }
     }
 
     override fun onUserLeaveHint() { super.onUserLeaveHint(); wejdzWOkienko() }
+
+    /** Nowy kanal / film z listy, gdy odtwarzacz juz gra (np. w okienku) - zaczynamy od nowa z nowymi danymi. */
+    override fun onNewIntent(i: Intent) { super.onNewIntent(i); setIntent(i); recreate() }
+
+    /** Wstecz przy TV: obraz zmniejsza sie do okienka, a pod nim wraca aplikacja (lista kanalow), jak mini-odtwarzacz. */
+    @Deprecated("Deprecated in Java")
+    override fun onBackPressed() {
+        if (przewodnikOtwarty && panel != null && resources.configuration.orientation != android.content.res.Configuration.ORIENTATION_LANDSCAPE) { zamknijPrzewodnik(); return }
+        if (resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE && panel != null) {
+            requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT; return
+        }
+        if (!intent.getBooleanExtra("vod", false) && Ust.prefs(this).getBoolean("okienko", true) && gracz?.isPlaying == true) {
+            if (wejdzWOkienko(true)) { startActivity(Intent(this, StartActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)); return }
+        }
+        @Suppress("DEPRECATION") super.onBackPressed()
+    }
 
     override fun onPictureInPictureModeChanged(w: Boolean, c: android.content.res.Configuration) {
         super.onPictureInPictureModeChanged(w, c)
