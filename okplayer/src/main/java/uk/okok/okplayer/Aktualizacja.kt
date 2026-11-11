@@ -93,15 +93,21 @@ object Aktualizacja {
         d.setContentView(kol)
         d.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
         d.window?.setLayout((a.resources.displayMetrics.widthPixels * 0.9).toInt(), -2)
+        d.setOnDismissListener { pokazane = false }
         d.show(); Jezyk.okno(d)
     }
 }
 
 class WynikInstalacji : android.content.BroadcastReceiver() {
     override fun onReceive(c: Context, i: Intent) {
-        if (i.getIntExtra(PackageInstaller.EXTRA_STATUS, -1) == PackageInstaller.STATUS_PENDING_USER_ACTION) {
+        val st = i.getIntExtra(PackageInstaller.EXTRA_STATUS, -1)
+        if (st == PackageInstaller.STATUS_PENDING_USER_ACTION) {
             @Suppress("DEPRECATION") val p = i.getParcelableExtra<Intent>(Intent.EXTRA_INTENT)
             if (p != null) try { c.startActivity(p.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } catch (_: Exception) {}
+        } else if (st != PackageInstaller.STATUS_SUCCESS) {
+            val m = i.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE) ?: ""
+            try { Serwer.raport(c, "aktualizacja instalacja status " + st + " " + m.take(80)) } catch (_: Exception) {}
+            android.widget.Toast.makeText(c, "Aktualizacja nie została zainstalowana (" + m.take(60) + ")", android.widget.Toast.LENGTH_LONG).show()
         }
     }
 }

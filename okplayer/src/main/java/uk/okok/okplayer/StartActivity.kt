@@ -877,7 +877,7 @@ class StartActivity : AppCompatActivity() {
         if (::mini.isInitialized) mini.visibility = View.GONE
     }
 
-    override fun onResume() { super.onResume(); pokazMini() }
+    override fun onResume() { super.onResume(); pokazMini(); lifecycleScope.launch { Aktualizacja.sprawdz(this@StartActivity) } }
     override fun onStop() {
         super.onStop()
         if (isInPictureInPictureMode) return

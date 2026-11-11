@@ -1,3 +1,2 @@
-Kolorystyka jak grafika z Canvy|białe akcenty, zwykłe szare okna|w całej aplikacji róż i fiolet: okna (PIN, opcje, konto, program) w ciemnym szkle z fioletową obwódką i różowymi przyciskami, przełączniki, paski i zaznaczenia różowe, tło kinowa czerń
-Grafiki z Canvy|–|z 1.96 (banery, ikona, ikony, zastępcze)
-Małe okno i program|działa (1.80)|bez zmian
+Sprawdzanie aktualizacji|tylko przy uruchomieniu aplikacji, po „Później” okno już nie wracało|sprawdza też po powrocie do aplikacji, okno wraca po „Później”
+Błąd instalacji|brak informacji, gdy Android odrzucił instalację|pokazuje komunikat z powodem i zgłasza go do raportów
