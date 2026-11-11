@@ -1,3 +1,6 @@
-Domyślna skórka|„Kolor z plakatu” (biała)|z powrotem Grafit i srebro – realistyczne ikony jak na Twoim zdjęciu
-Tło aplikacji|neonowa fala z prześwitami i błyskami|spokojny grafit z delikatną fakturą z realistycznego zestawu Canvy, bez błysków
-Skórki|–|„Kolor z plakatu” i pozostałe dalej do wyboru: Ustawienia → Skórka (wygląd)
+Nowy uniwersalny wygląd|różne skórki, błyski w tle|jeden spójny styl z Canvy (połączenie Netflix, Prime Video, Disney+, HBO): ciemny grafit, białe ikony, bursztynowy akcent – domyślny
+Ikony i menu|ikony 3D / neonowe|cienkie białe ikony z Canvy, wybrana świeci na bursztynowo
+Odtwarzacz|okrągłe przyciski|kwadratowe przyciski z Canvy (odtwórz, pauza, −10/+10 s, poprzedni/następny, opcje, pełny ekran)
+Plakietki, cyfry, ramki|stare|bursztynowe NA ŻYWO, konturowe cyfry Top 10 w bursztynie, ramka zaznaczenia w bursztynie
+Tło|napis „Tło aplikacji – ciemny grafit…” na dole ekranu|czyste tło bez napisu
+Skórki|–|poprzednie wyglądy dalej w Ustawienia → Skórka (wygląd)

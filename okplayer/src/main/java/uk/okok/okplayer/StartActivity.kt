@@ -186,7 +186,7 @@ class StartActivity : AppCompatActivity() {
     private fun pokazMenu(i: Int = zakladka) {
         for (k in 0 until dol.childCount) (dol.getChildAt(k) as ImageView).apply {
             val wyb = tag == i
-            if (Skorka.wybrana(this@StartActivity) == "k") setColorFilter(if (wyb) Skorka.akcent(this@StartActivity) else 0xFFBFC3C9.toInt()) else clearColorFilter()
+            if (Skorka.bialeIkony(this@StartActivity)) setColorFilter(if (wyb) Skorka.akcent(this@StartActivity) else 0xFFBFC3C9.toInt()) else clearColorFilter()
             animate().alpha(if (wyb) 1f else 0.62f).scaleX(if (wyb) 1.15f else 0.95f).scaleY(if (wyb) 1.15f else 0.95f).setDuration(200).start()
         }
     }
@@ -198,7 +198,7 @@ class StartActivity : AppCompatActivity() {
         if (false) for (k in 0 until dol.childCount) (dol.getChildAt(k) as ImageView).apply {
             val wyb = tag == i
             // 2.01: ikony 3D z Canvy - wybrana pelna i powiekszona, pozostale przygaszone.
-            if (Skorka.wybrana(this@StartActivity) == "k") setColorFilter(if (wyb) Skorka.akcent(this@StartActivity) else 0xFFBFC3C9.toInt()) else clearColorFilter()
+            if (Skorka.bialeIkony(this@StartActivity)) setColorFilter(if (wyb) Skorka.akcent(this@StartActivity) else 0xFFBFC3C9.toInt()) else clearColorFilter()
             animate().alpha(if (wyb) 1f else 0.62f).scaleX(if (wyb) 1.15f else 0.95f).scaleY(if (wyb) 1.15f else 0.95f).setDuration(200).start()
         }
         tresc.removeAllViews()

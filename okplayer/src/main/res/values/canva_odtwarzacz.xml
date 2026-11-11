@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- 1.98: przyciski odtwarzacza z grafik Canvy (OK Player – UI kit) zamiast standardowych ikon. -->
 <resources>
-    <drawable name="exo_styled_controls_play">@drawable/ok_gr_play__k</drawable>
-    <drawable name="exo_styled_controls_pause">@drawable/ok_gr_pauza__k</drawable>
-    <drawable name="exo_styled_controls_rewind">@drawable/ok_gr_wstecz10__k</drawable>
-    <drawable name="exo_styled_controls_fastforward">@drawable/ok_gr_naprzod10__k</drawable>
-    <drawable name="exo_styled_controls_previous">@drawable/ok_gr_poprzedni__k</drawable>
-    <drawable name="exo_styled_controls_next">@drawable/ok_gr_nastepny__k</drawable>
-    <drawable name="exo_styled_controls_settings">@drawable/ok_gr_opcje__k</drawable>
-    <drawable name="exo_styled_controls_fullscreen_enter">@drawable/ok_gr_pelny__k</drawable>
-    <drawable name="exo_styled_controls_fullscreen_exit">@drawable/ok_gr_pelny__k</drawable>
+    <drawable name="exo_styled_controls_play">@drawable/ok_gr_play__u</drawable>
+    <drawable name="exo_styled_controls_pause">@drawable/ok_gr_pauza__u</drawable>
+    <drawable name="exo_styled_controls_rewind">@drawable/ok_gr_wstecz10__u</drawable>
+    <drawable name="exo_styled_controls_fastforward">@drawable/ok_gr_naprzod10__u</drawable>
+    <drawable name="exo_styled_controls_previous">@drawable/ok_gr_poprzedni__u</drawable>
+    <drawable name="exo_styled_controls_next">@drawable/ok_gr_nastepny__u</drawable>
+    <drawable name="exo_styled_controls_settings">@drawable/ok_gr_opcje__u</drawable>
+    <drawable name="exo_styled_controls_fullscreen_enter">@drawable/ok_gr_pelny__u</drawable>
+    <drawable name="exo_styled_controls_fullscreen_exit">@drawable/ok_gr_pelny__u</drawable>
     <dimen name="exo_icon_size">64dp</dimen>
 </resources>

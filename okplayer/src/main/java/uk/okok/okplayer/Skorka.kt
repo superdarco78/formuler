@@ -4,10 +4,12 @@ import android.content.Context
 
 /** 2.03: skorki wygladu z grafik Canvy (bez neonu). a = grafit/srebro (domyslna), b = zloto, c = morski, d = blekit, r = roz. */
 object Skorka {
-    val lista = listOf("a" to "Grafit i srebro (domyślna)", "k" to "Kolor z plakatu (biała, nowa)", "b" to "Złoto", "c" to "Morski turkus", "d" to "Błękit", "r" to "Róż (stara)")
-    fun wybrana(c: Context) = Ust.prefs(c).getString("skorka", "a") ?: "a"
+    val lista = listOf("u" to "Uniwersalna – grafit i bursztyn (domyślna)", "a" to "Grafit i srebro", "k" to "Kolor z plakatu (biała, nowa)", "b" to "Złoto", "c" to "Morski turkus", "d" to "Błękit", "r" to "Róż (stara)")
+    fun wybrana(c: Context) = Ust.prefs(c).getString("skorka", "u") ?: "u"
     fun nazwa(c: Context) = lista.firstOrNull { it.first == wybrana(c) }?.second ?: lista[0].second
-    private fun przyrostek(c: Context) = when (wybrana(c)) { "b" -> "__b"; "c" -> "__c"; "d" -> "__d"; "r" -> "__r"; "k" -> "__k"; else -> "" }
+    private fun przyrostek(c: Context) = when (wybrana(c)) { "b" -> "__b"; "c" -> "__c"; "d" -> "__d"; "r" -> "__r"; "k" -> "__k"; "u" -> "__u"; else -> "" }
+    /** Skorki z bialymi ikonami barwionymi akcentem. */
+    fun bialeIkony(c: Context) = wybrana(c) == "k" || wybrana(c) == "u"
     /** Grafika w wybranej skorce (gdy jej brak - domyslna). */
     fun id(c: Context, id: Int): Int {
         val s = przyrostek(c); if (s.isEmpty()) return id
@@ -21,7 +23,7 @@ object Skorka {
         return if (r != 0) r else c.resources.getIdentifier(n, "drawable", c.packageName)
     }
     /** Kolor akcentu skorki (paski postepu, wyroznienia). */
-    fun akcent(c: Context): Int = when (wybrana(c)) { "k" -> Ust.prefs(c).getInt("akcent_k", 0xFFE8A23A.toInt()); "b" -> 0xFFD8A93B.toInt(); "c" -> 0xFF2FBFB0.toInt(); "d" -> 0xFF3B8FE0.toInt(); "r" -> 0xFFFF3D5A.toInt(); else -> 0xFFB8C2CE.toInt() }
+    fun akcent(c: Context): Int = when (wybrana(c)) { "u" -> 0xFFF5A623.toInt(); "k" -> Ust.prefs(c).getInt("akcent_k", 0xFFE8A23A.toInt()); "b" -> 0xFFD8A93B.toInt(); "c" -> 0xFF2FBFB0.toInt(); "d" -> 0xFF3B8FE0.toInt(); "r" -> 0xFFFF3D5A.toInt(); else -> 0xFFB8C2CE.toInt() }
 
     /** "Kolor z plakatu": akcent wyliczony z plakatu na banerze (najbardziej nasycony, jasny kolor). */
     fun zPlakatu(c: Context, b: android.graphics.Bitmap): Int {
