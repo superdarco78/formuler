@@ -600,12 +600,13 @@ class StartActivity : AppCompatActivity() {
         tresc.addView(k)
         if (kategorie.isEmpty()) { k.addView(tekst(if (radio && this.kategorie.isNotEmpty()) "Brak stacji radiowych na liście." else "Ładuję listę…", 15f, SZARY).apply { setPadding(dp(16), dp(16), 0, 0) }); return }
         var wybrana = (if (radio) Ust.prefs(this).getString("grupa_radio", null) else Ust.grupa(this)).takeIf { id -> kategorie.any { it.id == id } } ?: kategorie.first().id
+        if (czyZablokowana(wybrana)) wybrana = kategorie.firstOrNull { !czyZablokowana(it.id) }?.id ?: wybrana
         val lista = RecyclerView(this).apply { layoutManager = LinearLayoutManager(this@StartActivity) }
         val adapter = KanalyAdapter { ch -> graj(ch) }
         lista.adapter = adapter
         val grupy = RecyclerView(this).apply { layoutManager = LinearLayoutManager(this@StartActivity, LinearLayoutManager.HORIZONTAL, false); setPadding(dp(10), dp(4), dp(10), dp(8)); clipToPadding = false }
         lateinit var ga: GrupyAdapter
-        ga = GrupyAdapter(kategorie, wybrana) { id -> wybrana = id; if (radio) Ust.prefs(this).edit().putString("grupa_radio", id).apply() else Ust.zapiszGrupe(this, id); ga.wybrana = id; ga.notifyDataSetChanged(); adapter.ustaw(kanaly.filter { it.kat == id }) }
+        ga = GrupyAdapter(kategorie, wybrana) { id -> if (czyZablokowana(id)) pytajPin { ga.klik(id) } else { wybrana = id; if (radio) Ust.prefs(this).edit().putString("grupa_radio", id).apply() else Ust.zapiszGrupe(this, id); ga.wybrana = id; ga.notifyDataSetChanged(); adapter.ustaw(kanaly.filter { it.kat == id }) } }
         grupy.adapter = ga
         k.addView(grupy, LinearLayout.LayoutParams(-1, -2))
         k.addView(lista, LinearLayout.LayoutParams(-1, 0, 1f))
@@ -719,7 +720,61 @@ class StartActivity : AppCompatActivity() {
         }
     }
 
+    // ---------------- Kontrola rodzicielska (PIN) ----------------
+    private var odblokowane = false
+    private fun pin() = Ust.prefs(this).getString("pin", "") ?: ""
+    private fun zablokowaneGrupy(): Set<String> = Ust.prefs(this).getStringSet("zablokowane", emptySet()) ?: emptySet()
+    private fun czyZablokowana(kat: String) = pin().isNotEmpty() && !odblokowane && kat in zablokowaneGrupy()
+    private val DOROSLI = Regex("(?i)(xxx|adult|18\\+|\\+18|dla doros|erot|porn)")
+    private fun polePin() = android.widget.EditText(this).apply {
+        inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD
+        filters = arrayOf(android.text.InputFilter.LengthFilter(4)); gravity = Gravity.CENTER; textSize = 26f; letterSpacing = 0.5f; hint = "••••"
+    }
+    /** Pyta o PIN; po poprawnym odblokowuje do zamkniecia aplikacji. */
+    private fun pytajPin(ok: () -> Unit) {
+        val e = polePin()
+        val d = androidx.appcompat.app.AlertDialog.Builder(this).setTitle("🔒 Podaj PIN").setView(e)
+            .setPositiveButton("OK", null).setNegativeButton("Anuluj", null).create()
+        d.setOnShowListener { d.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            if (e.text.toString() == pin()) { odblokowane = true; d.dismiss(); ok() } else { e.text.clear(); e.error = "Zły PIN" } } }
+        d.show(); Jezyk.okno(d)
+    }
+    private fun ustawPin(potem: () -> Unit) {
+        val e1 = polePin(); val e2 = polePin()
+        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(8), dp(20), 0)
+            addView(tekst("Nowy PIN (4 cyfry)", 14f, SZARY)); addView(e1); addView(tekst("Powtórz PIN", 14f, SZARY).apply { setPadding(0, dp(10), 0, 0) }); addView(e2) }
+        val d = androidx.appcompat.app.AlertDialog.Builder(this).setTitle("🔒 Ustaw PIN").setView(box).setPositiveButton("Zapisz", null).setNegativeButton("Anuluj", null).create()
+        d.setOnShowListener { d.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            val a = e1.text.toString(); val b = e2.text.toString()
+            when { a.length != 4 -> e1.error = "4 cyfry"; a != b -> e2.error = "PIN-y się różnią"
+                else -> {
+                    val ed = Ust.prefs(this).edit().putString("pin", a)
+                    // Za pierwszym razem od razu blokujemy grupy dla doroslych.
+                    if (!Ust.prefs(this).contains("zablokowane")) ed.putStringSet("zablokowane", kategorie.filter { DOROSLI.containsMatchIn(it.nazwa) }.map { it.id }.toSet())
+                    ed.apply(); odblokowane = false; d.dismiss(); android.widget.Toast.makeText(this, Jezyk.t("PIN zapisany"), android.widget.Toast.LENGTH_SHORT).show(); potem()
+                } } } }
+        d.show(); Jezyk.okno(d)
+    }
+    private fun wyborGrup() {
+        val l = kategorie; val zb = zablokowaneGrupy().toMutableSet()
+        val zazn = BooleanArray(l.size) { l[it].id in zb }
+        androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Zablokowane grupy (wymagają PIN)")
+            .setMultiChoiceItems(l.map { nazwaKat(it.id, l) }.toTypedArray(), zazn) { _, i, c -> if (c) zb.add(l[i].id) else zb.remove(l[i].id) }
+            .setPositiveButton("Zapisz") { _, _ -> Ust.prefs(this).edit().putStringSet("zablokowane", zb).apply(); pokaz(4) }
+            .setNegativeButton("Anuluj", null).show().also { Jezyk.okno(it) }
+    }
+    private fun kontrolaRodzicielska() {
+        if (pin().isEmpty()) { ustawPin { pokaz(4) }; return }
+        pytajPin {
+            val o = arrayOf("Wybierz zablokowane grupy (" + zablokowaneGrupy().size + ")", "Zmień PIN", "Wyłącz kontrolę rodzicielską")
+            androidx.appcompat.app.AlertDialog.Builder(this).setTitle("🔒 Kontrola rodzicielska").setItems(o) { _, i ->
+                when (i) { 0 -> wyborGrup(); 1 -> ustawPin { pokaz(4) }; else -> { Ust.prefs(this).edit().remove("pin").apply(); android.widget.Toast.makeText(this, Jezyk.t("Kontrola rodzicielska wyłączona"), android.widget.Toast.LENGTH_SHORT).show(); pokaz(4) } }
+            }.setNegativeButton("Zamknij", null).show().also { Jezyk.okno(it) }
+        }
+    }
+
     private fun graj(ch: Kanal, pelny: Boolean = false) {
+        if (czyZablokowana(ch.kat)) { pytajPin { graj(ch, pelny) }; return }
         if (Ust.prefs(this).contains("mini")) { Ust.prefs(this).edit().remove("mini").apply(); if (::miniWidok.isInitialized) miniWidok.player = null; miniGracz = null; miniKanal = null; mini.visibility = View.GONE }
         Ust.zapiszOstatni(this, ch)
         if (pelny) {
@@ -836,6 +891,7 @@ class StartActivity : AppCompatActivity() {
         wiersz("Okienko TV (obraz w obrazie)", if (Ust.prefs(this).getBoolean("okienko", true)) "Włączone – po wyjściu do ekranu telefonu TV gra w okienku" else "Wyłączone") {
             Ust.prefs(this).edit().putBoolean("okienko", !Ust.prefs(this).getBoolean("okienko", true)).apply(); pokaz(4)
         }
+        wiersz("Kontrola rodzicielska", if (pin().isEmpty()) "Wyłączona – ustaw PIN, żeby blokować grupy (np. dla dorosłych)" else "Włączona – zablokowanych grup: " + zablokowaneGrupy().size) { kontrolaRodzicielska() }
         wiersz("Odśwież listę", "Pobiera świeżą listę kanałów, filmów i seriali z serwera") { laduj() }
         wiersz("Wyloguj", "Aplikacja pokaże nowy kod do edytora") { Ust.wyloguj(this); ekranLogowania() }
     }
