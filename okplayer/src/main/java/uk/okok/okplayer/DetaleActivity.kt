@@ -136,8 +136,8 @@ class DetaleActivity : AppCompatActivity() {
             czas(t("duration").ifEmpty { t("episode_run_time") }).takeIf { it.isNotEmpty() }?.let { c -> if (sb.isNotEmpty()) sb.append("  •  "); sb.append(c) }
             ocena.text = sb
             opis.text = t("plot").ifEmpty { t("description") }
-            zwiastun = t("youtube_trailer").let { y -> Regex("([A-Za-z0-9_-]{11})$").find(y.substringBefore("&"))?.groupValues?.get(1) ?: "" }
-            wybierz(akt)
+            t("youtube_trailer").let { y -> Regex("([A-Za-z0-9_-]{11})$").find(y.substringBefore("&"))?.groupValues?.get(1) ?: "" }.takeIf { it.isNotEmpty() }?.let { zwiastun = it }
+            zakladka(akt, serial)
             // Zwiastun i role z Wikidata, a gdy brak - zwiastun z YouTube po tytule.
             if (dodatkiPobrane) return@launch
             dodatkiPobrane = true
