@@ -15,18 +15,18 @@ jobs:
         run: |
           pip install --quiet pillow
           mkdir -p k; i=0
-          while read -r u; do i=$((i+1)); n=$(printf "kit_%02d.png" $i); curl -fsSL -o "k/$n" "$u" || echo "brak $n"; done < okplayer/kit.txt
+          while read -r u; do i=$((i+1)); n=$(printf "ekran_%02d.png" $i); curl -fsSL -o "k/$n" "$u" || echo "brak $n"; done < okplayer/kit.txt
           python3 - <<'PY'
           from PIL import Image, ImageDraw
           import glob
-          fs=sorted(glob.glob('k/*.png'))
+          fs=sorted(glob.glob('k/ekran_*.png'))
           for part in range(0,len(fs),20):
               sh=Image.new('RGB',(4*480,5*290),(60,60,60)); d=ImageDraw.Draw(sh)
               for j,f in enumerate(fs[part:part+20]):
                   im=Image.open(f).convert('RGBA'); im.thumbnail((470,265))
                   bg=Image.new('RGBA',im.size,(128,128,128,255)); bg.alpha_composite(im)
                   x,y=(j%4)*480+5,(j//4)*290+20; sh.paste(bg.convert('RGB'),(x,y)); d.text((x,y-16),f.split('/')[-1],fill=(255,255,0))
-              sh.save(f'k/podglad_{part//20+1}.jpg',quality=85)
+              sh.save(f'k/ekrany_{part//20+1}.jpg',quality=85)
           PY
           gh release view canva-kit >/dev/null 2>&1 || gh release create canva-kit -t "Canva UI kit" -n "kit" --target kit-canva
           gh release upload canva-kit k/* --clobber
