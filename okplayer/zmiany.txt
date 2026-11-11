@@ -1,3 +1,3 @@
-Kontrola rodzicielska (PIN)|nie było|Ustawienia → Kontrola rodzicielska: ustaw 4-cyfrowy PIN, wybierz grupy kanałów do zablokowania (grupy dla dorosłych blokują się same); zablokowana grupa i jej kanały pytają o PIN, po wpisaniu odblokowane do zamknięcia aplikacji
-Jasność i głośność palcem|–|z 1.89
+Start – zegar, data i pogoda|nie było|na górze Startu karta: duży zegar, dzień i data, pogoda (ikona, temperatura, miasto) i do kiedy ważne konto – jak w IBO Player
+Kontrola rodzicielska (PIN)|nie było|Ustawienia → Kontrola rodzicielska: PIN, blokada wybranych grup (grupy dla dorosłych same), zablokowana grupa/kanał pyta o PIN (z 1.90)
 Małe okno i program|działa (1.80)|bez zmian

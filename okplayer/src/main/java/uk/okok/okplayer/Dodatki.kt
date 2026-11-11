@@ -130,6 +130,18 @@ object Dodatki {
         u
     } catch (e: Exception) { "" }
 
+    /** Pogoda bez klucza: miejsce z adresu IP (ipwho.is), temperatura i niebo z Open-Meteo. Zwraca (miasto, "12°", ikona) albo null. */
+    fun pogoda(): Triple<String, String, String>? = try {
+        val ip = JSONObject(tekst("https://ipwho.is/?lang=$J"))
+        val lat = ip.optDouble("latitude"); val lon = ip.optDouble("longitude")
+        val w = JSONObject(tekst("https://api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon&current=temperature_2m,weather_code,is_day")).optJSONObject("current")
+        if (w == null) null else {
+            val k = w.optInt("weather_code"); val dzien = w.optInt("is_day", 1) == 1
+            val ik = when (k) { 0 -> if (dzien) "☀️" else "🌙"; 1, 2 -> if (dzien) "🌤️" else "☁️"; 3 -> "☁️"; 45, 48 -> "🌫️"; in 51..67, in 80..82 -> "🌧️"; in 71..77, 85, 86 -> "❄️"; in 95..99 -> "⛈️"; else -> "🌡️" }
+            Triple(ip.optString("city"), Math.round(w.optDouble("temperature_2m")).toString() + "°", ik)
+        }
+    } catch (e: Exception) { null }
+
     fun itunes(tytul: String, serial: Boolean): JSONObject? = try {
         val rok = Regex("\\((\\d{4})\\)").find(tytul)?.groupValues?.get(1)?.toIntOrNull()
         val czysty = tytul.replace(Regex("\\(\\d{4}\\)"), " ").replace(Regex("^[A-Z]{2,3}\\s*[-|:]\\s*"), "")

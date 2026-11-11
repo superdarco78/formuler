@@ -96,6 +96,13 @@ object Serwer {
         try { tekst("$BAZA/app.php?a=blad&dev=${idUrzadzenia(c)}&msg=" + java.net.URLEncoder.encode("OKP2 " + msg, "UTF-8")) } catch (e: Exception) { }
     }
 
+    /** Data waznosci konta z serwera (user_info.exp_date) jako "dd.MM.yyyy", "bez limitu" albo "". */
+    fun waznosc(c: Context): String = try {
+        val u = JSONObject(tekst("$BAZA/player_api.php?username=app&password=${Ust.klucz(c)}")).optJSONObject("user_info")
+        val e = u?.optString("exp_date")?.toLongOrNull()
+        if (u == null) "" else if (e == null || e <= 0) "bez limitu" else java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.US).format(java.util.Date(e * 1000))
+    } catch (e: Exception) { "" }
+
     private fun api(c: Context, akcja: String) = "$BAZA/player_api.php?username=app&password=${Ust.klucz(c)}&action=$akcja"
 
     /** Czyta liste JSON obiekt po obiekcie (malo pamieci, bez zawieszania). */

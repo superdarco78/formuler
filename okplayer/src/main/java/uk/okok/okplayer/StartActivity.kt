@@ -428,6 +428,32 @@ class StartActivity : AppCompatActivity() {
     }
 
     private var wczesniejPobrane = false
+    private var pogodaPamiec: Triple<String, String, String>? = null
+    private var waznoscPamiec: String? = null
+    private fun kartaZegara(): View {
+        val karta = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(16), dp(12), dp(16), dp(12))
+            background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(0xFF2A1030.toInt(), 0xFF1A1A2A.toInt())).apply { cornerRadius = dp(16).toFloat() } }
+        val lewa = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        lewa.addView(android.widget.TextClock(this).apply { format24Hour = "HH:mm"; format12Hour = "HH:mm"; textSize = 34f; setTextColor(Color.WHITE); setTypeface(typeface, android.graphics.Typeface.BOLD) })
+        lewa.addView(android.widget.TextClock(this).apply { format24Hour = "EEEE, d MMMM yyyy"; format12Hour = "EEEE, d MMMM yyyy"; textSize = 14f; setTextColor(0xFFBDBDBD.toInt()) })
+        val konto = tekst(waznoscPamiec?.let { if (it.isEmpty()) "" else "Konto ważne: $it" } ?: "", 12f, 0xFFC85BFF.toInt()).apply { setPadding(0, dp(4), 0, 0) }
+        lewa.addView(konto)
+        karta.addView(lewa, LinearLayout.LayoutParams(0, -2, 1f))
+        val prawa = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.END }
+        val ik = tekst(pogodaPamiec?.third ?: "", 30f); val temp = tekst(pogodaPamiec?.second ?: "", 22f, gruby = true); val miasto = tekst(pogodaPamiec?.first ?: "", 13f, 0xFFBDBDBD.toInt())
+        val rz = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; addView(ik); addView(temp.apply { setPadding(dp(6), 0, 0, 0) }) }
+        prawa.addView(rz); prawa.addView(miasto.apply { gravity = Gravity.END })
+        karta.addView(prawa)
+        if (pogodaPamiec == null || waznoscPamiec == null) lifecycleScope.launch {
+            val p = withContext(Dispatchers.IO) { pogodaPamiec ?: Dodatki.pogoda() }
+            val w = withContext(Dispatchers.IO) { waznoscPamiec ?: Serwer.waznosc(this@StartActivity) }
+            pogodaPamiec = p; waznoscPamiec = w
+            p?.let { ik.text = it.third; temp.text = it.second; miasto.text = it.first }
+            if (w.isNotEmpty()) konto.text = "Konto ważne: $w"
+        }
+        return karta
+    }
+
     private fun start() {
         val sv = ScrollView(this)
         val k = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(0, 0, 0, dp(16)) }
@@ -435,6 +461,8 @@ class StartActivity : AppCompatActivity() {
         if (filmy.isEmpty() && kanaly.isEmpty()) { k.addView(tekst("Ładuję listę…", 15f, SZARY).apply { setPadding(dp(16), dp(16), 0, 0) }); return }
         val pop = { l: List<Vod> -> l.filter { it.ocena > 0 }.sortedByDescending { it.ocena }.take(20).ifEmpty { l.takeLast(20).reversed() } }
         // Kontynuuj ogladanie: ostatni kanal + filmy przerwane w polowie (z ulubionych i najnowszych)
+        // Na samej gorze: zegar, data, pogoda i waznosc konta (jak w IBO Player), potem mecze.
+        k.addView(kartaZegara(), LinearLayout.LayoutParams(-1, -2).apply { setMargins(dp(12), dp(4), dp(12), dp(4)) })
         // Na samej gorze: mecze i sport, ktore leca teraz
         rzadSportu(k)
         rzadKanalow(k, "Ostatnio oglądane kanały", Ust.ostatnie(this).map { o -> kanaly.firstOrNull { it.id == o.id } ?: o })
