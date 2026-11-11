@@ -274,6 +274,29 @@ object Api {
             vi to out
         }
 
+    /** Normalizacja tytulu do porownan: male litery, bez roku, jakosci i znakow. */
+    fun normTytul(t: String): String = t.lowercase()
+        .replace(Regex("\\(\\d{4}\\).*$"), " ")
+        .replace(Regex("\\b(4k|uhd|fhd|hd|lektor|napisy|dubbing|pl|multi|ai)\\b"), " ")
+        .replace(Regex("[^\\p{L}\\p{N}]"), "")
+
+    fun rokTytulu(t: String): Int? = Regex("\\((\\d{4})\\)").find(t)?.groupValues?.get(1)?.toIntOrNull()
+
+    /** Filmografia aktora z Wikidata (bez klucza): pary (tytul znormalizowany, rok). */
+    suspend fun filmyAktora(nazwa: String): List<Pair<String, Int?>> = withContext(Dispatchers.IO) {
+        val esc = nazwa.replace("\\", "").replace("\"", "")
+        val q = """SELECT ?l ?y WHERE { ?a rdfs:label "$esc"@en. ?f wdt:P161 ?a. ?f rdfs:label ?l. FILTER(lang(?l) IN ("pl","en")) OPTIONAL { ?f wdt:P577 ?d. BIND(YEAR(?d) AS ?y) } } LIMIT 2000"""
+        val url = "https://query.wikidata.org/sparql?format=json&query=" + java.net.URLEncoder.encode(q, "UTF-8")
+        val req = Request.Builder().url(url).header("User-Agent", "OKPlayer/3.6 (aplikacja IPTV; kontakt przez GitHub superdarco78)")
+            .header("Accept", "application/sparql-results+json").build()
+        val body = client.newCall(req).execute().use { it.body?.string() ?: "" }
+        val arr = JSONObject(body).optJSONObject("results")?.optJSONArray("bindings") ?: return@withContext emptyList()
+        (0 until arr.length()).map { i ->
+            val o = arr.getJSONObject(i)
+            normTytul(o.optJSONObject("l")?.optString("value") ?: "") to o.optJSONObject("y")?.optString("value")?.toIntOrNull()
+        }.filter { it.first.length >= 2 }.distinct()
+    }
+
     private val zdjeciaAktorow = java.util.concurrent.ConcurrentHashMap<String, String>()
 
     /** Zdjecie aktora z publicznej wyszukiwarki IMDb (bez klucza). Pusty tekst = brak. */

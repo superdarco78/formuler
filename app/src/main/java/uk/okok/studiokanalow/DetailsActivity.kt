@@ -86,6 +86,49 @@ class DetailsActivity : AppCompatActivity() {
         lifecycleScope.launch { try { Api.raportuj(Device.id(this@DetailsActivity), "v" + (try { packageManager.getPackageInfo(packageName, 0).versionName } catch (e: Exception) { "?" }) + " OK Player " + m) } catch (_: Exception) {} }
     }
 
+    /** Po kliknieciu aktora: filmy z listy, w ktorych gral (filmografia z Wikidata dopasowana do Twojej listy). */
+    private fun filmyAktora(aktor: String) {
+        val bs = com.google.android.material.bottomsheet.BottomSheetDialog(this)
+        val root = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.VERTICAL; setBackgroundColor(0xFF121212.toInt()); setPadding(dp(14), dp(16), dp(14), dp(10)) }
+        root.addView(tekst(aktor, 20f, 0xFFFFFFFF.toInt(), true).apply { setPadding(0, 0, 0, dp(4)) })
+        val stan = tekst("Szukam filmów z Twojej listy…", 14f, 0xFFA6A6A6.toInt()).apply { setPadding(0, 0, 0, dp(10)) }
+        root.addView(stan)
+        val lista = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.VERTICAL }
+        root.addView(android.widget.ScrollView(this).apply { addView(lista) }, android.widget.LinearLayout.LayoutParams(-1, (resources.displayMetrics.heightPixels * 0.6).toInt()))
+        bs.setContentView(root); bs.show()
+        lifecycleScope.launch {
+            try {
+                val filmo = Api.filmyAktora(aktor)
+                val vod = Api.vodStreams(Session.server(this@DetailsActivity), Session.user(this@DetailsActivity), Session.pass(this@DetailsActivity), null)
+                val mojId = intent.getStringExtra("id")
+                val trafione = vod.filter { ch ->
+                    val n = Api.normTytul(ch.name); val r = Api.rokTytulu(ch.name)
+                    ch.streamId != mojId && filmo.any { (t, y) -> t == n && (r == null || y == null || kotlin.math.abs(r - y) <= 1) }
+                }.distinctBy { Api.normTytul(it.name) + Api.rokTytulu(it.name) }
+                stan.text = if (trafione.isEmpty()) "Brak innych filmów z tym aktorem na Twojej liście." else "Filmy na Twojej liście: ${trafione.size}"
+                for (ch in trafione) {
+                    val rz = android.widget.LinearLayout(this@DetailsActivity).apply {
+                        orientation = android.widget.LinearLayout.HORIZONTAL; setPadding(0, dp(6), 0, dp(6))
+                        setOnClickListener {
+                            bs.dismiss()
+                            startActivity(Intent(this@DetailsActivity, DetailsActivity::class.java)
+                                .putExtra("id", ch.streamId).putExtra("name", ch.name).putExtra("logo", ch.logo).putExtra("url", ch.directUrl ?: ""))
+                        }
+                    }
+                    val img = android.widget.ImageView(this@DetailsActivity).apply { scaleType = android.widget.ImageView.ScaleType.CENTER_CROP; setBackgroundColor(0xFF1E1E1E.toInt()); if (!ch.logo.isNullOrEmpty()) load(ch.logo) else setImageResource(R.drawable.ic_movie) }
+                    rz.addView(img, android.widget.LinearLayout.LayoutParams(dp(70), dp(104)))
+                    rz.addView(tekst(ch.name, 16f, 0xFFFFFFFF.toInt()).apply { setPadding(dp(12), 0, 0, 0); gravity = android.view.Gravity.CENTER_VERTICAL },
+                        android.widget.LinearLayout.LayoutParams(0, -1, 1f))
+                    lista.addView(rz)
+                }
+                rap("aktor " + aktor + " filmografia=" + filmo.size + " na liscie=" + trafione.size)
+            } catch (e: Exception) {
+                stan.text = "Nie udało się pobrać filmów aktora."
+                rap("aktor blad " + e.javaClass.simpleName + " " + (e.message ?: "").take(80))
+            }
+        }
+    }
+
     private fun pokazSezony(tytul: String, demo: Boolean) {
         if (sezony.isEmpty()) {
             androidx.appcompat.app.AlertDialog.Builder(this).setTitle(tytul).setMessage("Brak odcinków.").setPositiveButton("OK", null).show(); return
@@ -358,6 +401,7 @@ class DetailsActivity : AppCompatActivity() {
                             lifecycleScope.launch { val u = Api.zdjecieAktora(aktor); if (u.isNotEmpty()) foto.load(u) }
                             k.addView(ramka, android.widget.LinearLayout.LayoutParams(-1, dp(220)))
                             k.addView(tekst(aktor, 17f, 0xFFFFFFFF.toInt()).apply { setPadding(0, dp(6), 0, 0) })
+                            k.setOnClickListener { filmyAktora(aktor) }
                             rz.addView(k, android.widget.LinearLayout.LayoutParams(0, -2, 1f))
                         }
                         if (para.size == 1) rz.addView(android.view.View(this), android.widget.LinearLayout.LayoutParams(0, 1, 1f))
