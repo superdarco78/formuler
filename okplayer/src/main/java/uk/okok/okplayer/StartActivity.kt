@@ -109,6 +109,7 @@ class StartActivity : AppCompatActivity() {
         gora.addView(ImageView(this).apply { setImageResource(R.mipmap.ic_launcher) }, LinearLayout.LayoutParams(dp(36), dp(36)))
         gora.addView(tekst("OK Player", 22f, gruby = true).apply { setPadding(dp(10), 0, 0, 0) }, LinearLayout.LayoutParams(0, -2, 1f))
         gora.addView(tekst("🔍", 22f).apply { setPadding(dp(12), dp(4), dp(16), dp(4)); isFocusable = true; setOnClickListener { pokaz(5) } })
+        gora.addView(tekst("⚙", 24f).apply { setPadding(dp(4), dp(4), dp(14), dp(4)); isFocusable = true; setOnClickListener { pokaz(4) } })
         gora.addView(tekst("v$wersja", 12f, SZARY))
         root.addView(gora)
         tresc = FrameLayout(this)
@@ -190,48 +191,125 @@ class StartActivity : AppCompatActivity() {
     private fun odswiezEkran() { if (zakladka != 4) pokaz(zakladka) }
 
     // ---------------- Start (jak MyTvOnline: rzedy kafelkow) ----------------
+    private fun nazwaKat(id: String, l: List<Kat>) = l.firstOrNull { it.id == id }?.nazwa?.replace(Regex("^[^|]*\\|\\s*"), "")?.trim() ?: ""
+
+    private fun poziomy() = RecyclerView(this).apply { layoutManager = LinearLayoutManager(this@StartActivity, LinearLayoutManager.HORIZONTAL, false); setPadding(dp(12), 0, dp(12), 0); clipToPadding = false }
+
+    private fun naglowekTmdb(t: String) = LinearLayout(this).apply {
+        orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(16), dp(22), dp(16), dp(10))
+        addView(tekst(t, 19f, gruby = true), LinearLayout.LayoutParams(0, -2, 1f))
+        addView(tekst("TMDB", 17f, 0xFF1ED98A.toInt(), gruby = true).apply { letterSpacing = 0.15f })
+        addView(View(context).apply { background = tlo(0xFF01B4E4.toInt(), 8) }, LinearLayout.LayoutParams(dp(44), dp(14)).apply { marginStart = dp(6) })
+    }
+
+    /** Ranking 1, 2, 3... z duza cyfra przy plakacie (szeroko = karta pozioma dla seriali). */
+    private fun rzadRanking(k: LinearLayout, tytul: String, l: List<Vod>, kat: List<Kat>, szeroko: Boolean) {
+        if (l.isEmpty()) return
+        k.addView(naglowekTmdb(tytul))
+        val rv = poziomy()
+        val sz = if (szeroko) dp(250) else dp(130); val wy = if (szeroko) dp(140) else dp(190)
+        rv.adapter = object : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+            override fun getItemCount() = l.size
+            override fun onCreateViewHolder(p: ViewGroup, t: Int) = object : RecyclerView.ViewHolder(FrameLayout(p.context).apply {
+                isFocusable = true; layoutParams = RecyclerView.LayoutParams(sz + dp(40), -2).apply { marginEnd = dp(6) }
+                val kol = LinearLayout(p.context).apply { orientation = LinearLayout.VERTICAL }
+                kol.addView(ImageView(p.context).apply { scaleType = ImageView.ScaleType.CENTER_CROP; background = tlo(KARTA, 8); clipToOutline = true }, LinearLayout.LayoutParams(sz, wy))
+                kol.addView(tekst("", 14f, gruby = true).apply { maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END; setPadding(0, dp(8), 0, 0) }, LinearLayout.LayoutParams(sz, -2))
+                kol.addView(tekst("", 13f, SZARY).apply { maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END }, LinearLayout.LayoutParams(sz, -2))
+                addView(kol, FrameLayout.LayoutParams(-2, -2).apply { leftMargin = dp(40) })
+                addView(TextView(p.context).apply {
+                    textSize = 58f; setTextColor(Color.BLACK); setTypeface(Typeface.DEFAULT_BOLD, Typeface.BOLD_ITALIC)
+                    setShadowLayer(3f, 0f, 0f, Color.WHITE); paint.style = android.graphics.Paint.Style.FILL_AND_STROKE; paint.strokeWidth = 1f
+                }, FrameLayout.LayoutParams(-2, -2).apply { topMargin = dp(2) })
+            }) {}
+            override fun onBindViewHolder(h: RecyclerView.ViewHolder, i: Int) {
+                val f = h.itemView as FrameLayout; val v = l[i]
+                val kol = f.getChildAt(0) as LinearLayout
+                (kol.getChildAt(0) as ImageView).apply { setImageDrawable(null); v.okladka?.let { load(it) } }
+                (kol.getChildAt(1) as TextView).text = v.nazwa.replace(Regex("\\s*\\(\\d{4}\\)\\s*$"), "")
+                (kol.getChildAt(2) as TextView).text = nazwaKat(v.kat, kat)
+                (f.getChildAt(1) as TextView).apply {
+                    text = "${i + 1}"
+                    // obrys cyfry jak w MyTvOnline: biala kreska, czarny srodek
+                    paint.style = android.graphics.Paint.Style.STROKE; paint.strokeWidth = dp(2).toFloat(); setTextColor(Color.WHITE)
+                }
+                f.setOnClickListener { otworz(v) }
+            }
+        }
+        k.addView(rv, LinearLayout.LayoutParams(-1, -2))
+    }
+
+    /** Plakaty z tytulem (rok) pod spodem i paskiem obejrzenia. */
+    private fun rzadVod(k: LinearLayout, tytul: String, l: List<Vod>) {
+        if (l.isEmpty()) return
+        k.addView(naglowek(tytul))
+        val rv = poziomy()
+        rv.adapter = object : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+            override fun getItemCount() = l.size
+            override fun onCreateViewHolder(p: ViewGroup, t: Int) = object : RecyclerView.ViewHolder(LinearLayout(p.context).apply {
+                orientation = LinearLayout.VERTICAL; isFocusable = true; layoutParams = RecyclerView.LayoutParams(dp(128), -2).apply { marginEnd = dp(10) }
+                val fr = FrameLayout(p.context).apply { background = tlo(KARTA, 8); clipToOutline = true }
+                fr.addView(ImageView(p.context).apply { scaleType = ImageView.ScaleType.CENTER_CROP }, FrameLayout.LayoutParams(-1, -1))
+                fr.addView(android.widget.ProgressBar(p.context, null, android.R.attr.progressBarStyleHorizontal).apply {
+                    max = 100; progressTintList = android.content.res.ColorStateList.valueOf(0xFFE53935.toInt()); progressBackgroundTintList = android.content.res.ColorStateList.valueOf(0xFF333333.toInt())
+                }, FrameLayout.LayoutParams(-1, dp(4)).apply { gravity = Gravity.BOTTOM })
+                addView(fr, LinearLayout.LayoutParams(-1, dp(185)))
+                addView(tekst("", 14f).apply { gravity = Gravity.CENTER; maxLines = 2; ellipsize = android.text.TextUtils.TruncateAt.END; setPadding(0, dp(8), 0, 0) })
+            }) {}
+            override fun onBindViewHolder(h: RecyclerView.ViewHolder, i: Int) {
+                val w = h.itemView as LinearLayout; val v = l[i]
+                val fr = w.getChildAt(0) as FrameLayout
+                (fr.getChildAt(0) as ImageView).apply { setImageDrawable(null); v.okladka?.let { load(it) } }
+                val pb = fr.getChildAt(1) as android.widget.ProgressBar
+                val url = if (v.rodzaj == "f") Serwer.adresFilmu(this@StartActivity, v.id, v.ext) else ""
+                val poz = if (url.isEmpty()) 0 else Ust.pozycja(this@StartActivity, url); val dl = if (url.isEmpty()) 0 else Ust.dlugosc(this@StartActivity, url)
+                if (poz > 0) { pb.visibility = View.VISIBLE; pb.progress = if (dl > 0) (poz * 100 / dl).toInt().coerceIn(3, 100) else 10 } else pb.visibility = View.GONE
+                (w.getChildAt(1) as TextView).text = v.nazwa
+                w.setOnClickListener { otworz(v) }
+            }
+        }
+        k.addView(rv, LinearLayout.LayoutParams(-1, -2))
+    }
+
+    private fun rzadKanalow(k: LinearLayout, tytul: String, l: List<Kanal>) {
+        if (l.isEmpty()) return
+        k.addView(naglowek(tytul))
+        val rv = poziomy()
+        rv.adapter = object : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+            override fun getItemCount() = l.size
+            override fun onCreateViewHolder(p: ViewGroup, t: Int) = object : RecyclerView.ViewHolder(LinearLayout(p.context).apply {
+                orientation = LinearLayout.VERTICAL; isFocusable = true; layoutParams = RecyclerView.LayoutParams(dp(118), -2).apply { marginEnd = dp(10) }
+                addView(ImageView(p.context).apply { scaleType = ImageView.ScaleType.FIT_CENTER; background = tlo(0xFF222222.toInt(), 10); setPadding(dp(14), dp(10), dp(14), dp(10)) }, LinearLayout.LayoutParams(-1, dp(76)))
+                addView(tekst("", 14f).apply { gravity = Gravity.CENTER; maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END; setPadding(0, dp(6), 0, 0) })
+            }) {}
+            override fun onBindViewHolder(h: RecyclerView.ViewHolder, i: Int) {
+                val w = h.itemView as LinearLayout; val ch = l[i]
+                (w.getChildAt(0) as ImageView).apply { setImageDrawable(null); if (ch.logo != null) load(ch.logo) }
+                (w.getChildAt(1) as TextView).text = ch.nazwa
+                w.setOnClickListener { graj(ch) }
+            }
+        }
+        k.addView(rv, LinearLayout.LayoutParams(-1, -2))
+    }
+
     private fun start() {
         val sv = ScrollView(this)
-        val k = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(0, dp(4), 0, dp(16)) }
+        val k = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(0, 0, 0, dp(16)) }
         sv.addView(k); tresc.addView(sv)
+        if (filmy.isEmpty() && kanaly.isEmpty()) { k.addView(tekst("Ładuję listę…", 15f, SZARY).apply { setPadding(dp(16), dp(16), 0, 0) }); return }
+        val pop = { l: List<Vod> -> l.filter { it.ocena > 0 }.sortedByDescending { it.ocena }.take(20).ifEmpty { l.takeLast(20).reversed() } }
+        // Kontynuuj ogladanie: ostatni kanal + filmy przerwane w polowie (z ulubionych i najnowszych)
         Ust.ostatni(this)?.let { o ->
             k.addView(naglowek("Kontynuuj oglądanie"))
             k.addView(kafelKanalu(o), LinearLayout.LayoutParams(-1, dp(72)).apply { setMargins(dp(16), 0, dp(16), 0) })
         }
-        val ul = Ust.ulubione(this)
-        if (ul.isNotEmpty()) {
-            val v = ul.filter { it[0] != "k" }.map { Vod(it[1], it[2], it[3].ifEmpty { null }, it[5], 0.0, it[4], it[0]) }
-            if (v.isNotEmpty()) rzad(k, "Ulubione", v)
-        }
-        if (filmy.isEmpty() && kanaly.isEmpty()) { k.addView(tekst("Ładuję listę…", 15f, SZARY).apply { setPadding(dp(16), dp(16), 0, 0) }); return }
-        if (filmy.isNotEmpty()) {
-            rzad(k, "Popularne filmy", filmy.filter { it.ocena > 0 }.sortedByDescending { it.ocena }.take(20).ifEmpty { filmy.takeLast(20).reversed() })
-            rzad(k, "Nowo dodane filmy", filmy.takeLast(25).reversed())
-        }
-        if (seriale.isNotEmpty()) {
-            rzad(k, "Popularne seriale", seriale.filter { it.ocena > 0 }.sortedByDescending { it.ocena }.take(20).ifEmpty { seriale.takeLast(20).reversed() })
-            rzad(k, "Nowe seriale", seriale.takeLast(25).reversed())
-        }
-        if (kanaly.isNotEmpty()) {
-            k.addView(naglowek("Kanały TV"))
-            val rv = RecyclerView(this).apply { layoutManager = LinearLayoutManager(this@StartActivity, LinearLayoutManager.HORIZONTAL, false); setPadding(dp(12), 0, dp(12), 0); clipToPadding = false }
-            val l = kanaly.take(30)
-            rv.adapter = object : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-                override fun getItemCount() = l.size
-                override fun onCreateViewHolder(p: ViewGroup, t: Int) = object : RecyclerView.ViewHolder(LinearLayout(p.context).apply {
-                    orientation = LinearLayout.VERTICAL; isFocusable = true; layoutParams = RecyclerView.LayoutParams(dp(130), -2).apply { marginEnd = dp(10) }
-                    addView(ImageView(p.context).apply { scaleType = ImageView.ScaleType.FIT_CENTER; background = tlo(KARTA, 10); setPadding(dp(10), dp(10), dp(10), dp(10)) }, LinearLayout.LayoutParams(-1, dp(80)))
-                    addView(tekst("", 13f).apply { maxLines = 1; setPadding(0, dp(6), 0, 0) })
-                }) {}
-                override fun onBindViewHolder(h: RecyclerView.ViewHolder, i: Int) {
-                    val w = h.itemView as LinearLayout; val ch = l[i]
-                    (w.getChildAt(0) as ImageView).apply { setImageDrawable(null); if (ch.logo != null) load(ch.logo) }
-                    (w.getChildAt(1) as TextView).text = ch.nazwa
-                    w.setOnClickListener { graj(ch) }
-                }
-            }
-            k.addView(rv, LinearLayout.LayoutParams(-1, -2))
-        }
+        val ul = Ust.ulubione(this).filter { it[0] != "k" }.map { Vod(it[1], it[2], it[3].ifEmpty { null }, it[5], 0.0, it[4], it[0]) }
+        rzadVod(k, "Ulubione", ul)
+        rzadRanking(k, "Popularne filmy", pop(filmy), katF, false)
+        rzadRanking(k, "Popularne seriale", pop(seriale), katS, true)
+        rzadKanalow(k, "Najnowsze kanały telewizyjne", kanaly.takeLast(20).reversed())
+        rzadVod(k, "Najnowsze VOD-y", filmy.takeLast(25).reversed())
+        rzadVod(k, "Najnowsze seriale telewizyjne", seriale.takeLast(25).reversed())
     }
 
     private fun naglowek(t: String) = tekst(t, 19f, gruby = true).apply { setPadding(dp(16), dp(20), dp(16), dp(10)) }
