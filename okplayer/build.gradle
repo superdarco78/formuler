@@ -12,8 +12,8 @@ android {
         applicationId "uk.okok.okplayer"
         minSdk 26
         targetSdk 34
-        versionCode 123
-        versionName "2.22"
+        versionCode 124
+        versionName "2.23"
     }
 
     signingConfigs {

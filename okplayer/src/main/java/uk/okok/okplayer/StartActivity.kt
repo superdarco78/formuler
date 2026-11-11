@@ -347,7 +347,7 @@ class StartActivity : AppCompatActivity() {
                     override fun onPlaybackStateChanged(st: Int) {
                         if (st == androidx.media3.common.Player.STATE_READY && !gotowe) { gotowe = true
                             if (duration > 120_000) seekTo((duration * (0.15 + Math.random() * 0.55)).toLong()); playWhenReady = true
-                            podgladH.postDelayed({ pv.animate().alpha(0f).setDuration(700).withEndAction { stopPodglad() }.start() }, 16_000) }
+                            podgladH.postDelayed({ pv.animate().alpha(0f).setDuration(700).withEndAction { stopPodglad() }.start() }, 30_000) }
                     }
                     override fun onIsPlayingChanged(gra: Boolean) { if (gra && pv.alpha == 0f) pv.animate().alpha(1f).setStartDelay(250).setDuration(700).start() }
                     override fun onPlayerError(e: androidx.media3.common.PlaybackException) { stopPodglad() } })
@@ -676,7 +676,7 @@ class StartActivity : AppCompatActivity() {
                                 val d = duration
                                 if (d > 120_000) seekTo((d * (0.15 + Math.random() * 0.55)).toLong())
                                 playWhenReady = true
-                                karta.postDelayed({ if (i == n) zwiastunWidok.animate().alpha(0f).setDuration(900).start() }, 21_000)
+                                karta.postDelayed({ if (i == n) zwiastunWidok.animate().alpha(0f).setDuration(900).start() }, 55_000)
                             }
                         }
                         override fun onIsPlayingChanged(gra: Boolean) { if (gra && przewiniete && zwiastunWidok.alpha == 0f) zwiastunWidok.animate().alpha(1f).setStartDelay(300).setDuration(900).start() }
@@ -714,7 +714,7 @@ class StartActivity : AppCompatActivity() {
             lista.setOnClickListener { Ust.przelaczUlubiony(this, v.rodzaj, v.id, v.nazwa, v.okladka, v.ext, ""); android.widget.Toast.makeText(this, Jezyk.t("Dodano do Mojej listy"), android.widget.Toast.LENGTH_SHORT).show() }
         }
         pokazNr(0, false)
-        val zmiana = object : Runnable { override fun run() { if (!karta.isAttachedToWindow) return; i = (i + 1) % l.size; pokazNr(i, true); karta.postDelayed(this, if (zwiastun != null) 26000 else 9000) } }
+        val zmiana = object : Runnable { override fun run() { if (!karta.isAttachedToWindow) return; i = (i + 1) % l.size; pokazNr(i, true); karta.postDelayed(this, if (zwiastun != null) 60000 else 9000) } }
         karta.postDelayed(zmiana, 7000)
         karta.setOnClickListener { otworz(l[i], karta) }
     }
@@ -830,7 +830,7 @@ class StartActivity : AppCompatActivity() {
         if (l.isEmpty()) return
         k.addView(naglowek(tytul))
         val rv = RecyclerView(this).apply { layoutManager = LinearLayoutManager(this@StartActivity, LinearLayoutManager.HORIZONTAL, false); setPadding(dp(12), 0, dp(12), 0); clipToPadding = false }
-        rv.adapter = PlakatyAdapter(l, dp(112))
+        rv.adapter = PlakatyAdapter(l, dp(112)); zajawkiWRzedzie(rv); karuzela3D(rv)
         k.addView(rv, LinearLayout.LayoutParams(-1, -2))
     }
 
@@ -924,6 +924,7 @@ class StartActivity : AppCompatActivity() {
         val klucz = "grupa_$rodzaj"
         var wybrana = Ust.prefs(this).getString(klucz, "") ?: ""
         val siatka = RecyclerView(this).apply { layoutManager = androidx.recyclerview.widget.GridLayoutManager(this@StartActivity, 3); setPadding(dp(8), 0, dp(8), dp(8)); clipToPadding = false }
+        zajawkiWRzedzie(siatka) // 2.23: zajawki takze w siatce Filmy / Seriale
         fun ustaw() { siatka.adapter = PlakatyAdapter(if (wybrana.isEmpty()) lista.asReversed() else lista.filter { it.kat == wybrana }, -1) }
         val pasek = RecyclerView(this).apply { layoutManager = LinearLayoutManager(this@StartActivity, LinearLayoutManager.HORIZONTAL, false); setPadding(dp(10), dp(4), dp(10), dp(8)); clipToPadding = false }
         lateinit var ga: GrupyAdapter
@@ -953,16 +954,23 @@ class StartActivity : AppCompatActivity() {
                 orientation = LinearLayout.VERTICAL; isFocusable = true
                 layoutParams = if (szer > 0) RecyclerView.LayoutParams(szer, -2).apply { marginEnd = dp(10) } else RecyclerView.LayoutParams(-1, -2).apply { setMargins(dp(4), dp(4), dp(4), dp(8)) }
                 val wys = if (szer > 0) szer * 3 / 2 else (resources.displayMetrics.widthPixels / 3 - dp(14)) * 3 / 2
-                addView(ImageView(p.context).apply { scaleType = ImageView.ScaleType.CENTER_CROP; background = tlo(KARTA, 8); clipToOutline = true; foreground = ramkaCanvy(); isDuplicateParentStateEnabled = true }, LinearLayout.LayoutParams(-1, wys))
+                // 2.23: plakat w ramce, zeby na nim mogla leciec zajawka
+                addView(FrameLayout(p.context).apply { background = tlo(KARTA, 8); clipToOutline = true; foreground = ramkaCanvy(); isDuplicateParentStateEnabled = true
+                    addView(ImageView(p.context).apply { scaleType = ImageView.ScaleType.CENTER_CROP }, FrameLayout.LayoutParams(-1, -1)) }, LinearLayout.LayoutParams(-1, wys))
                 addView(tekst("", 13f).apply { maxLines = 2; setPadding(0, dp(6), 0, 0) })
             }
             return object : RecyclerView.ViewHolder(w) {}
         }
         override fun onBindViewHolder(h: RecyclerView.ViewHolder, i: Int) {
             val w = h.itemView as LinearLayout; val v = l[i]
-            (w.getChildAt(0) as ImageView).apply { setImageDrawable(null); if (v.okladka != null) load(v.okladka) { canva("ok_gr_brak_plakatu").takeIf { it != 0 }?.let { error(it) } } else canva("ok_gr_brak_plakatu").takeIf { it != 0 }?.let { setImageResource(it) } }
+            val fr = w.getChildAt(0) as FrameLayout
+            (fr.getChildAt(0) as ImageView).apply { setImageDrawable(null); if (v.okladka != null) load(v.okladka) { canva("ok_gr_brak_plakatu").takeIf { it != 0 }?.let { error(it) } } else canva("ok_gr_brak_plakatu").takeIf { it != 0 }?.let { setImageResource(it) } }
             (w.getChildAt(1) as TextView).text = v.nazwa
-            w.setOnClickListener { otworz(v, w.getChildAt(0)) }
+            w.setOnClickListener { stopPodglad(); otworz(v, fr) }
+            w.tag = Runnable { podglad(fr, FrameLayout.LayoutParams(-1, -1), v) }
+            w.setOnFocusChangeListener { _, f -> if (f) podglad(fr, FrameLayout.LayoutParams(-1, -1), v) else stopPodglad() }
+            // myszka / wskaznik: najechanie na plakat = zajawka
+            w.setOnHoverListener { _, e -> if (e.action == android.view.MotionEvent.ACTION_HOVER_ENTER) podglad(fr, FrameLayout.LayoutParams(-1, -1), v); false }
         }
     }
 
