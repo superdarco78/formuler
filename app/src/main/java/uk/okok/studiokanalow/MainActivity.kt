@@ -106,6 +106,7 @@ class MainActivity : AppCompatActivity() {
         onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 if (b.bottomNav.selectedItemId != R.id.tab_start) { b.bottomNav.selectedItemId = R.id.tab_start; return }
+                if (!Session.optBool(this@MainActivity, "pytaj_wyjscie", true)) { finishAffinity(); return }
                 androidx.appcompat.app.AlertDialog.Builder(this@MainActivity)
                     .setTitle("Zamknąć OK Player?")
                     .setMessage("Czy na pewno chcesz wyjść z aplikacji?")
@@ -529,6 +530,9 @@ class MainActivity : AppCompatActivity() {
             ", napisy: " + tak(Session.opt(this, "subs") == "1"), R.drawable.ic_radio) { ekrany.dzwiek { budujUstawienia() } }
         wiersz("Opcje odtwarzacza", "Start: " + tak(Session.autostart(this)) + ", wznawianie: " + tak(Session.resume(this)) +
             ", powiększenie: " + tak(Session.opt(this, "zoom") == "1"), R.drawable.ic_tv) { ekrany.odtwarzacz { budujUstawienia() } }
+        wiersz("Pytaj przed wyjściem", tak(Session.optBool(this, "pytaj_wyjscie", true)), R.drawable.ic_tv) {
+            Session.setOptBool(this, "pytaj_wyjscie", !Session.optBool(this, "pytaj_wyjscie", true)); budujUstawienia()
+        }
         if (Konfig.wl(this, "rodzic")) wiersz("Opcje rodzicielskie", null, R.drawable.ic_pin) { ekrany.rodzicielskie { pinOk = true } }
         odstep()
         if (Konfig.wl(this, "backup")) wiersz("Backup & Przywróć", null, R.drawable.ic_movie) { ekrany.backup() }
