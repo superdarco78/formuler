@@ -1,2 +1,2 @@
-Dni w programie TV|pokazywały się wszystkie dni, także przyszłe (czw., pt.) i dni bez archiwum|tylko dni, z których kanał ma archiwum, oraz dziś – każdy pokazany dzień da się obejrzeć
-Opis filmu|„Nie udało się pobrać opisu”|3 różne próby; gdy serwer nie ma opisu – tytuł, ocena i zwiastun po tytule; widać powód błędu
+Wybór audycji z programu|po dotknięciu audycji z archiwum program zostawał otwarty z boku i zasłaniał obraz|program sam się chowa, a obraz od razu jest na pełnym ekranie
+Dni w programie|także przyszłe dni|tylko dni z archiwum tego kanału i dziś

@@ -109,6 +109,13 @@ class OdtwarzaczActivity : AppCompatActivity() {
     private var archiwumGra = false
     private var terazWpis: Wpis? = null
 
+    /** Po wybraniu audycji z programu: program sie chowa, obraz od razu na pelny ekran. */
+    private fun poWyborze() {
+        if (przewodnikOtwarty) zamknijPrzewodnik()
+        requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+        uloz(android.content.res.Configuration.ORIENTATION_LANDSCAPE)
+    }
+
     // ---- Archiwum ze straznikiem: gdy obraz stoi albo jest blad, sam probuje kolejnego sposobu ----
     private var warianty: List<String> = emptyList()
     private var wariant = 0
@@ -276,8 +283,8 @@ class OdtwarzaczActivity : AppCompatActivity() {
                 }
                 setOnClickListener {
                     when {
-                        archiwum -> { pokazNapis("Archiwum: " + w.tytul); grajArchiwum(biezacy!!.id, w); naArchiwum(w) }
-                        teraz -> { biezacy?.let { przelacz(it) } }
+                        archiwum -> { pokazNapis("Archiwum: " + w.tytul); grajArchiwum(biezacy!!.id, w); naArchiwum(w); poWyborze() }
+                        teraz -> { biezacy?.let { przelacz(it) }; poWyborze() }
                         else -> pokazNapis(if (w.start > t) "Audycja jeszcze się nie zaczęła" else "Ta audycja nie ma archiwum")
                     }
                 }
