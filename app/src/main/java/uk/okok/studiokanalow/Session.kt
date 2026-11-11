@@ -49,34 +49,6 @@ object Session {
         prefs(ctx).edit().clear().apply()
     }
 
-    // ----- pamiec list na dysku: Start pokazuje sie od razu, a swieze listy pobieraja sie w tle -----
-    fun zapiszKanaly(ctx: Context, klucz: String, l: List<uk.okok.studiokanalow.model.Channel>) {
-        try {
-            val a = org.json.JSONArray()
-            for (c in l) a.put(org.json.JSONArray().put(c.streamId).put(c.name).put(c.logo ?: "").put(c.categoryId ?: "").put(c.num).put(c.directUrl ?: "").put(c.rating).put(c.opis).put(c.czas))
-            java.io.File(ctx.filesDir, "lista_$klucz.json").writeText(a.toString())
-        } catch (e: Exception) { }
-    }
-    fun wczytajKanaly(ctx: Context, klucz: String): List<uk.okok.studiokanalow.model.Channel>? = try {
-        val f = java.io.File(ctx.filesDir, "lista_$klucz.json")
-        if (!f.exists()) null else {
-            val a = org.json.JSONArray(f.readText())
-            (0 until a.length()).map { i -> val o = a.getJSONArray(i)
-                uk.okok.studiokanalow.model.Channel(o.getString(0), o.getString(1), o.getString(2).ifEmpty { null }, o.getString(3).ifEmpty { null },
-                    o.optInt(4), o.getString(5).ifEmpty { null }, o.optDouble(6, 0.0), o.optString(7), o.optString(8)) }
-        }
-    } catch (e: Exception) { null }
-    fun zapiszKategorie(ctx: Context, klucz: String, l: List<uk.okok.studiokanalow.model.Category>) {
-        try {
-            val a = org.json.JSONArray(); for (c in l) a.put(org.json.JSONArray().put(c.id).put(c.name))
-            java.io.File(ctx.filesDir, "kat_$klucz.json").writeText(a.toString())
-        } catch (e: Exception) { }
-    }
-    fun wczytajKategorie(ctx: Context, klucz: String): List<uk.okok.studiokanalow.model.Category>? = try {
-        val f = java.io.File(ctx.filesDir, "kat_$klucz.json")
-        if (!f.exists()) null else { val a = org.json.JSONArray(f.readText()); (0 until a.length()).map { i -> uk.okok.studiokanalow.model.Category(a.getJSONArray(i).getString(0), a.getJSONArray(i).getString(1)) } }
-    } catch (e: Exception) { null }
-
     // ----- kontynuuj ogladanie filmow/odcinkow (pozycja jak w MyTvOnline) -----
     fun zapiszPozycje(ctx: Context, url: String, name: String, logo: String?, poz: Long, dl: Long) {
         val arr = try { org.json.JSONArray(prefs(ctx).getString("kontynuuj", "[]")) } catch (e: Exception) { org.json.JSONArray() }
