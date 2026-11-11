@@ -79,6 +79,7 @@ class StartActivity : AppCompatActivity() {
         if (Ust.zalogowany(this)) ekranGlowny() else ekranLogowania()
         if (savedInstanceState == null) animacjaStartu()
         lifecycleScope.launch { Aktualizacja.sprawdz(this@StartActivity) }
+        window.decorView.postDelayed({ if (!isFinishing && Ust.zalogowany(this)) powitanie() }, 1500)
     }
 
     // ---------------- logowanie kodem ----------------
@@ -927,7 +928,21 @@ class StartActivity : AppCompatActivity() {
         var wybrana = Ust.prefs(this).getString(klucz, "") ?: ""
         val siatka = RecyclerView(this).apply { layoutManager = androidx.recyclerview.widget.GridLayoutManager(this@StartActivity, 3); setPadding(dp(8), 0, dp(8), dp(8)); clipToPadding = false }
         zajawkiWRzedzie(siatka) // 2.23: zajawki takze w siatce Filmy / Seriale
-        fun ustaw() { siatka.adapter = PlakatyAdapter(if (wybrana.isEmpty()) lista.asReversed() else lista.filter { it.kat == wybrana }, -1) }
+        // 2.25: duzy baner z zajawka na gorze Filmow i Seriali (przewija sie razem z plakatami)
+        val gora = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; layoutParams = RecyclerView.LayoutParams(-1, -2) }
+        val zBanerem = Ust.widoczne(this, "rzad_baner_zakladki")
+        if (zBanerem) baner(gora, lista.filter { it.ocena > 0 }.sortedByDescending { it.ocena }.take(10).ifEmpty { lista.takeLast(10).reversed() })
+        val naglowekA = object : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+            override fun getItemCount() = if (zBanerem && gora.childCount > 0) 1 else 0
+            override fun onCreateViewHolder(p: ViewGroup, t: Int): RecyclerView.ViewHolder { (gora.parent as? ViewGroup)?.removeView(gora); return object : RecyclerView.ViewHolder(gora) {} }
+            override fun onBindViewHolder(h: RecyclerView.ViewHolder, i: Int) {}
+            override fun getItemViewType(position: Int) = 777 }
+        (siatka.layoutManager as androidx.recyclerview.widget.GridLayoutManager).spanSizeLookup = object : androidx.recyclerview.widget.GridLayoutManager.SpanSizeLookup() {
+            override fun getSpanSize(position: Int) = if (position == 0 && naglowekA.itemCount == 1) 3 else 1 }
+        siatka.addOnScrollListener(object : RecyclerView.OnScrollListener() { override fun onScrolled(r: RecyclerView, dx: Int, dy: Int) {
+            if (ef("ef_paralaksa") && gora.isAttachedToWindow) banerObrazy?.forEach { it.translationY = -gora.top * 0.35f } } })
+        fun ustaw() { siatka.adapter = androidx.recyclerview.widget.ConcatAdapter(androidx.recyclerview.widget.ConcatAdapter.Config.Builder().setIsolateViewTypes(true).build(),
+            naglowekA, PlakatyAdapter(if (wybrana.isEmpty()) lista.asReversed() else lista.filter { it.kat == wybrana }, -1)) }
         val pasek = RecyclerView(this).apply { layoutManager = LinearLayoutManager(this@StartActivity, LinearLayoutManager.HORIZONTAL, false); setPadding(dp(10), dp(4), dp(10), dp(8)); clipToPadding = false }
         lateinit var ga: GrupyAdapter
         ga = GrupyAdapter(grupy, wybrana) { id -> wybrana = id; Ust.prefs(this).edit().putString(klucz, id).apply(); ga.wybrana = id; ga.notifyDataSetChanged(); ustaw() }
@@ -935,6 +950,33 @@ class StartActivity : AppCompatActivity() {
         k.addView(pasek, LinearLayout.LayoutParams(-1, -2))
         k.addView(siatka, LinearLayout.LayoutParams(-1, 0, 1f))
         ustaw()
+    }
+
+    /** 2.25: ekran powitalny dla nowego uzytkownika (raz) - 3 plansze, wlaczany w panelu. */
+    private fun powitanie() {
+        if (Ust.prefs(this).getBoolean("powitanie_ok", false) || !Ust.widoczne(this, "ekran_powitalny")) return
+        val plansze = listOf(Triple("🎬", "Witaj w OK Player", "Tysiące filmów, seriali i kanałów TV w jednym miejscu."),
+            Triple("✨", "Zajawki i Top 10", "Plakaty ożywają – zobacz fragment filmu, zanim go włączysz. Codziennie nowe Top 10."),
+            Triple("⚽", "Sport na żywo", "Mecze dnia na stronie głównej, archiwum i oglądanie od początku."))
+        val d = android.app.Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
+        val f = FrameLayout(this).apply { background = Skorka.tloZAkcentem(Ust.prefs(this@StartActivity).getInt("kolor_plakatu", 0xFF2A6F7A.toInt())) }
+        val k = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER; setPadding(dp(32), dp(32), dp(32), dp(32)) }
+        val ik = tekst("", 72f).apply { gravity = Gravity.CENTER }; val t = tekst("", 28f, gruby = true).apply { gravity = Gravity.CENTER; setPadding(0, dp(18), 0, dp(10)) }
+        val o = tekst("", 17f, 0xFFD0D4DA.toInt()).apply { gravity = Gravity.CENTER }
+        val kropki = LinearLayout(this).apply { gravity = Gravity.CENTER; setPadding(0, dp(28), 0, dp(28)) }
+        val dalej = tekst("", 18f, Color.BLACK, gruby = true).apply { gravity = Gravity.CENTER; isFocusable = true; setPadding(dp(40), dp(14), dp(40), dp(14))
+            background = GradientDrawable().apply { cornerRadius = dp(28).toFloat(); setColor(Color.WHITE) } }
+        listOf(ik, t, o, kropki).forEach { k.addView(it, LinearLayout.LayoutParams(-1, -2)) }; k.addView(dalej, LinearLayout.LayoutParams(-2, -2))
+        f.addView(k, FrameLayout.LayoutParams(-1, -1)); d.setContentView(f)
+        var nr = 0
+        fun pokaz() { val (a, b, c) = plansze[nr]; ik.text = a; t.text = Jezyk.t(b); o.text = Jezyk.t(c)
+            dalej.text = Jezyk.t(if (nr == plansze.size - 1) "Zaczynamy" else "Dalej")
+            kropki.removeAllViews(); plansze.indices.forEach { x -> kropki.addView(View(this).apply { background = GradientDrawable().apply { cornerRadius = dp(5).toFloat(); setColor(if (x == nr) Color.WHITE else 0x55FFFFFF) } },
+                LinearLayout.LayoutParams(if (x == nr) dp(22) else dp(8), dp(8)).apply { marginEnd = dp(6) }) }
+            listOf(ik, t, o).forEachIndexed { x, v -> v.alpha = 0f; v.translationY = dp(20).toFloat(); v.animate().alpha(1f).translationY(0f).setStartDelay(x * 120L).setDuration(500).start() } }
+        dalej.setOnClickListener { if (nr < plansze.size - 1) { nr++; pokaz() } else { Ust.prefs(this).edit().putBoolean("powitanie_ok", true).apply(); d.dismiss() } }
+        d.setOnCancelListener { Ust.prefs(this).edit().putBoolean("powitanie_ok", true).apply() }
+        pokaz(); d.show(); dalej.requestFocus()
     }
 
     private fun otworz(v: Vod, zrodlo: View? = null) {
