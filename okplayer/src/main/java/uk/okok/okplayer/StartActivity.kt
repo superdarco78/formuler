@@ -572,7 +572,7 @@ class StartActivity : AppCompatActivity() {
         }
     }
 
-    private fun graj(ch: Kanal, pelny: Boolean = true) {
+    private fun graj(ch: Kanal, pelny: Boolean = false) {
         if (Ust.prefs(this).contains("mini")) { Ust.prefs(this).edit().remove("mini").apply(); if (::miniWidok.isInitialized) miniWidok.player = null; miniGracz = null; miniKanal = null; mini.visibility = View.GONE; WspolnyGracz.wlasciciel = "duzy" }
         Ust.zapiszOstatni(this, ch)
         startActivity(Intent(this, OdtwarzaczActivity::class.java)

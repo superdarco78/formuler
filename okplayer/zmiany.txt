@@ -1,5 +1,2 @@
-⏮ Od początku (nowość)|audycję, która już trwa, można było oglądać tylko od teraz|przycisk „⏮ Od początku” na obrazie TV – włącza bieżącą audycję od pierwszej minuty (z archiwum)
-Przełączanie kanałów palcem (nowość)|kanał zmieniało się tylko z listy|przesuń palcem po obrazie w górę = następny kanał, w dół = poprzedni; nazwa kanału pokazuje się na obrazie
-Ostatnio oglądane kanały (nowość)|na Starcie był tylko jeden ostatni kanał|rząd do 15 ostatnio oglądanych kanałów z logo – jedno dotknięcie i grają
-Okno aktualizacji|szary tekst z historią kilku wersji|ładne okno: tylko zmiany tej wersji, każda z „Było” i „Teraz”
-Przycisk okienka pod obrazem|okrągły ⧉ obok „Kanały”|usunięty – małe okno przyciskiem Wstecz
+Kanał z listy TV|otwierał się od razu na pełnym ekranie|otwiera się jak w starej aplikacji: obraz na górze, pod nim program (EPG) i lista kanałów
+Mini-okno|bez zmian|Wstecz = mały kwadrat; dotknięcie kwadratu = pełny ekran; Wstecz z pełnego ekranu = znowu kwadrat
