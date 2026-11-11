@@ -130,6 +130,7 @@ class DetaleActivity : AppCompatActivity() {
     }
 
     private var dodatkiPobrane = false
+    private var uzupelniono = false
     private fun pokazInfo(o: JSONObject, serial: Boolean, id: String, nazwa: String, plakat: ImageView, meta: TextView, ocena: TextView, opis: TextView) {
         lifecycleScope.launch {
             // Gdy serwer nie ma opisu - pokazujemy to, co wiemy z listy (tytul, ocena), a zwiastun szukamy po tytule.
@@ -147,6 +148,19 @@ class DetaleActivity : AppCompatActivity() {
                 pokazSezon(id, nazwa); ustawPrzycisk(id)
             }
             fun t(k: String) = i.optString(k).takeIf { it.isNotEmpty() && it != "null" } ?: ""
+            // Uzupelnienie z Wikidata/Wikipedii (raz): rezyser, obsada z rolami, gatunek, kraj, czas, zwiastun, opis - gdy czegos brakuje.
+            if (!uzupelniono && listOf("cast", "director", "genre", "plot", "duration", "country").any { t(it).isEmpty() || t(it) == "Serwer nie ma jeszcze opisu tego tytułu." }) {
+                uzupelniono = true
+                launch {
+                    val w = withContext(Dispatchers.IO) { Dodatki.filmWiki(nazwa, serial) } ?: return@launch
+                    var zm = false
+                    for (k in listOf("director", "genre", "country", "cast", "releasedate", "duration", "youtube_trailer", "tmdb_id")) if (w.optString(k).isNotEmpty() && t(k).isEmpty()) { i.put(k, w.optString(k)); zm = true }
+                    val pl = w.optString("plot_wiki")
+                    if (pl.isNotEmpty() && (t("plot").isEmpty() || t("plot").startsWith("Serwer nie ma"))) { i.put("plot", pl); zm = true }
+                    w.optJSONObject("_role")?.let { r -> role = role + r.keys().asSequence().associateWith { r.optString(it) } }
+                    if (zm) { o.put("info", i); pokazInfo(o, serial, id, nazwa, plakat, meta, ocena, opis) }
+                }
+            }
             if (t("cover_big").startsWith("http") && intent.getStringExtra("okladka") == null) plakat.load(t("cover_big"))
             if (t("movie_image").startsWith("http") && intent.getStringExtra("okladka") == null) plakat.load(t("movie_image"))
             val rok = t("releasedate").take(4).ifEmpty { t("releaseDate").take(4) }.ifEmpty { t("year") }
@@ -231,7 +245,7 @@ class DetaleActivity : AppCompatActivity() {
             }
             else -> {
                 val k = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; background = tlo(KARTA, 10); setPadding(dp(18), dp(18), dp(18), dp(18)) }
-                listOf("Premiera" to t("releasedate").ifEmpty { t("releaseDate") }, "Gatunek" to t("genre"), "Reżyseria" to t("director"),
+                listOf("Premiera" to t("releasedate").ifEmpty { t("releaseDate") }, "Gatunek" to t("genre"), "Reżyseria" to t("director"), "Kraj" to t("country"),
                     "Czas" to czas(t("duration").ifEmpty { t("episode_run_time") }), "Ocena" to t("rating"), "Obsada" to t("cast"))
                     .filter { it.second.isNotEmpty() }.forEach { (a, b) -> k.addView(tekst("$a: $b", 15f, 0xFFDDDDDD.toInt()).apply { setPadding(0, dp(4), 0, dp(4)) }) }
                 if (t("plot").isNotEmpty()) k.addView(tekst(t("plot"), 15f, SZARY).apply { setPadding(0, dp(12), 0, 0) })

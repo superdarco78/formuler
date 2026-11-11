@@ -153,4 +153,43 @@ object Dodatki {
         } catch (_: Exception) { }
         return out
     }
+
+    /** Uzupelnienie danych filmu/serialu z Wikidata i Wikipedii (po tytule i roku): rezyser, obsada z rolami, gatunek,
+     *  kraj, czas, premiera, zwiastun, numer TMDb oraz opis z Wikipedii - gdy serwer ich nie ma. */
+    fun filmWiki(tytulPelny: String, serial: Boolean): JSONObject? = try {
+        val rok = Regex("\\((\\d{4})\\)").find(tytulPelny)?.groupValues?.get(1)
+        val tytul = tytulPelny.replace(Regex("\\(\\d{4}\\)"), "").replace(Regex("^[A-Z]{2,3}\\s*[-|:]\\s*"), "")
+            .replace(Regex("\\b(napisy|lektor|dubbing|4k|hd|fhd|uhd)\\b", RegexOption.IGNORE_CASE), "").replace("\"", "").replace(Regex("\\s+"), " ").trim()
+        val typ = if (serial) "wd:Q5398426" else "wd:Q11424"
+        val filtrRoku = if (rok != null && !serial) "OPTIONAL { ?f wdt:P577 ?d. } FILTER(!BOUND(?d) || ABS(YEAR(?d) - $rok) <= 1)" else ""
+        val f = sparql("SELECT ?f WHERE { { ?f rdfs:label \"$tytul\"@pl } UNION { ?f rdfs:label \"$tytul\"@en } ?f wdt:P31/wdt:P279* $typ. $filtrRoku } LIMIT 1")
+        if (f.length() == 0) null else {
+            val q = f.getJSONObject(0).optJSONObject("f")?.optString("value")?.substringAfterLast("/") ?: ""
+            val w = "wd:$q"
+            fun lista(zap: String) = sparql(zap).let { a -> (0 until a.length()).mapNotNull { a.getJSONObject(it).optJSONObject("x")?.optString("value") }.distinct() }
+            val rez = lista("SELECT ?x WHERE { $w wdt:P57 ?r. ?r rdfs:label ?x. FILTER(lang(?x) IN (\"pl\",\"en\")) } LIMIT 4")
+            val gat = lista("SELECT ?x WHERE { $w wdt:P136 ?g. ?g rdfs:label ?x. FILTER(lang(?x)=\"pl\") } LIMIT 4")
+            val kraj = lista("SELECT ?x WHERE { $w wdt:P495 ?k. ?k rdfs:label ?x. FILTER(lang(?x)=\"pl\") } LIMIT 3")
+            val ob = sparql("SELECT ?aL (SAMPLE(?rl) AS ?rL) WHERE { $w p:P161 ?st. ?st ps:P161 ?a. ?a rdfs:label ?aL. FILTER(lang(?aL)=\"en\") OPTIONAL { ?st pq:P453 ?r. ?r rdfs:label ?rl. FILTER(lang(?rl) IN (\"pl\",\"en\")) } OPTIONAL { ?st pq:P4633 ?rn. BIND(STR(?rn) AS ?rl) } } GROUP BY ?aL LIMIT 30")
+            val inne = sparql("SELECT ?d ?czas ?yt ?tm ?plw WHERE { OPTIONAL { $w wdt:P577 ?d. } OPTIONAL { $w wdt:P2047 ?czas. } OPTIONAL { $w wdt:P1651 ?yt. } OPTIONAL { $w wdt:P4947 ?tm. } OPTIONAL { $w wdt:P4983 ?tm. } OPTIONAL { ?plw schema:about $w; schema:isPartOf <https://pl.wikipedia.org/>. } } LIMIT 1")
+            val o = JSONObject()
+            if (rez.isNotEmpty()) o.put("director", rez.joinToString(", "))
+            if (gat.isNotEmpty()) o.put("genre", gat.joinToString(", "))
+            if (kraj.isNotEmpty()) o.put("country", kraj.joinToString(", "))
+            val nazwiska = ArrayList<String>(); val role = JSONObject()
+            for (i in 0 until ob.length()) { val x = ob.getJSONObject(i); val a = x.optJSONObject("aL")?.optString("value") ?: continue; nazwiska.add(a); x.optJSONObject("rL")?.optString("value")?.takeIf { it.isNotEmpty() }?.let { role.put(a, it) } }
+            if (nazwiska.isNotEmpty()) { o.put("cast", nazwiska.joinToString(", ")); o.put("_role", role) }
+            if (inne.length() > 0) {
+                val x = inne.getJSONObject(0); fun v(k: String) = x.optJSONObject(k)?.optString("value") ?: ""
+                v("d").take(10).takeIf { it.isNotEmpty() }?.let { o.put("releasedate", it) }
+                v("czas").toDoubleOrNull()?.let { o.put("duration", it.toInt().toString()) }
+                v("yt").takeIf { it.isNotEmpty() }?.let { o.put("youtube_trailer", it) }
+                v("tm").takeIf { it.isNotEmpty() }?.let { o.put("tmdb_id", it) }
+                v("plw").takeIf { it.isNotEmpty() }?.let { u ->
+                    try { val j = JSONObject(tekst(u.substringBefore("/wiki/") + "/api/rest_v1/page/summary/" + u.substringAfter("/wiki/"))); j.optString("extract").takeIf { it.isNotEmpty() }?.let { o.put("plot_wiki", it) } } catch (_: Exception) {}
+                }
+            }
+            o
+        }
+    } catch (e: Exception) { null }
 }
