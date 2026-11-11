@@ -59,7 +59,7 @@ class DetaleActivity : AppCompatActivity() {
         val id = intent.getStringExtra("id") ?: ""
         val nazwa = intent.getStringExtra("nazwa") ?: ""
         val serial = intent.getStringExtra("rodzaj") == "s"
-        val sv = ScrollView(this).apply { tloCanvy(R.drawable.ok_gr_tlo_aplikacji) }
+        val sv = ScrollView(this).apply { tloCanvy(Skorka.id(this@DetaleActivity, R.drawable.ok_gr_tlo_aplikacji)) }
         kol = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         sv.addView(kol)
         val plakat = ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_CROP; intent.getStringExtra("okladka")?.let { load(it) } }
@@ -71,7 +71,7 @@ class DetaleActivity : AppCompatActivity() {
         kol.addView(ocena)
         val rzad = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(dp(16), dp(18), dp(16), dp(10)) }
         ogladaj = tekst("▶   " + (if (serial) "Odcinki" else "Oglądaj"), 18f, Color.WHITE, true).apply {
-            gravity = Gravity.CENTER; background = android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(0xFFFF3D5A.toInt(), 0xFFB52AD6.toInt())).apply { cornerRadius = dp(30).toFloat() }; setPadding(0, dp(15), 0, dp(15)); isFocusable = true
+            gravity = Gravity.CENTER; background = android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(Skorka.akcent(this@DetaleActivity), Skorka.akcent(this@DetaleActivity))).apply { cornerRadius = dp(30).toFloat() }; setPadding(0, dp(15), 0, dp(15)); isFocusable = true
             setOnClickListener { if (serial) grajKolejny(id, nazwa) else grajFilm(id, nazwa) }
         }
         rzad.addView(ogladaj, LinearLayout.LayoutParams(0, -2, 1f))
@@ -342,7 +342,7 @@ class DetaleActivity : AppCompatActivity() {
         val chipy = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(dp(12), 0, dp(12), dp(8)) }
         odcinki.forEachIndexed { i, (nr, l) ->
             chipy.addView(tekst("Sezon $nr", 15f, Color.WHITE).apply {
-                background = if (i == sezon) android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(0xFFFF3D5A.toInt(), 0xFFB52AD6.toInt())).apply { cornerRadius = dp(20).toFloat() } else tlo(0xFF2A2A2A.toInt(), 20); setPadding(dp(16), dp(9), dp(16), dp(9)); isFocusable = true
+                background = if (i == sezon) android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(Skorka.akcent(this@DetaleActivity), Skorka.akcent(this@DetaleActivity))).apply { cornerRadius = dp(20).toFloat() } else tlo(0xFF2A2A2A.toInt(), 20); setPadding(dp(16), dp(9), dp(16), dp(9)); isFocusable = true
                 setOnClickListener { sezon = i; pokazSezon(serialId, tytul) }
             }, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(8) })
         }
@@ -361,7 +361,7 @@ class DetaleActivity : AppCompatActivity() {
             val url = adresOdc(o); val poz = Ust.pozycja(this, url); val dl = Ust.dlugosc(this, url)
             if (poz > 0) ram.addView(android.widget.ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
                 max = 100; progress = if (dl > 0) (poz * 100 / dl).toInt().coerceIn(3, 100) else 10
-                progressTintList = android.content.res.ColorStateList.valueOf(0xFFE0245E.toInt()); progressBackgroundTintList = android.content.res.ColorStateList.valueOf(0x66000000)
+                progressTintList = android.content.res.ColorStateList.valueOf(Skorka.akcent(this@DetaleActivity)); progressBackgroundTintList = android.content.res.ColorStateList.valueOf(0x66000000)
             }, FrameLayout.LayoutParams(-1, dp(4)).apply { gravity = Gravity.BOTTOM })
             wiersz.addView(ram, LinearLayout.LayoutParams(dp(150), dp(85)))
             val op = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), 0, 0, 0) }

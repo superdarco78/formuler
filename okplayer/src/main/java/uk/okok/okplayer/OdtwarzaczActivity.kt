@@ -93,11 +93,11 @@ class OdtwarzaczActivity : AppCompatActivity() {
             for (n in listOf(androidx.media3.ui.R.id.exo_rew_with_amount, androidx.media3.ui.R.id.exo_ffwd_with_amount))
                 (widok.findViewById<android.view.View>(n) as? android.widget.TextView)?.let { tv -> tv.setTextColor(Color.TRANSPARENT); tv.foreground = null }
             // Dolny pasek odtwarzacza na tle z Canvy.
-            widok.findViewById<android.view.View>(androidx.media3.ui.R.id.exo_bottom_bar)?.tloCanvy(R.drawable.ok_gr_pasek)
+            widok.findViewById<android.view.View>(androidx.media3.ui.R.id.exo_bottom_bar)?.tloCanvy(Skorka.id(this@OdtwarzaczActivity, R.drawable.ok_gr_pasek))
             widok.findViewById<androidx.media3.ui.DefaultTimeBar>(androidx.media3.ui.R.id.exo_progress)?.apply {
-                setPlayedColor(0xFFFF3D5A.toInt()); setScrubberColor(0xFFC85BFF.toInt()); setBufferedColor(0x66FFFFFF); setUnplayedColor(0x33FFFFFF)
+                setPlayedColor(Skorka.akcent(this@OdtwarzaczActivity)); setScrubberColor(Skorka.akcent(this@OdtwarzaczActivity)); setBufferedColor(0x66FFFFFF); setUnplayedColor(0x33FFFFFF)
             }
-            widok.findViewById<TextView>(androidx.media3.ui.R.id.exo_position)?.setTextColor(0xFFFF3D5A.toInt())
+            widok.findViewById<TextView>(androidx.media3.ui.R.id.exo_position)?.setTextColor(Skorka.akcent(this@OdtwarzaczActivity))
         }
         f.addView(widok, FrameLayout.LayoutParams(-1, -1))
         // Animacja przy wlaczaniu kanalu / filmu: logo pulsuje, wokol kreci sie kolorowy pierscien, pod spodem nazwa.
@@ -106,7 +106,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         val obreczIkona = FrameLayout(this)
         pierscien = android.view.View(this).apply {
             background = android.graphics.drawable.GradientDrawable().apply { shape = android.graphics.drawable.GradientDrawable.OVAL; gradientType = android.graphics.drawable.GradientDrawable.SWEEP_GRADIENT
-                colors = intArrayOf(0x00FF3D5A, 0xFFFF3D5A.toInt(), 0xFFB52AD6.toInt(), 0xFF7A1FFF.toInt()); innerRadiusRatio = 2.6f; thicknessRatio = 14f; useLevel = false }
+                colors = intArrayOf(0x00FF3D5A, Skorka.akcent(this@OdtwarzaczActivity), Skorka.akcent(this@OdtwarzaczActivity), Skorka.akcent(this@OdtwarzaczActivity)); innerRadiusRatio = 2.6f; thicknessRatio = 14f; useLevel = false }
         }
         obreczIkona.addView(pierscien, FrameLayout.LayoutParams(220, 220).apply { gravity = Gravity.CENTER })
         logoLad = android.widget.ImageView(this).apply { setImageResource(R.mipmap.ic_launcher) }
@@ -121,14 +121,14 @@ class OdtwarzaczActivity : AppCompatActivity() {
         }
         f.addView(napis, FrameLayout.LayoutParams(-2, -2).apply { gravity = Gravity.TOP or Gravity.START; setMargins(24, 24, 24, 24) })
         val przyciski = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.HORIZONTAL }
-        fun prz(t: String, a: () -> Unit) = TextView(this).apply { text = t; setTextColor(Color.WHITE); textSize = 15f; setTypeface(typeface, android.graphics.Typeface.BOLD); gravity = Gravity.CENTER; setPadding(40, 22, 40, 22); tloCanvy(R.drawable.ok_gr_przycisk); isFocusable = true
-            setOnFocusChangeListener { v, f -> v.tloCanvy(if (f) R.drawable.ok_gr_przycisk_roz else R.drawable.ok_gr_przycisk) }; setOnClickListener { a() } }
+        fun prz(t: String, a: () -> Unit) = TextView(this).apply { text = t; setTextColor(Color.WHITE); textSize = 15f; setTypeface(typeface, android.graphics.Typeface.BOLD); gravity = Gravity.CENTER; setPadding(40, 22, 40, 22); tloCanvy(Skorka.id(this@OdtwarzaczActivity, R.drawable.ok_gr_przycisk)); isFocusable = true
+            setOnFocusChangeListener { v, f -> v.tloCanvy(if (f) Skorka.id(this@OdtwarzaczActivity, R.drawable.ok_gr_przycisk_roz) else Skorka.id(this@OdtwarzaczActivity, R.drawable.ok_gr_przycisk)) }; setOnClickListener { a() } }
         if (!intent.getBooleanExtra("vod", false)) przyciski.addView(prz("⏮ Od początku") { odPoczatku() }, android.widget.LinearLayout.LayoutParams(-2, -2).apply { marginEnd = 16 })
         if (!intent.getBooleanExtra("vod", false)) przyciski.addView(prz("⇄ Poprzedni") { poprzedni?.let { przelacz(it) } ?: pokazNapis("Brak poprzedniego kanału") }, android.widget.LinearLayout.LayoutParams(-2, -2).apply { marginEnd = 16 })
         przyciski.addView(prz("⚙ Opcje") { opcje() })
         if (!intent.getBooleanExtra("vod", false)) przyciski.addView(prz("☰ Program / archiwum") { program() }.also { progNaObrazie = it }, android.widget.LinearLayout.LayoutParams(-2, -2).apply { marginStart = 16 })
         // Plakietka NA ZYWO z Canvy (tylko na zywo, razem z przyciskami).
-        plakietkaNaZywo = android.widget.ImageView(this).apply { setImageResource(R.drawable.ok_gr_na_zywo); adjustViewBounds = true; visibility = android.view.View.GONE }
+        plakietkaNaZywo = android.widget.ImageView(this).apply { setImageResource(Skorka.id(this@OdtwarzaczActivity, R.drawable.ok_gr_na_zywo)); adjustViewBounds = true; visibility = android.view.View.GONE }
         f.addView(plakietkaNaZywo, FrameLayout.LayoutParams(-2, 64).apply { gravity = Gravity.BOTTOM or Gravity.START; setMargins(32, 0, 0, 150) })
         widok.setControllerVisibilityListener(PlayerView.ControllerVisibilityListener { v -> przyciski.visibility = v
             plakietkaNaZywo?.visibility = if (v == android.view.View.VISIBLE && !archiwumGra && !intent.getBooleanExtra("vod", false)) android.view.View.VISIBLE else android.view.View.GONE })
@@ -142,7 +142,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         ramka = f
         korzen = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.VERTICAL; setBackgroundColor(Color.BLACK) }
         korzen.addView(f, android.widget.LinearLayout.LayoutParams(-1, resources.displayMetrics.widthPixels * 9 / 16))
-        val pn = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(32, 24, 32, 24); tloCanvy(R.drawable.ok_gr_tlo_panel) }
+        val pn = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(32, 24, 32, 24); tloCanvy(Skorka.id(this@OdtwarzaczActivity, R.drawable.ok_gr_tlo_panel)) }
         logoTv = android.widget.ImageView(this).apply { scaleType = android.widget.ImageView.ScaleType.FIT_CENTER }
         pn.addView(logoTv, android.widget.LinearLayout.LayoutParams(160, 100))
         val opisy = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.VERTICAL; setPadding(28, 0, 0, 0) }
@@ -150,7 +150,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         terazTv = TextView(this).apply { setTextColor(0xFFDDDDDD.toInt()); textSize = 14f }
         potemTv = TextView(this).apply { setTextColor(0xFF9A9A9A.toInt()); textSize = 13f }
         pasekTeraz = android.widget.ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
-            max = 100; visibility = android.view.View.GONE; progressTintList = android.content.res.ColorStateList.valueOf(0xFFE0245E.toInt()); progressBackgroundTintList = android.content.res.ColorStateList.valueOf(0xFF333333.toInt())
+            max = 100; visibility = android.view.View.GONE; progressTintList = android.content.res.ColorStateList.valueOf(Skorka.akcent(this@OdtwarzaczActivity)); progressBackgroundTintList = android.content.res.ColorStateList.valueOf(0xFF333333.toInt())
         }
         godzinyTv = TextView(this).apply { setTextColor(0xFF9A9A9A.toInt()); textSize = 12f; visibility = android.view.View.GONE }
         opisy.addView(nazwaTv); opisy.addView(terazTv); opisy.addView(pasekTeraz, android.widget.LinearLayout.LayoutParams(-1, 10).apply { topMargin = 8; bottomMargin = 4 }); opisy.addView(godzinyTv); opisy.addView(potemTv)
@@ -158,7 +158,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         pn.addView(opisy, android.widget.LinearLayout.LayoutParams(0, -2, 1f))
         przyciskProgram = TextView(this).apply {
             text = "☰ Program"; setTextColor(Color.WHITE); textSize = 14f; setTypeface(typeface, android.graphics.Typeface.BOLD); setPadding(30, 18, 30, 18); isFocusable = true
-            tloCanvy(R.drawable.ok_gr_przycisk_roz); setPadding(44, 22, 44, 22)
+            tloCanvy(Skorka.id(this@OdtwarzaczActivity, R.drawable.ok_gr_przycisk_roz)); setPadding(44, 22, 44, 22)
             setOnClickListener { if (przewodnikOtwarty) zamknijPrzewodnik() else otworzPrzewodnik() }
         }
         // Z przycisku Program na podgladzie: tylko archiwum tego kanalu (bez listy i bez przelacznika). Zwykle: lista kanalow + Program.
@@ -391,11 +391,11 @@ class OdtwarzaczActivity : AppCompatActivity() {
                 val znak = when { teraz -> "● NA ŻYWO  •  jeszcze " + ((w.koniec - t) / 60) + " min"; archiwum -> "⏪ Archiwum – dotknij, aby obejrzeć"; minelo -> "Bez archiwum"; else -> "Wkrótce  •  " + ((w.koniec - w.start) / 60) + " min" }
                 prawa.addView(TextView(this@OdtwarzaczActivity).apply {
                     text = znak; textSize = 13f
-                    setTextColor(when { teraz -> 0xFFE0245E.toInt(); archiwum -> 0xFF4FC3F7.toInt(); else -> szary })
+                    setTextColor(when { teraz -> Skorka.akcent(this@OdtwarzaczActivity); archiwum -> 0xFF4FC3F7.toInt(); else -> szary })
                 }, android.widget.LinearLayout.LayoutParams(-2, -2).apply { topMargin = 4 })
                 if (teraz) prawa.addView(android.widget.ProgressBar(this@OdtwarzaczActivity, null, android.R.attr.progressBarStyleHorizontal).apply {
                     max = 100; progress = ((t - w.start) * 100 / (w.koniec - w.start).coerceAtLeast(1)).toInt()
-                    progressTintList = android.content.res.ColorStateList.valueOf(0xFFE0245E.toInt()); progressBackgroundTintList = android.content.res.ColorStateList.valueOf(0xFF444444.toInt())
+                    progressTintList = android.content.res.ColorStateList.valueOf(Skorka.akcent(this@OdtwarzaczActivity)); progressBackgroundTintList = android.content.res.ColorStateList.valueOf(0xFF444444.toInt())
                 }, android.widget.LinearLayout.LayoutParams(-1, 10).apply { topMargin = 8 })
                 if (w.opis.isNotEmpty()) prawa.addView(TextView(this@OdtwarzaczActivity).apply {
                     text = w.opis; textSize = 13f; setTextColor(0xFFBDBDBD.toInt()); maxLines = 2; ellipsize = android.text.TextUtils.TruncateAt.END
@@ -501,7 +501,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
                     addView(TextView(p.context).apply { setTextColor(Color.WHITE); textSize = 16f; maxLines = 1 })
                     addView(TextView(p.context).apply { setTextColor(0xFF9A9A9A.toInt()); textSize = 13f; maxLines = 1 })
                     addView(android.widget.ProgressBar(p.context, null, android.R.attr.progressBarStyleHorizontal).apply {
-                        max = 100; progressTintList = android.content.res.ColorStateList.valueOf(0xFFE0245E.toInt()); progressBackgroundTintList = android.content.res.ColorStateList.valueOf(0xFF333333.toInt())
+                        max = 100; progressTintList = android.content.res.ColorStateList.valueOf(Skorka.akcent(this@OdtwarzaczActivity)); progressBackgroundTintList = android.content.res.ColorStateList.valueOf(0xFF333333.toInt())
                     }, android.widget.LinearLayout.LayoutParams(-1, 10).apply { topMargin = 8 })
                 }, android.widget.LinearLayout.LayoutParams(0, -2, 1f))
             }

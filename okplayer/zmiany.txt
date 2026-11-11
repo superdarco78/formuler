@@ -1,5 +1,5 @@
-Dolne menu|ogromny pas tła zajmujący pół ekranu|wąski pasek z ikonami 3D z Canvy, tło nie rozpycha menu
-Karty w Ustawieniach i panele|ogromne puste karty, śmieci na górnej krawędzi|karty dopasowane do treści, czysty szklany panel z Canvy z neonową obwódką
-Przyciski-pigułki i ramka zaznaczenia|rozciągnięte, z poszarpanymi brzegami|równe pigułki i ramka z Canvy (dopasowują się do napisu)
-Dolne menu – nieaktywne ikony|mocno wyblakłe|wyraźniejsze
-Reszta|z 2.01|animacja startu i szata z Canvy bez zmian
+Skórki wyglądu|jedna różowa, neonowa szata|5 skórek z grafik Canvy do wyboru: Grafit i srebro (domyślna, uniwersalna), Złoto, Morski turkus, Błękit, Róż – Ustawienia → Skórka (wygląd), zmiana od razu
+Neon|świecące poświaty wokół ikon, paneli i przycisków|bez poświaty – realistyczne ikony 3D, matowe szklane panele, przygaszone tło
+Logo|logo na ciemnym prostokącie|czyste logo OK PLAYER bez tła
+Kolory akcentów|różowe paski, zaznaczenia i przełączniki|w kolorze wybranej skórki (domyślnie srebrne)
+Reszta|z 2.02|menu i karty dopasowane, odtwarzacz z grafik Canvy

@@ -2,8 +2,8 @@
 <resources>
     <color name="tlo">#050507</color>
     <color name="ikona_tlo">#0B1020</color>
-    <color name="akcent">#FF3D5A</color>
-    <color name="fiolet">#B52AD6</color>
+    <color name="akcent">#B8C2CE</color>
+    <color name="fiolet">#7E8A99</color>
     <!-- Kolorystyka z grafiki Canvy: czern kinowa, roz i fiolet w calej aplikacji (okna, przelaczniki, paski, kursor). -->
     <style name="Motyw" parent="Theme.AppCompat.NoActionBar">
         <item name="android:windowBackground">@color/tlo</item>
@@ -13,7 +13,7 @@
         <item name="colorPrimaryDark">@color/tlo</item>
         <item name="colorAccent">@color/akcent</item>
         <item name="colorControlActivated">@color/akcent</item>
-        <item name="colorControlHighlight">#33FF3D5A</item>
+        <item name="colorControlHighlight">#33B8C2CE</item>
         <item name="android:textColorHighlight">#66B52AD6</item>
         <item name="alertDialogTheme">@style/MotywOkno</item>
     </style>

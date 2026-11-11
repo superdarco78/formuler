@@ -35,7 +35,7 @@ class StartActivity : AppCompatActivity() {
     private val CZARNY = Color.BLACK
     private val KARTA = 0xFF1E1E1E.toInt()
     private val SZARY = 0xFFA6A6A6.toInt()
-    private val AKCENT = 0xFFE0245E.toInt()
+    private val AKCENT get() = Skorka.akcent(this)
 
     private lateinit var tresc: FrameLayout
     private lateinit var dol: LinearLayout
@@ -67,8 +67,8 @@ class StartActivity : AppCompatActivity() {
     private fun tlo(kol: Int, r: Int) = GradientDrawable().apply { setColor(kol); cornerRadius = dp(r).toFloat() }
     /** 2.01: swiecaca ramka z Canvy na zaznaczonym plakacie (pilot / dotyk). */
     private fun ramkaCanvy() = android.graphics.drawable.StateListDrawable().apply {
-        addState(intArrayOf(android.R.attr.state_focused), getDrawable(R.drawable.ok_gr_ramka))
-        addState(intArrayOf(android.R.attr.state_pressed), getDrawable(R.drawable.ok_gr_ramka))
+        addState(intArrayOf(android.R.attr.state_focused), getDrawable(Skorka.id(this@StartActivity, R.drawable.ok_gr_ramka)))
+        addState(intArrayOf(android.R.attr.state_pressed), getDrawable(Skorka.id(this@StartActivity, R.drawable.ok_gr_ramka)))
     }
     private val wersja by lazy { try { packageManager.getPackageInfo(packageName, 0).versionName } catch (e: Exception) { "?" } }
 
@@ -121,13 +121,13 @@ class StartActivity : AppCompatActivity() {
     // ---------------- ekran glowny ----------------
     private fun ekranGlowny() {
         parowanie?.cancel()
-        val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; tloCanvy(R.drawable.ok_gr_tlo_aplikacji) }
+        val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; tloCanvy(Skorka.id(this@StartActivity, R.drawable.ok_gr_tlo_aplikacji)) }
         glowny = root
         val gora = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(18), dp(14), dp(18), dp(10)) }
-        gora.addView(ImageView(this).apply { setImageResource(R.drawable.ok_gr_logo); scaleType = ImageView.ScaleType.FIT_START; adjustViewBounds = true }, LinearLayout.LayoutParams(dp(110), dp(40)))
+        gora.addView(ImageView(this).apply { setImageResource(Skorka.id(this@StartActivity, R.drawable.ok_gr_logo)); scaleType = ImageView.ScaleType.FIT_START; adjustViewBounds = true }, LinearLayout.LayoutParams(dp(110), dp(40)))
         gora.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
-        gora.addView(ImageView(this).apply { setImageResource(R.drawable.ok_gr_ik_szukaj); scaleType = ImageView.ScaleType.FIT_CENTER; isFocusable = true; setPadding(dp(2), dp(2), dp(2), dp(2)); setOnClickListener { pokaz(5) } }, LinearLayout.LayoutParams(dp(46), dp(46)))
-        gora.addView(ImageView(this).apply { setImageResource(R.drawable.ok_gr_ik_ustawienia); scaleType = ImageView.ScaleType.FIT_CENTER; isFocusable = true; setPadding(dp(2), dp(2), dp(2), dp(2)); setOnClickListener { pokaz(4) } }, LinearLayout.LayoutParams(dp(46), dp(46)).apply { marginStart = dp(6); marginEnd = dp(8) })
+        gora.addView(ImageView(this).apply { setImageResource(Skorka.id(this@StartActivity, R.drawable.ok_gr_ik_szukaj)); scaleType = ImageView.ScaleType.FIT_CENTER; isFocusable = true; setPadding(dp(2), dp(2), dp(2), dp(2)); setOnClickListener { pokaz(5) } }, LinearLayout.LayoutParams(dp(46), dp(46)))
+        gora.addView(ImageView(this).apply { setImageResource(Skorka.id(this@StartActivity, R.drawable.ok_gr_ik_ustawienia)); scaleType = ImageView.ScaleType.FIT_CENTER; isFocusable = true; setPadding(dp(2), dp(2), dp(2), dp(2)); setOnClickListener { pokaz(4) } }, LinearLayout.LayoutParams(dp(46), dp(46)).apply { marginStart = dp(6); marginEnd = dp(8) })
         gora.addView(tekst("v$wersja", 12f, SZARY))
         root.addView(gora)
         // Tresc zakladek + mini-okno TV plywajace nad nia (kwadrat z obrazem, bez opisu; dotknij = pelny ekran, X = zamknij).
@@ -145,7 +145,7 @@ class StartActivity : AppCompatActivity() {
             background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(0xCC000000.toInt()) }
             setOnClickListener { zamknijMini() }
         }, FrameLayout.LayoutParams(dp(30), dp(30)).apply { gravity = Gravity.TOP or Gravity.END; setMargins(0, dp(6), dp(6), 0) })
-        mini.addView(ImageView(this).apply { setImageResource(R.drawable.ok_gr_ramka); scaleType = ImageView.ScaleType.FIT_XY; isClickable = false; isFocusable = false }, 1, FrameLayout.LayoutParams(-1, -1))
+        mini.addView(ImageView(this).apply { setImageResource(Skorka.id(this@StartActivity, R.drawable.ok_gr_ramka)); scaleType = ImageView.ScaleType.FIT_XY; isClickable = false; isFocusable = false }, 1, FrameLayout.LayoutParams(-1, -1))
         miniNazwa = tekst("", 1f); miniTeraz = tekst("", 1f)
         // Dotkniecie = pelny ekran; przeciagniecie palcem = przesuwanie okienka.
         var x0 = 0f; var y0 = 0f; var ruch = false
@@ -168,9 +168,9 @@ class StartActivity : AppCompatActivity() {
         banerCanvy = ImageView(this).apply { adjustViewBounds = true; scaleType = ImageView.ScaleType.FIT_XY; visibility = View.GONE }
         root.addView(banerCanvy, LinearLayout.LayoutParams(-1, -2))
         root.addView(obszar, LinearLayout.LayoutParams(-1, 0, 1f))
-        dol = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; tloCanvy(R.drawable.ok_gr_pasek); setPadding(dp(6), dp(2), dp(6), dp(2)) }
+        dol = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; tloCanvy(Skorka.id(this@StartActivity, R.drawable.ok_gr_pasek)); setPadding(dp(6), dp(2), dp(6), dp(2)) }
         // Dolne menu jak w MyTvOnline: same ikonki (Start, TV, Filmy, Seriale, Ulubione)
-        listOf(R.drawable.ok_gr_menu_start to 0, R.drawable.ok_gr_menu_tv to 1, R.drawable.ok_gr_menu_filmy to 2, R.drawable.ok_gr_menu_seriale to 3, R.drawable.ok_gr_menu_radio to 7, R.drawable.ok_gr_menu_ulubione to 6).forEach { (ik, z) ->
+        listOf(Skorka.id(this@StartActivity, R.drawable.ok_gr_menu_start) to 0, Skorka.id(this@StartActivity, R.drawable.ok_gr_menu_tv) to 1, Skorka.id(this@StartActivity, R.drawable.ok_gr_menu_filmy) to 2, Skorka.id(this@StartActivity, R.drawable.ok_gr_menu_seriale) to 3, Skorka.id(this@StartActivity, R.drawable.ok_gr_menu_radio) to 7, Skorka.id(this@StartActivity, R.drawable.ok_gr_menu_ulubione) to 6).forEach { (ik, z) ->
             dol.addView(ImageView(this).apply {
                 setImageResource(ik); scaleType = ImageView.ScaleType.FIT_CENTER; setPadding(0, dp(9), 0, dp(9)); isFocusable = true; tag = z
                 setOnClickListener { pokaz(z) }
@@ -317,7 +317,7 @@ class StartActivity : AppCompatActivity() {
                 val fr = FrameLayout(p.context).apply { background = tlo(KARTA, 8); clipToOutline = true; foreground = ramkaCanvy(); isDuplicateParentStateEnabled = true }
                 fr.addView(ImageView(p.context).apply { scaleType = ImageView.ScaleType.CENTER_CROP }, FrameLayout.LayoutParams(-1, -1))
                 fr.addView(android.widget.ProgressBar(p.context, null, android.R.attr.progressBarStyleHorizontal).apply {
-                    max = 100; progressTintList = android.content.res.ColorStateList.valueOf(0xFFE53935.toInt()); progressBackgroundTintList = android.content.res.ColorStateList.valueOf(0xFF333333.toInt())
+                    max = 100; progressTintList = android.content.res.ColorStateList.valueOf(Skorka.akcent(this@StartActivity)); progressBackgroundTintList = android.content.res.ColorStateList.valueOf(0xFF333333.toInt())
                 }, FrameLayout.LayoutParams(-1, dp(4)).apply { gravity = Gravity.BOTTOM })
                 addView(fr, LinearLayout.LayoutParams(-1, dp(185)))
                 addView(tekst("", 14f).apply { gravity = Gravity.CENTER; maxLines = 2; ellipsize = android.text.TextUtils.TruncateAt.END; setPadding(0, dp(8), 0, 0) })
@@ -345,7 +345,7 @@ class StartActivity : AppCompatActivity() {
             override fun getItemCount() = l.size
             override fun onCreateViewHolder(p: ViewGroup, t: Int) = object : RecyclerView.ViewHolder(LinearLayout(p.context).apply {
                 orientation = LinearLayout.VERTICAL; isFocusable = true; layoutParams = RecyclerView.LayoutParams(dp(118), -2).apply { marginEnd = dp(10) }
-                addView(ImageView(p.context).apply { scaleType = ImageView.ScaleType.FIT_CENTER; tloCanvy(R.drawable.ok_gr_okno); setPadding(dp(14), dp(10), dp(14), dp(10)); foreground = ramkaCanvy(); isDuplicateParentStateEnabled = true }, LinearLayout.LayoutParams(-1, dp(76)))
+                addView(ImageView(p.context).apply { scaleType = ImageView.ScaleType.FIT_CENTER; tloCanvy(Skorka.id(this@StartActivity, R.drawable.ok_gr_okno)); setPadding(dp(14), dp(10), dp(14), dp(10)); foreground = ramkaCanvy(); isDuplicateParentStateEnabled = true }, LinearLayout.LayoutParams(-1, dp(76)))
                 addView(tekst("", 14f).apply { gravity = Gravity.CENTER; maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END; setPadding(0, dp(6), 0, 0) })
             }) {}
             override fun onBindViewHolder(h: RecyclerView.ViewHolder, i: Int) {
@@ -402,7 +402,7 @@ class StartActivity : AppCompatActivity() {
             rv.adapter = object : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
                 override fun getItemCount() = trwa.size
                 override fun onCreateViewHolder(p: ViewGroup, t: Int) = object : RecyclerView.ViewHolder(LinearLayout(p.context).apply {
-                    orientation = LinearLayout.VERTICAL; isFocusable = true; setPadding(dp(14), dp(12), dp(14), dp(12)); tloCanvy(R.drawable.ok_gr_okno); foreground = ramkaCanvy()
+                    orientation = LinearLayout.VERTICAL; isFocusable = true; setPadding(dp(14), dp(12), dp(14), dp(12)); tloCanvy(Skorka.id(this@StartActivity, R.drawable.ok_gr_okno)); foreground = ramkaCanvy()
                     layoutParams = RecyclerView.LayoutParams(dp(230), -2).apply { marginEnd = dp(10) }
                     addView(LinearLayout(p.context).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
                         addView(ImageView(p.context).apply { scaleType = ImageView.ScaleType.FIT_CENTER }, LinearLayout.LayoutParams(dp(54), dp(34)))
@@ -420,7 +420,7 @@ class StartActivity : AppCompatActivity() {
                     ((w.getChildAt(0) as LinearLayout).getChildAt(1) as TextView).apply {
                         text = liga?.second ?: ""; setTextColor(Color.WHITE)
                         // bez rozpoznanej ligi: plakietka NA ZYWO z Canvy
-                        if (liga == null) { tloCanvy(R.drawable.ok_gr_plakietka_zywo); minWidth = dp(84); minHeight = dp(24); setPadding(0, 0, 0, 0) }
+                        if (liga == null) { tloCanvy(Skorka.id(this@StartActivity, R.drawable.ok_gr_plakietka_zywo)); minWidth = dp(84); minHeight = dp(24); setPadding(0, 0, 0, 0) }
                         else { background = tlo(liga.third, 8); minWidth = 0; minHeight = 0; setPadding(dp(8), dp(3), dp(8), dp(3)) }
                         (layoutParams as? LinearLayout.LayoutParams)?.marginStart = dp(10)
                     }
@@ -457,11 +457,11 @@ class StartActivity : AppCompatActivity() {
     private var waznoscPamiec: String? = null
     private fun kartaZegara(): View {
         val karta = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(16), dp(12), dp(16), dp(12))
-            tloCanvy(R.drawable.ok_gr_okno) }
+            tloCanvy(Skorka.id(this@StartActivity, R.drawable.ok_gr_okno)) }
         val lewa = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         lewa.addView(android.widget.TextClock(this).apply { format24Hour = "HH:mm"; format12Hour = "HH:mm"; textSize = 34f; setTextColor(Color.WHITE); setTypeface(typeface, android.graphics.Typeface.BOLD) })
         lewa.addView(android.widget.TextClock(this).apply { format24Hour = "EEEE, d MMMM yyyy"; format12Hour = "EEEE, d MMMM yyyy"; textSize = 14f; setTextColor(0xFFBDBDBD.toInt()) })
-        val konto = tekst(waznoscPamiec?.let { if (it.isEmpty()) "" else "Konto ważne: $it" } ?: "", 12f, 0xFFC85BFF.toInt()).apply { setPadding(0, dp(4), 0, 0) }
+        val konto = tekst(waznoscPamiec?.let { if (it.isEmpty()) "" else "Konto ważne: $it" } ?: "", 12f, Skorka.akcent(this@StartActivity)).apply { setPadding(0, dp(4), 0, 0) }
         lewa.addView(konto)
         karta.addView(lewa, LinearLayout.LayoutParams(0, -2, 1f))
         val prawa = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.END }
@@ -488,10 +488,10 @@ class StartActivity : AppCompatActivity() {
             val el = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL; setPadding(0, dp(6), 0, dp(6)); isFocusable = true; isClickable = true }
             val ikC = mapOf("Telewizja" to "ok_gr_ik_tv", "Filmy" to "ok_gr_ik_filmy", "Seriale" to "ok_gr_ik_seriale", "Ulubione" to "ok_gr_ik_ulubione", "Radio" to "ok_gr_ik_radio", "Historia" to "ok_gr_ik_historia", "Konto" to "ok_gr_ik_konto", "Ustawienia" to "ok_gr_ik_ustawienia")[nazwa]?.let { canva(it) } ?: 0
             val kolo: View = if (ikC != 0) ImageView(this).apply { setImageResource(ikC) } else tekst(ik, 24f).apply { gravity = Gravity.CENTER
-                background = if (i == 0) GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(0xFFFF3D5A.toInt(), 0xFFB52AD6.toInt())).apply { shape = GradientDrawable.OVAL }
+                background = if (i == 0) GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(Skorka.akcent(this@StartActivity), Skorka.akcent(this@StartActivity))).apply { shape = GradientDrawable.OVAL }
                     else GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(0xFF2A2A35.toInt()); setStroke(dp(1), 0xFF3A3A48.toInt()) } }
             el.addView(kolo, LinearLayout.LayoutParams(dp(64), dp(64)))
-            el.addView(tekst(nazwa, 12f, if (i == 0) 0xFFFF6B85.toInt() else 0xFFDDDDDD.toInt()).apply { setPadding(0, dp(4), 0, 0); gravity = Gravity.CENTER })
+            el.addView(tekst(nazwa, 12f, if (i == 0) Skorka.akcent(this@StartActivity) else 0xFFDDDDDD.toInt()).apply { setPadding(0, dp(4), 0, 0); gravity = Gravity.CENTER })
             el.setOnClickListener { kolo.animate().scaleX(0.85f).scaleY(0.85f).setDuration(90).withEndAction { kolo.animate().scaleX(1f).scaleY(1f).setDuration(120).start(); akcja() }.start() }
             siatka.addView(el, android.widget.GridLayout.LayoutParams(android.widget.GridLayout.spec(i / 4, 1f), android.widget.GridLayout.spec(i % 4, 1f)).apply { width = 0 })
         }
@@ -594,14 +594,14 @@ class StartActivity : AppCompatActivity() {
         val l = Ust.historia(this)
         val gora = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(4), dp(4), dp(4), dp(10)) }
         gora.addView(tekst("🕘 Historia oglądania", 20f, gruby = true), LinearLayout.LayoutParams(0, -2, 1f))
-        if (l.isNotEmpty()) gora.addView(tekst("Wyczyść", 14f, 0xFFFF6B85.toInt()).apply { setPadding(dp(10), dp(6), dp(10), dp(6)); isFocusable = true; setOnClickListener { Ust.wyczyscHistorie(this@StartActivity); pokaz(8) } })
+        if (l.isNotEmpty()) gora.addView(tekst("Wyczyść", 14f, Skorka.akcent(this@StartActivity)).apply { setPadding(dp(10), dp(6), dp(10), dp(6)); isFocusable = true; setOnClickListener { Ust.wyczyscHistorie(this@StartActivity); pokaz(8) } })
         k.addView(gora)
         if (l.isEmpty()) { k.addView(tekst("Tu pojawi się wszystko, co oglądasz: kanały, filmy i odcinki.", 15f, SZARY)); return }
         val teraz = System.currentTimeMillis()
         fun kiedy(c: Long): String { val m = (teraz - c) / 60000; return when { m < 1 -> "przed chwilą"; m < 60 -> "$m min temu"; m < 1440 -> "${m / 60} godz. temu"; else -> java.text.SimpleDateFormat("d.MM, HH:mm", Jezyk.loc).format(java.util.Date(c)) } }
         for (o in l) {
             val tv = o.optString("t") == "tv"; val u = o.optString("u")
-            val w = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; tloCanvy(R.drawable.ok_gr_okno); foreground = ramkaCanvy(); setPadding(dp(10), dp(10), dp(12), dp(10)); isFocusable = true }
+            val w = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; tloCanvy(Skorka.id(this@StartActivity, R.drawable.ok_gr_okno)); foreground = ramkaCanvy(); setPadding(dp(10), dp(10), dp(12), dp(10)); isFocusable = true }
             w.addView(ImageView(this).apply { scaleType = if (tv) ImageView.ScaleType.FIT_CENTER else ImageView.ScaleType.CENTER_CROP; background = tlo(0xFF2A2A30.toInt(), 8); clipToOutline = true
                 o.optString("o").takeIf { it.startsWith("http") }?.let { load(it) } }, LinearLayout.LayoutParams(if (tv) dp(84) else dp(56), if (tv) dp(52) else dp(80)))
             val p = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), 0, 0, 0) }
@@ -621,7 +621,7 @@ class StartActivity : AppCompatActivity() {
     }
 
     /** Grafika z Canvy (wbudowana przy budowie) albo 0, gdy jej brak. */
-    private fun canva(n: String) = resources.getIdentifier(n, "drawable", packageName)
+    private fun canva(n: String) = Skorka.nazwaId(this, n)
     private lateinit var banerCanvy: ImageView
     /** Baner z Canvy nad zakladka: Filmy = "Nowosci filmowe", TV = "Kanaly na zywo", Seriale/Ulubione = "Witaj w OK Player". */
     private fun naglowekCanva(i: Int) {
@@ -758,7 +758,7 @@ class StartActivity : AppCompatActivity() {
         if (lista.isEmpty()) {
             if (bladVod.isNotEmpty()) {
                 k.addView(tekst("Nie udało się pobrać listy.\n" + bladVod.take(120), 15f, SZARY).apply { setPadding(dp(16), dp(16), dp(16), dp(12)) })
-                k.addView(tekst("⟳  Spróbuj ponownie", 17f, Color.WHITE, gruby = true).apply { gravity = Gravity.CENTER; background = android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(0xFFFF3D5A.toInt(), 0xFFB52AD6.toInt())).apply { cornerRadius = dp(26).toFloat() }; setPadding(0, dp(14), 0, dp(14)); setOnClickListener { bladVod = ""; ladujVod(); pokaz(zakladka) } },
+                k.addView(tekst("⟳  Spróbuj ponownie", 17f, Color.WHITE, gruby = true).apply { gravity = Gravity.CENTER; background = android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(Skorka.akcent(this@StartActivity), Skorka.akcent(this@StartActivity))).apply { cornerRadius = dp(26).toFloat() }; setPadding(0, dp(14), 0, dp(14)); setOnClickListener { bladVod = ""; ladujVod(); pokaz(zakladka) } },
                     LinearLayout.LayoutParams(-1, -2).apply { setMargins(dp(16), 0, dp(16), 0) })
             } else k.addView(tekst("Ładuję " + (if (rodzaj == "f") "filmy" else "seriale") + "… (pierwszy raz może potrwać do minuty)", 15f, SZARY).apply { setPadding(dp(16), dp(16), dp(16), 0) })
             return
@@ -829,10 +829,10 @@ class StartActivity : AppCompatActivity() {
     }
 
     private fun kafelKanalu(ch: Kanal) = LinearLayout(this).apply {
-        orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; tloCanvy(R.drawable.ok_gr_okno); foreground = ramkaCanvy(); setPadding(dp(12), dp(8), dp(12), dp(8)); isFocusable = true
+        orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; tloCanvy(Skorka.id(this@StartActivity, R.drawable.ok_gr_okno)); foreground = ramkaCanvy(); setPadding(dp(12), dp(8), dp(12), dp(8)); isFocusable = true
         addView(ImageView(this@StartActivity).apply { scaleType = ImageView.ScaleType.FIT_CENTER; if (ch.logo != null) load(ch.logo) { canva("ok_gr_brak_logo").takeIf { it != 0 }?.let { error(it) } } else canva("ok_gr_brak_logo").takeIf { it != 0 }?.let { setImageResource(it) } }, LinearLayout.LayoutParams(dp(80), dp(52)))
         addView(tekst(ch.nazwa, 17f).apply { setPadding(dp(14), 0, 0, 0) }, LinearLayout.LayoutParams(0, -2, 1f))
-        addView(ImageView(this@StartActivity).apply { setImageResource(R.drawable.ok_gr_play) }, LinearLayout.LayoutParams(dp(40), dp(40)))
+        addView(ImageView(this@StartActivity).apply { setImageResource(Skorka.id(this@StartActivity, R.drawable.ok_gr_play)) }, LinearLayout.LayoutParams(dp(40), dp(40)))
         setOnClickListener { graj(ch) }
     }
 
@@ -1043,7 +1043,7 @@ class StartActivity : AppCompatActivity() {
         gGodz = tekst("", 12f, SZARY).apply { maxLines = 1 }
         o.addView(gNazwa); o.addView(gTeraz); o.addView(gPasek, LinearLayout.LayoutParams(-1, dp(3)).apply { topMargin = dp(4); bottomMargin = dp(2) }); o.addView(gGodz)
         p.addView(o, LinearLayout.LayoutParams(0, -2, 1f))
-        p.addView(tekst("☰ Program", 14f, Color.WHITE, gruby = true).apply { setPadding(dp(14), dp(8), dp(14), dp(8)); background = android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(0xFFFF3D5A.toInt(), 0xFFB52AD6.toInt())).apply { cornerRadius = dp(20).toFloat() }; isFocusable = true
+        p.addView(tekst("☰ Program", 14f, Color.WHITE, gruby = true).apply { setPadding(dp(14), dp(8), dp(14), dp(8)); background = android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(Skorka.akcent(this@StartActivity), Skorka.akcent(this@StartActivity))).apply { cornerRadius = dp(20).toFloat() }; isFocusable = true
             setOnClickListener { gornyKanal?.let { ch -> doProgramu(ch) } } })
         k.addView(p)
         return k
@@ -1096,7 +1096,7 @@ class StartActivity : AppCompatActivity() {
         val k = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), dp(8), dp(16), dp(16)) }
         tresc.addView(ScrollView(this).apply { addView(k) })
         fun wiersz(t: String, opis: String, akcja: () -> Unit) = k.addView(LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL; tloCanvy(R.drawable.ok_gr_okno); foreground = ramkaCanvy(); setPadding(dp(16), dp(16), dp(16), dp(16)); isFocusable = true
+            orientation = LinearLayout.VERTICAL; tloCanvy(Skorka.id(this@StartActivity, R.drawable.ok_gr_okno)); foreground = ramkaCanvy(); setPadding(dp(16), dp(16), dp(16), dp(16)); isFocusable = true
             addView(tekst(t, 17f)); addView(tekst(opis, 14f, SZARY))
             setOnClickListener { akcja() }
         }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
@@ -1111,6 +1111,12 @@ class StartActivity : AppCompatActivity() {
             androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Układ Startu").setSingleChoiceItems(o.map { it.second }.toTypedArray(), ter) { d, i -> Ust.prefs(this).edit().putString("uklad", o[i].first).apply(); d.dismiss(); pokaz(4) }
                 .setNegativeButton("Zamknij", null).show().also { Jezyk.okno(it) }
         }
+        wiersz("Skórka (wygląd)", Skorka.nazwa(this)) {
+            val ter = Skorka.lista.indexOfFirst { it.first == Skorka.wybrana(this) }
+            androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Skórka").setSingleChoiceItems(Skorka.lista.map { it.second }.toTypedArray(), ter) { d, i ->
+                Ust.prefs(this).edit().putString("skorka", Skorka.lista[i].first).apply(); d.dismiss(); recreate() }
+                .setNegativeButton("Zamknij", null).show().also { Jezyk.okno(it) }
+        }
         wiersz("Kontrola rodzicielska", if (pin().isEmpty()) "Wyłączona – ustaw PIN, żeby blokować grupy (np. dla dorosłych)" else "Włączona – zablokowanych grup: " + zablokowaneGrupy().size) { kontrolaRodzicielska() }
         wiersz("Odśwież listę", "Pobiera świeżą listę kanałów, filmów i seriali z serwera") { laduj() }
         wiersz("Wyloguj", "Aplikacja pokaże nowy kod do edytora") { Ust.wyloguj(this); ekranLogowania() }
@@ -1121,12 +1127,12 @@ class StartActivity : AppCompatActivity() {
         // neonowy pasek z Canvy laduje sie do konca, napis "Ladowanie kanalow...", na koniec plynne wejscie do aplikacji. Nie blokuje ladowania.
         val dekor = window.decorView as ViewGroup
         val n = FrameLayout(this).apply { setBackgroundColor(Color.BLACK); isClickable = true }
-        val tloS = ImageView(this).apply { setImageResource(R.drawable.ok_gr_start_tlo); scaleType = ImageView.ScaleType.CENTER_CROP; alpha = 0f; scaleX = 1.25f; scaleY = 1.25f }
+        val tloS = ImageView(this).apply { setImageResource(Skorka.id(this@StartActivity, R.drawable.ok_gr_start_tlo)); scaleType = ImageView.ScaleType.CENTER_CROP; alpha = 0f; scaleX = 1.25f; scaleY = 1.25f }
         n.addView(tloS, FrameLayout.LayoutParams(-1, -1))
         val szer = resources.displayMetrics.widthPixels; val wys = resources.displayMetrics.heightPixels
         val bok = (minOf(szer, wys * 16 / 9) * 0.30f).toInt()
-        val lewa = ImageView(this).apply { setImageResource(R.drawable.ok_gr_start_lewa); scaleType = ImageView.ScaleType.CENTER_CROP; alpha = 0f; translationX = -bok.toFloat() }
-        val prawa = ImageView(this).apply { setImageResource(R.drawable.ok_gr_start_prawa); scaleType = ImageView.ScaleType.CENTER_CROP; alpha = 0f; translationX = bok.toFloat() }
+        val lewa = ImageView(this).apply { setImageResource(Skorka.id(this@StartActivity, R.drawable.ok_gr_start_lewa)); scaleType = ImageView.ScaleType.CENTER_CROP; alpha = 0f; translationX = -bok.toFloat() }
+        val prawa = ImageView(this).apply { setImageResource(Skorka.id(this@StartActivity, R.drawable.ok_gr_start_prawa)); scaleType = ImageView.ScaleType.CENTER_CROP; alpha = 0f; translationX = bok.toFloat() }
         n.addView(lewa, FrameLayout.LayoutParams(bok, -1).apply { gravity = Gravity.START })
         n.addView(prawa, FrameLayout.LayoutParams(bok, -1).apply { gravity = Gravity.END })
         // przyciemnienie srodka, zeby logo swiecilo
@@ -1135,11 +1141,11 @@ class StartActivity : AppCompatActivity() {
         val poswiata = View(this).apply { background = GradientDrawable().apply { gradientType = GradientDrawable.RADIAL_GRADIENT; gradientRadius = dp(150).toFloat(); colors = intArrayOf(0x88FF2D9A.toInt(), 0x33B52AD6, 0x00000000) }; alpha = 0f }
         val logoF = FrameLayout(this)
         logoF.addView(poswiata, FrameLayout.LayoutParams(dp(320), dp(260)).apply { gravity = Gravity.CENTER })
-        val logo = ImageView(this).apply { setImageResource(R.drawable.ok_gr_logo); scaleType = ImageView.ScaleType.FIT_CENTER; alpha = 0f; scaleX = 0.4f; scaleY = 0.4f }
+        val logo = ImageView(this).apply { setImageResource(Skorka.id(this@StartActivity, R.drawable.ok_gr_logo)); scaleType = ImageView.ScaleType.FIT_CENTER; alpha = 0f; scaleX = 0.4f; scaleY = 0.4f }
         logoF.addView(logo, FrameLayout.LayoutParams(dp(230), dp(170)).apply { gravity = Gravity.CENTER })
         sr.addView(logoF, LinearLayout.LayoutParams(dp(320), dp(230)))
-        val tor = FrameLayout(this).apply { tloCanvy(R.drawable.ok_gr_pasek_tor); alpha = 0f }
-        val pelny = android.graphics.drawable.ClipDrawable(getDrawable(R.drawable.ok_gr_pasek_pelny), Gravity.START, android.graphics.drawable.ClipDrawable.HORIZONTAL).apply { level = 0 }
+        val tor = FrameLayout(this).apply { tloCanvy(Skorka.id(this@StartActivity, R.drawable.ok_gr_pasek_tor)); alpha = 0f }
+        val pelny = android.graphics.drawable.ClipDrawable(getDrawable(Skorka.id(this@StartActivity, R.drawable.ok_gr_pasek_pelny)), Gravity.START, android.graphics.drawable.ClipDrawable.HORIZONTAL).apply { level = 0 }
         tor.addView(View(this).apply { background = pelny }, FrameLayout.LayoutParams(-1, -1))
         sr.addView(tor, LinearLayout.LayoutParams(dp(260), dp(14)).apply { topMargin = dp(18) })
         val napis = tekst("Ładowanie kanałów…", 15f, 0xFFE6E6F0.toInt()).apply { gravity = Gravity.CENTER; setPadding(0, dp(14), 0, 0); alpha = 0f; letterSpacing = 0.05f }
@@ -1170,13 +1176,13 @@ class StartActivity : AppCompatActivity() {
 
     private fun oknoWyjscia() {
         val d = android.app.Dialog(this)
-        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL; setPadding(dp(24), dp(24), dp(24), dp(20)); tloCanvy(R.drawable.ok_gr_okno) }
+        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL; setPadding(dp(24), dp(24), dp(24), dp(20)); tloCanvy(Skorka.id(this@StartActivity, R.drawable.ok_gr_okno)) }
         val ik = ImageView(this).apply { setImageResource(R.mipmap.ic_launcher) }
         box.addView(ik, LinearLayout.LayoutParams(dp(72), dp(72)).apply { bottomMargin = dp(14) })
         box.addView(tekst("Zamknąć OK Player?", 21f, gruby = true).apply { gravity = Gravity.CENTER })
         box.addView(tekst("Czy na pewno chcesz wyjść z aplikacji?", 16f, SZARY).apply { gravity = Gravity.CENTER; setPadding(0, dp(10), 0, dp(22)) })
         fun przycisk(t: String, kolTla: Int, kolTekstu: Int, akcja: () -> Unit) = tekst(t, 17f, kolTekstu, gruby = kolTla == 0).apply {
-            gravity = Gravity.CENTER; setPadding(0, dp(14), 0, dp(14)); background = if (kolTla == 0) android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(0xFFFF3D5A.toInt(), 0xFFB52AD6.toInt())).apply { cornerRadius = dp(28).toFloat() } else tlo(kolTla, 28).apply { setStroke(dp(1), 0xFF555555.toInt()) }; isFocusable = true; setOnClickListener { akcja() }
+            gravity = Gravity.CENTER; setPadding(0, dp(14), 0, dp(14)); background = if (kolTla == 0) android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(Skorka.akcent(this@StartActivity), Skorka.akcent(this@StartActivity))).apply { cornerRadius = dp(28).toFloat() } else tlo(kolTla, 28).apply { setStroke(dp(1), 0xFF555555.toInt()) }; isFocusable = true; setOnClickListener { akcja() }
         }
         box.addView(przycisk("Wyjdź", 0, Color.WHITE) {
             ik.animate().rotation(360f).scaleX(0.2f).scaleY(0.2f).alpha(0f).setDuration(450).start()
@@ -1220,7 +1226,7 @@ class StartActivity : AppCompatActivity() {
                     addView(tekst("", 17f).apply { maxLines = 1 })
                     addView(tekst("", 13f, SZARY).apply { maxLines = 1 })
                     addView(android.widget.ProgressBar(p.context, null, android.R.attr.progressBarStyleHorizontal).apply {
-                        max = 100; visibility = android.view.View.INVISIBLE; progressTintList = android.content.res.ColorStateList.valueOf(0xFFE0245E.toInt()); progressBackgroundTintList = android.content.res.ColorStateList.valueOf(0xFF333333.toInt())
+                        max = 100; visibility = android.view.View.INVISIBLE; progressTintList = android.content.res.ColorStateList.valueOf(Skorka.akcent(this@StartActivity)); progressBackgroundTintList = android.content.res.ColorStateList.valueOf(0xFF333333.toInt())
                     }, LinearLayout.LayoutParams(-1, dp(3)).apply { topMargin = dp(5) })
                 }, LinearLayout.LayoutParams(0, -2, 1f))
             }
@@ -1233,7 +1239,7 @@ class StartActivity : AppCompatActivity() {
             val opis = w.getChildAt(2) as LinearLayout
             (opis.getChildAt(0) as TextView).text = ch.nazwa
             // 2.01: wiersz kanalu na szklanym panelu z Canvy, grajacy kanal na rozowej pigulce z Canvy
-            w.tloCanvy(if (gornyKanal?.id == ch.id) R.drawable.ok_gr_przycisk_roz else R.drawable.ok_gr_okno); w.foreground = ramkaCanvy()
+            w.tloCanvy(if (gornyKanal?.id == ch.id) Skorka.id(this@StartActivity, R.drawable.ok_gr_przycisk_roz) else Skorka.id(this@StartActivity, R.drawable.ok_gr_okno)); w.foreground = ramkaCanvy()
             val epg = opis.getChildAt(1) as TextView
             val pas = opis.getChildAt(2) as android.widget.ProgressBar
             epg.text = ""; epg.tag = ch.id; pas.visibility = android.view.View.INVISIBLE
@@ -1262,7 +1268,7 @@ class StartActivity : AppCompatActivity() {
             val t = h.itemView as TextView; val k = g[i]
             t.text = k.nazwa
             val wyb = k.id == wybrana
-            t.tloCanvy(if (wyb) R.drawable.ok_gr_przycisk_roz else R.drawable.ok_gr_przycisk); t.setTextColor(Color.WHITE); t.setPadding(dp(20), dp(12), dp(20), dp(12))
+            t.tloCanvy(if (wyb) Skorka.id(this@StartActivity, R.drawable.ok_gr_przycisk_roz) else Skorka.id(this@StartActivity, R.drawable.ok_gr_przycisk)); t.setTextColor(Color.WHITE); t.setPadding(dp(20), dp(12), dp(20), dp(12))
             t.setOnClickListener { klik(k.id) }
         }
     }
