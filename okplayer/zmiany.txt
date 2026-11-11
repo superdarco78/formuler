@@ -1,3 +1,2 @@
-Ikona TV na dole|pokazywała samą listę – trzeba było wybrać kanał|od razu obraz na górze (ostatnio oglądany kanał albo ten z małego kwadratu), pod nim program i jedna lista kanałów – jak na zdjęciu
-Mały kwadrat → ikona TV|kwadrat zostawał w rogu|kwadrat „rozkłada się” w obraz na górze zakładki TV, bez ładowania od nowa
-TV z listy|osobny ekran z drugą, taką samą listą (lista 2 razy)|jedna lista: obraz na górze, kanały pod spodem, dotknięcie kanału przełącza od razu
+„Teraz” przy kanałach|przy części kanałów (np. TVN 24, TV Republika) brakowało „Teraz” i paska, pod obrazem było tylko „Na żywo”|gdy serwer nie odpowie za pierwszym razem, aplikacja pyta drugi raz, a pusty wynik pamięta tylko 30 s zamiast 10 min – „Teraz” i pasek pojawiają się przy wszystkich kanałach
+Ikona TV na dole|pokazywała samą listę|od razu obraz na górze (ostatni kanał albo ten z małego kwadratu), pod nim program i jedna lista kanałów

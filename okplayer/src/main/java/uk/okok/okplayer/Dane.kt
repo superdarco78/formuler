@@ -163,15 +163,17 @@ object Serwer {
 
     fun terazLeci(c: Context, id: String): String {
         val now = System.currentTimeMillis()
-        teraz[id]?.let { if (now - it.first < 600_000) return it.second }
-        val w = try {
-            val arr = JSONObject(tekst(api(c, "get_short_epg") + "&stream_id=$id&limit=2&okp=1")).optJSONArray("epg_listings")
+        // Udany wynik pamietany 10 min; pusty (blad / brak odpowiedzi) tylko 30 s - zeby "Teraz" szybko sie pojawilo.
+        teraz[id]?.let { if (now - it.first < (if (it.second.isEmpty()) 30_000 else 600_000)) return it.second }
+        fun pobierz(): String = try {
+            val arr = JSONObject(tekst(api(c, "get_short_epg") + "&stream_id=$id&limit=4&okp=1")).optJSONArray("epg_listings")
             fun dek(x: String) = try { String(android.util.Base64.decode(x, android.util.Base64.DEFAULT), Charsets.UTF_8) } catch (e: Exception) { x }
             val sek = now / 1000
             var out = ""
             if (arr != null) for (i in 0 until arr.length()) { val o = arr.getJSONObject(i); val en = o.optString("stop_timestamp").toLongOrNull() ?: 0; if (en in 1..sek) continue; out = dek(o.optString("title")); okno[id] = (o.optString("start_timestamp").toLongOrNull() ?: 0L) to en; break }
             out
         } catch (e: Exception) { "" }
+        val w = pobierz().ifEmpty { Thread.sleep(800); pobierz() }
         teraz[id] = now to w
         return w
     }
