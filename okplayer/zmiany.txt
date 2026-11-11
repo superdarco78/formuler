@@ -1,4 +1,5 @@
-Opis filmu i serialu|czasem kręciło się „Ładuję…” bez końca i nie było opisu, gatunku ani oceny|opis zapamiętuje się w telefonie – przy kolejnym otwarciu pokazuje się natychmiast, a świeży dociąga się w tle
-Pobieranie opisu|jedna próba – gdy serwer nie odpowiedział, ekran zostawał pusty|3 próby; gdy dalej nic, napis „Nie udało się pobrać opisu” i przycisk „Spróbuj ponownie”
-Start|opis pobierał się dopiero po dotknięciu plakatu|opisy popularnych i najnowszych filmów, seriali i ulubionych pobierają się w tle zaraz po uruchomieniu – otwierają się od razu
-Animacja przy uruchomieniu|krótka|dłuższa: fale, logo z odbiciem, składany napis i pasek ładowania
+TV z listy|otwierał się osobny ekran z drugą, taką samą listą kanałów (lista była 2 razy)|obraz pojawia się na górze zakładki TV, a pod nim jest ta sama, jedna lista kanałów z grupami – jak w starej aplikacji
+Zmiana kanału|każdy kanał otwierał nowy ekran|dotknij innego kanału na liście – obraz na górze przełącza się od razu, bieżący kanał jest podświetlony
+Pod obrazem|–|logo, nazwa, „Teraz”, pasek ile minęło, godziny i ile zostało, przycisk „☰ Program” (EPG z archiwum)
+Wstecz / inna zakładka|–|obraz zmienia się w mały kwadrat w rogu i gra dalej; dotknij kwadratu = pełny ekran
+Pełny ekran|–|przycisk ⛶ na obrazie (płynnie, bez ładowania od nowa)

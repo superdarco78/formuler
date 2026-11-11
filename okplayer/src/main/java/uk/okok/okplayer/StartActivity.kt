@@ -144,6 +144,8 @@ class StartActivity : AppCompatActivity() {
             }
         }
         obszar.addView(mini, FrameLayout.LayoutParams(dp(208), dp(117)).apply { gravity = Gravity.BOTTOM or Gravity.END; setMargins(0, 0, dp(12), dp(12)) })
+        gora2 = budujGornyGracz()
+        root.addView(gora2, LinearLayout.LayoutParams(-1, -2))
         root.addView(obszar, LinearLayout.LayoutParams(-1, 0, 1f))
         dol = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setBackgroundColor(0xFF0D0D0D.toInt()) }
         // Dolne menu jak w MyTvOnline: same ikonki (Start, TV, Filmy, Seriale, Ulubione)
@@ -160,6 +162,7 @@ class StartActivity : AppCompatActivity() {
     }
 
     private fun pokaz(i: Int) {
+        if (i != 1 && ::gora2.isInitialized && gora2.visibility == View.VISIBLE) zwinGorny(true)
         zakladka = i
         for (k in 0 until dol.childCount) (dol.getChildAt(k) as ImageView).apply {
             val wyb = tag == i
@@ -548,13 +551,19 @@ class StartActivity : AppCompatActivity() {
     }
 
     override fun onResume() { super.onResume(); pokazMini() }
-    override fun onStop() { super.onStop(); if (!isInPictureInPictureMode) zatrzymajMini() }
+    override fun onStop() {
+        super.onStop()
+        if (isInPictureInPictureMode) return
+        zatrzymajMini()
+        if (::gora2.isInitialized && gora2.visibility == View.VISIBLE) { gornyWidok.player = null; gora2.visibility = View.GONE; gornyKanal = null; WspolnyGracz.zwolnij("gora") }
+    }
 
     /** Mini-okno gra, a Ty wychodzisz do ekranu telefonu: TV zostaje w plywajacym okienku (jak wczesniej). */
     private var glowny: LinearLayout? = null
     private var miniRodzic: ViewGroup? = null
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
+        if (::gora2.isInitialized && gora2.visibility == View.VISIBLE) zwinGorny(true)
         if (miniGracz?.isPlaying != true || !Ust.prefs(this).getBoolean("okienko", true)) return
         try { enterPictureInPictureMode(android.app.PictureInPictureParams.Builder().setAspectRatio(android.util.Rational(16, 9)).build()) } catch (e: Exception) { }
     }
@@ -578,11 +587,104 @@ class StartActivity : AppCompatActivity() {
     }
 
     private fun graj(ch: Kanal, pelny: Boolean = false) {
-        if (Ust.prefs(this).contains("mini")) { Ust.prefs(this).edit().remove("mini").apply(); if (::miniWidok.isInitialized) miniWidok.player = null; miniGracz = null; miniKanal = null; mini.visibility = View.GONE; WspolnyGracz.wlasciciel = "duzy" }
+        if (Ust.prefs(this).contains("mini")) { Ust.prefs(this).edit().remove("mini").apply(); if (::miniWidok.isInitialized) miniWidok.player = null; miniGracz = null; miniKanal = null; mini.visibility = View.GONE }
         Ust.zapiszOstatni(this, ch)
-        startActivity(Intent(this, OdtwarzaczActivity::class.java)
-            .putExtra("url", Serwer.adresKanalu(this, ch.id)).putExtra("nazwa", ch.nazwa).putExtra("logo", ch.logo).putExtra("id", ch.id).putExtra("kat", ch.kat).putExtra("pelny", pelny))
+        if (pelny) {
+            WspolnyGracz.wlasciciel = "duzy"
+            startActivity(Intent(this, OdtwarzaczActivity::class.java)
+                .putExtra("url", Serwer.adresKanalu(this, ch.id)).putExtra("nazwa", ch.nazwa).putExtra("logo", ch.logo).putExtra("id", ch.id).putExtra("kat", ch.kat).putExtra("pelny", true))
+            return
+        }
+        // TV jak w starej aplikacji: obraz na gorze zakladki TV, pod nim ta sama lista kanalow (bez drugiej listy).
+        val bylaTv = zakladka == 1 && gornyKanal != null
+        gornyKanal = ch
+        if (ch.kat.isNotEmpty() && !bylaTv) Ust.zapiszGrupe(this, ch.kat)
+        WspolnyGracz.wlasciciel = "gora"
+        val g = WspolnyGracz.pobierz(this)
+        gornyWidok.player = g
+        WspolnyGracz.graj(this, Serwer.adresKanalu(this, ch.id), odNowa = true)
+        gora2.visibility = View.VISIBLE
+        ustawGornyPanel(ch)
+        if (zakladka != 1) pokaz(1) else (tresc.getChildAt(0) as? LinearLayout)?.let { odswiezZaznaczenie() }
     }
+
+    // ---------------- Obraz TV na gorze zakladki TV ----------------
+    private lateinit var gora2: LinearLayout
+    private lateinit var gornyWidok: androidx.media3.ui.PlayerView
+    private lateinit var gLogo: ImageView
+    private lateinit var gNazwa: TextView
+    private lateinit var gTeraz: TextView
+    private lateinit var gPasek: android.widget.ProgressBar
+    private lateinit var gGodz: TextView
+    private var gornyKanal: Kanal? = null
+
+    private fun budujGornyGracz(): LinearLayout {
+        val k = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; visibility = View.GONE; setBackgroundColor(Color.BLACK) }
+        gornyWidok = androidx.media3.ui.PlayerView(this).apply {
+            useController = true; controllerShowTimeoutMs = 2500; setShowBuffering(androidx.media3.ui.PlayerView.SHOW_BUFFERING_ALWAYS)
+            setShowPreviousButton(false); setShowNextButton(false); setShowRewindButton(false); setShowFastForwardButton(false)
+            setFullscreenButtonClickListener { gornyKanal?.let { ch -> doPelnego(ch) } }
+        }
+        k.addView(gornyWidok, LinearLayout.LayoutParams(-1, resources.displayMetrics.widthPixels * 9 / 16))
+        gornyWidok.post { for (n in listOf(androidx.media3.ui.R.id.exo_progress, androidx.media3.ui.R.id.exo_position, androidx.media3.ui.R.id.exo_duration, androidx.media3.ui.R.id.exo_time)) gornyWidok.findViewById<View>(n)?.visibility = View.GONE }
+        val p = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(14), dp(10), dp(14), dp(10)); setBackgroundColor(0xFF111111.toInt()) }
+        gLogo = ImageView(this).apply { scaleType = ImageView.ScaleType.FIT_CENTER }
+        p.addView(gLogo, LinearLayout.LayoutParams(dp(56), dp(38)))
+        val o = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), 0, dp(8), 0) }
+        gNazwa = tekst("", 17f, gruby = true).apply { maxLines = 1 }
+        gTeraz = tekst("", 13f, 0xFFDDDDDD.toInt()).apply { maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END }
+        gPasek = android.widget.ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply { max = 100; visibility = View.GONE
+            progressTintList = android.content.res.ColorStateList.valueOf(AKCENT); progressBackgroundTintList = android.content.res.ColorStateList.valueOf(0xFF333333.toInt()) }
+        gGodz = tekst("", 12f, SZARY).apply { maxLines = 1 }
+        o.addView(gNazwa); o.addView(gTeraz); o.addView(gPasek, LinearLayout.LayoutParams(-1, dp(3)).apply { topMargin = dp(4); bottomMargin = dp(2) }); o.addView(gGodz)
+        p.addView(o, LinearLayout.LayoutParams(0, -2, 1f))
+        p.addView(tekst("☰ Program", 14f, Color.BLACK).apply { setPadding(dp(14), dp(8), dp(14), dp(8)); background = tlo(0xFFE6E6E6.toInt(), 20); isFocusable = true
+            setOnClickListener { gornyKanal?.let { ch -> doProgramu(ch) } } })
+        k.addView(p)
+        return k
+    }
+
+    private fun ustawGornyPanel(ch: Kanal) {
+        gNazwa.text = ch.nazwa; gLogo.setImageDrawable(null); ch.logo?.let { gLogo.load(it) }
+        gTeraz.text = ""; gGodz.text = ""; gPasek.visibility = View.GONE
+        lifecycleScope.launch {
+            val t = withContext(Dispatchers.IO) { Serwer.terazLeci(this@StartActivity, ch.id) }
+            if (gornyKanal?.id != ch.id) return@launch
+            gTeraz.text = if (t.isEmpty()) "Na żywo" else "Teraz: $t"
+            Serwer.postep(ch.id).takeIf { it >= 0 }?.let { gPasek.progress = it; gPasek.visibility = View.VISIBLE }
+            gGodz.text = Serwer.godziny(ch.id)
+        }
+    }
+
+    /** Obraz z gory na pelny ekran (plynnie, ten sam odtwarzacz). */
+    private fun doPelnego(ch: Kanal) {
+        zwinGorny(false)
+        WspolnyGracz.wlasciciel = "duzy"
+        startActivity(Intent(this, OdtwarzaczActivity::class.java)
+            .putExtra("url", Serwer.adresKanalu(this, ch.id)).putExtra("nazwa", ch.nazwa).putExtra("logo", ch.logo).putExtra("id", ch.id).putExtra("kat", ch.kat).putExtra("pelny", true))
+        overridePendingTransition(android.R.anim.fade_in, 0)
+    }
+
+    /** Program (EPG) z archiwum: odtwarzacz z otwartym przewodnikiem. */
+    private fun doProgramu(ch: Kanal) {
+        zwinGorny(false)
+        WspolnyGracz.wlasciciel = "duzy"
+        startActivity(Intent(this, OdtwarzaczActivity::class.java)
+            .putExtra("url", Serwer.adresKanalu(this, ch.id)).putExtra("nazwa", ch.nazwa).putExtra("logo", ch.logo).putExtra("id", ch.id).putExtra("kat", ch.kat).putExtra("przewodnik", true))
+    }
+
+    /** Chowa obraz z gory; doMini = true -> TV gra dalej w malym kwadracie. */
+    private fun zwinGorny(doMini: Boolean) {
+        if (!::gora2.isInitialized || gora2.visibility != View.VISIBLE) return
+        val ch = gornyKanal
+        gornyWidok.player = null; gora2.visibility = View.GONE; gornyKanal = null
+        if (doMini && ch != null) {
+            Ust.prefs(this).edit().putString("mini", listOf(ch.id, ch.nazwa, ch.logo ?: "", ch.kat).joinToString("\u0001")).apply()
+            WspolnyGracz.wlasciciel = "mini"; pokazMini()
+        }
+    }
+
+    private fun odswiezZaznaczenie() { (tresc.getChildAt(0) as? LinearLayout)?.let { k -> for (i in 0 until k.childCount) ((k.getChildAt(i) as? RecyclerView)?.adapter as? KanalyAdapter)?.notifyDataSetChanged() } }
 
     // ---------------- Ustawienia ----------------
     private fun ustawienia() {
@@ -682,6 +784,7 @@ class StartActivity : AppCompatActivity() {
 
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
+        if (::gora2.isInitialized && gora2.visibility == View.VISIBLE) { zwinGorny(true); return }
         if (::mini.isInitialized && mini.visibility == View.VISIBLE) { zamknijMini(); return }
         if (Ust.zalogowany(this) && zakladka != 0) { pokaz(0); return }
         oknoWyjscia()
@@ -715,6 +818,7 @@ class StartActivity : AppCompatActivity() {
             (w.getChildAt(1) as ImageView).apply { setImageDrawable(null); if (ch.logo != null) load(ch.logo) }
             val opis = w.getChildAt(2) as LinearLayout
             (opis.getChildAt(0) as TextView).text = ch.nazwa
+            w.setBackgroundColor(if (gornyKanal?.id == ch.id) 0xFF2A2A2A.toInt() else Color.TRANSPARENT)
             val epg = opis.getChildAt(1) as TextView
             val pas = opis.getChildAt(2) as android.widget.ProgressBar
             epg.text = ""; epg.tag = ch.id; pas.visibility = android.view.View.INVISIBLE
