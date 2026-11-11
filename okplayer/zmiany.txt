@@ -1,3 +1,3 @@
-Przyciski|białe/szare przyciski z czarnym napisem (Wyjdź, Oglądaj, ☰ Program, Spróbuj ponownie, wybrany sezon)|w kolorach OK Player: różowo-fioletowe przejście jak w logo, biały pogrubiony napis
-Anuluj w oknie wyjścia|szary|ciemny z cienką obwódką – widać, że to drugi, mniej ważny przycisk
-Wybór audycji z archiwum|program zostawał z boku|program się chowa, obraz od razu na pełnym ekranie
+Archiwum w podglądzie TV (w pionie)|po wybraniu audycji obraz przeskakiwał na pełny ekran|archiwum gra w obrazie na górze, a program zostaje pod spodem – można od razu wybrać inną audycję; pełny ekran przyciskiem ⛶
+Archiwum na pełnym ekranie|–|bez zmian: program z boku chowa się, obraz na całość
+Przyciski|białe/szare|w kolorach OK Player (różowo-fioletowe)

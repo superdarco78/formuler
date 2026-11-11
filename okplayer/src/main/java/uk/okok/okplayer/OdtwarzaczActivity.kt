@@ -111,9 +111,11 @@ class OdtwarzaczActivity : AppCompatActivity() {
 
     /** Po wybraniu audycji z programu: program sie chowa, obraz od razu na pelny ekran. */
     private fun poWyborze() {
-        if (przewodnikOtwarty) zamknijPrzewodnik()
-        requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-        uloz(android.content.res.Configuration.ORIENTATION_LANDSCAPE)
+        // Pelny ekran: program chowa sie, obraz na calosc. Podglad w pionie: archiwum gra w obrazie na gorze, program zostaje pod spodem.
+        if (resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) {
+            if (przewodnikOtwarty) zamknijPrzewodnik()
+            uloz(android.content.res.Configuration.ORIENTATION_LANDSCAPE)
+        } else if (przewodnikOtwarty) rysujPrzewodnik()
     }
 
     // ---- Archiwum ze straznikiem: gdy obraz stoi albo jest blad, sam probuje kolejnego sposobu ----
