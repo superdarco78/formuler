@@ -437,6 +437,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
             if (intent.getBooleanExtra("vod", false) && g.duration > 0) {
                 val koniec = g.currentPosition > g.duration - 90_000
                 Ust.zapiszPozycje(this, intent.getStringExtra("url") ?: "", if (koniec) 0 else g.currentPosition)
+                Ust.zapiszDlugosc(this, intent.getStringExtra("url") ?: "", g.duration)
             }
         }
         gracz?.release(); gracz = null

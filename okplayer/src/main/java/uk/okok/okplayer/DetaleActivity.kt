@@ -38,6 +38,9 @@ class DetaleActivity : AppCompatActivity() {
     private var role: Map<String, String> = emptyMap()
     private var akt = 0
     private var serialF = false
+    private lateinit var ogladaj: TextView
+    private lateinit var sekcjaOdc: LinearLayout
+    private var sezon = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,9 +58,9 @@ class DetaleActivity : AppCompatActivity() {
         val ocena = tekst("", 16f).apply { gravity = Gravity.CENTER; setPadding(0, dp(6), 0, 0) }
         kol.addView(ocena)
         val rzad = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(dp(16), dp(18), dp(16), dp(10)) }
-        val ogladaj = tekst("▶   " + (if (serial) "Odcinki" else "Oglądaj"), 18f, 0xFF111111.toInt()).apply {
+        ogladaj = tekst("▶   " + (if (serial) "Odcinki" else "Oglądaj"), 18f, 0xFF111111.toInt()).apply {
             gravity = Gravity.CENTER; background = tlo(0xFFE6E6E6.toInt(), 30); setPadding(0, dp(15), 0, dp(15)); isFocusable = true
-            setOnClickListener { if (serial) pokazOdcinki(nazwa) else grajFilm(id, nazwa) }
+            setOnClickListener { if (serial) grajKolejny(id, nazwa) else grajFilm(id, nazwa) }
         }
         rzad.addView(ogladaj, LinearLayout.LayoutParams(0, -2, 1f))
         val rodz = if (serial) "s" else "f"
@@ -82,6 +85,8 @@ class DetaleActivity : AppCompatActivity() {
         val tv = nazwyZ.map { n -> tekst(n, 16f, SZARY).apply { gravity = Gravity.CENTER; setPadding(0, dp(10), 0, dp(10)); isFocusable = true } }
         fun wybierz(i: Int) { akt = i; tv.forEachIndexed { k, t -> t.setTextColor(if (k == i) Color.WHITE else SZARY); t.paint.isUnderlineText = k == i; t.invalidate() }; zakladka(i, serial) }
         tv.forEachIndexed { i, t -> t.setOnClickListener { wybierz(i) }; zakl.addView(t, LinearLayout.LayoutParams(0, -2, 1f)) }
+        sekcjaOdc = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; visibility = android.view.View.GONE }
+        kol.addView(sekcjaOdc)
         kol.addView(zakl); kol.addView(tabTresc)
         val f = FrameLayout(this)
         f.addView(sv)
@@ -98,6 +103,9 @@ class DetaleActivity : AppCompatActivity() {
                 val ep = o.optJSONObject("episodes")
                 if (ep != null) odcinki = ep.keys().asSequence().toList().sortedBy { it.toIntOrNull() ?: 0 }.map { s ->
                     val a = ep.optJSONArray(s); s to (0 until (a?.length() ?: 0)).map { a!!.getJSONObject(it) } }
+                val ost = Ust.ostatniOdcinek(this@DetaleActivity, id).split("|")
+                sezon = odcinki.indexOfFirst { it.first == ost.getOrNull(0) }.coerceAtLeast(0)
+                pokazSezon(id, nazwa); ustawPrzycisk(id)
             }
             fun t(k: String) = i.optString(k).takeIf { it.isNotEmpty() && it != "null" } ?: ""
             if (t("cover_big").startsWith("http") && intent.getStringExtra("okladka") == null) plakat.load(t("cover_big"))
@@ -196,17 +204,82 @@ class DetaleActivity : AppCompatActivity() {
         startActivity(Intent(this, OdtwarzaczActivity::class.java).putExtra("url", url).putExtra("nazwa", nazwa).putExtra("vod", true))
     }
 
-    private fun pokazOdcinki(tytul: String) {
+    /** Krotki tytul odcinka: bez "Chicago Fire - S01E01 - ". */
+    private fun krotki(t: String): String = t.replace(Regex("^.*?[Ss]\\d{1,2}\\s*[Ee]\\d{1,3}\\s*[-–:.]?\\s*"), "").trim().ifEmpty { t }
+
+    private fun adresOdc(o: JSONObject) = Serwer.adresOdcinka(this, o.optString("id"), o.optString("container_extension").ifEmpty { "mp4" })
+
+    private fun grajOdcinek(serialId: String, tytul: String, s: Int, e: Int) {
+        val o = odcinki.getOrNull(s)?.second?.getOrNull(e) ?: return
+        Ust.zapiszOdcinek(this, serialId, odcinki[s].first + "|" + e)
+        startActivity(Intent(this, OdtwarzaczActivity::class.java).putExtra("url", adresOdc(o))
+            .putExtra("nazwa", "$tytul — S${odcinki[s].first} E${o.optString("episode_num")} " + krotki(o.optString("title"))).putExtra("vod", true))
+    }
+
+    /** Ogladaj: ostatni odcinek (jesli nie skonczony) albo nastepny; na poczatku S1 E1. */
+    private fun ktoryOdcinek(serialId: String): Pair<Int, Int> {
+        val ost = Ust.ostatniOdcinek(this, serialId).split("|")
+        val s = odcinki.indexOfFirst { it.first == ost.getOrNull(0) }
+        val e = ost.getOrNull(1)?.toIntOrNull() ?: -1
+        if (s < 0 || e < 0) return 0 to 0
+        val o = odcinki[s].second.getOrNull(e) ?: return 0 to 0
+        if (Ust.pozycja(this, adresOdc(o)) > 0) return s to e
+        return if (e + 1 < odcinki[s].second.size) s to e + 1 else if (s + 1 < odcinki.size) s + 1 to 0 else s to e
+    }
+
+    private fun ustawPrzycisk(serialId: String) {
+        if (odcinki.isEmpty()) return
+        val (s, e) = ktoryOdcinek(serialId)
+        val o = odcinki[s].second.getOrNull(e) ?: return
+        val wznow = Ust.pozycja(this, adresOdc(o)) > 0
+        ogladaj.text = (if (wznow) "▶   Wznów  " else "▶   Oglądaj  ") + "S${odcinki[s].first} E${o.optString("episode_num")}"
+    }
+
+    private fun grajKolejny(serialId: String, tytul: String) {
         if (odcinki.isEmpty()) { android.widget.Toast.makeText(this, "Ładuję odcinki…", android.widget.Toast.LENGTH_SHORT).show(); return }
-        val sezony = odcinki.map { "Sezon " + it.first + " (" + it.second.size + ")" }.toTypedArray()
-        androidx.appcompat.app.AlertDialog.Builder(this).setTitle(tytul).setItems(sezony) { _, s ->
-            val l = odcinki[s].second
-            val nazwy = l.map { "E" + it.optString("episode_num") + "  " + it.optString("title") }.toTypedArray()
-            androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Sezon " + odcinki[s].first).setItems(nazwy) { _, e ->
-                val o = l[e]
-                val url = Serwer.adresOdcinka(this, o.optString("id"), o.optString("container_extension").ifEmpty { "mp4" })
-                startActivity(Intent(this, OdtwarzaczActivity::class.java).putExtra("url", url).putExtra("nazwa", "$tytul — " + nazwy[e]).putExtra("vod", true))
-            }.show()
-        }.show()
+        val (s, e) = ktoryOdcinek(serialId); grajOdcinek(serialId, tytul, s, e)
+    }
+
+    override fun onResume() { super.onResume(); if (serialF && odcinki.isNotEmpty()) { pokazSezon(intent.getStringExtra("id") ?: "", intent.getStringExtra("nazwa") ?: ""); ustawPrzycisk(intent.getStringExtra("id") ?: "") } }
+
+    /** Odcinki jak w MyTvOnline: sezony w rzedzie, pod spodem karty z obrazkiem, numerem, tytulem, czasem, opisem i paskiem obejrzenia. */
+    private fun pokazSezon(serialId: String, tytul: String) {
+        sekcjaOdc.removeAllViews()
+        if (odcinki.isEmpty()) return
+        sekcjaOdc.visibility = android.view.View.VISIBLE
+        sekcjaOdc.addView(tekst("Odcinki", 20f, g = true).apply { setPadding(dp(16), dp(16), dp(16), dp(8)) })
+        val chipy = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(dp(12), 0, dp(12), dp(8)) }
+        odcinki.forEachIndexed { i, (nr, l) ->
+            chipy.addView(tekst("Sezon $nr", 15f, if (i == sezon) Color.BLACK else Color.WHITE).apply {
+                background = tlo(if (i == sezon) 0xFFE6E6E6.toInt() else 0xFF2A2A2A.toInt(), 20); setPadding(dp(16), dp(9), dp(16), dp(9)); isFocusable = true
+                setOnClickListener { sezon = i; pokazSezon(serialId, tytul) }
+            }, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(8) })
+        }
+        sekcjaOdc.addView(android.widget.HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; addView(chipy) })
+        val okladka = intent.getStringExtra("okladka")
+        odcinki[sezon].second.forEachIndexed { e, o ->
+            val inf = o.optJSONObject("info")
+            fun t(k: String) = inf?.optString(k)?.takeIf { it.isNotEmpty() && it != "null" } ?: ""
+            val wiersz = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(dp(16), dp(10), dp(16), dp(10)); isFocusable = true; isClickable = true
+                setOnClickListener { grajOdcinek(serialId, tytul, sezon, e) } }
+            val ram = FrameLayout(this).apply { background = tlo(KARTA, 8); clipToOutline = true }
+            val im = ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_CROP }
+            ram.addView(im, FrameLayout.LayoutParams(-1, -1))
+            (t("movie_image").takeIf { it.startsWith("http") } ?: okladka)?.let { im.load(it) }
+            ram.addView(tekst("▶", 22f).apply { gravity = Gravity.CENTER; setShadowLayer(8f, 0f, 0f, Color.BLACK) }, FrameLayout.LayoutParams(-1, -1))
+            val url = adresOdc(o); val poz = Ust.pozycja(this, url); val dl = Ust.dlugosc(this, url)
+            if (poz > 0) ram.addView(android.widget.ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
+                max = 100; progress = if (dl > 0) (poz * 100 / dl).toInt().coerceIn(3, 100) else 10
+                progressTintList = android.content.res.ColorStateList.valueOf(0xFFE0245E.toInt()); progressBackgroundTintList = android.content.res.ColorStateList.valueOf(0x66000000)
+            }, FrameLayout.LayoutParams(-1, dp(4)).apply { gravity = Gravity.BOTTOM })
+            wiersz.addView(ram, LinearLayout.LayoutParams(dp(150), dp(85)))
+            val op = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), 0, 0, 0) }
+            op.addView(tekst(o.optString("episode_num") + ". " + krotki(o.optString("title")), 15f, g = true).apply { maxLines = 2; ellipsize = android.text.TextUtils.TruncateAt.END })
+            val m = listOf(czas(t("duration").ifEmpty { t("duration_secs").toIntOrNull()?.let { (it / 60).toString() } ?: "" }), t("releasedate").ifEmpty { t("air_date") }.take(10)).filter { it.isNotEmpty() }.joinToString("  •  ")
+            if (m.isNotEmpty()) op.addView(tekst(m, 13f, SZARY).apply { setPadding(0, dp(3), 0, 0) })
+            t("plot").takeIf { it.isNotEmpty() }?.let { op.addView(tekst(it, 13f, 0xFFBDBDBD.toInt()).apply { maxLines = 2; ellipsize = android.text.TextUtils.TruncateAt.END; setPadding(0, dp(3), 0, 0) }) }
+            wiersz.addView(op, LinearLayout.LayoutParams(0, -2, 1f))
+            sekcjaOdc.addView(wiersz)
+        }
     }
 }

@@ -34,6 +34,11 @@ object Ust {
     fun zapiszOstatni(c: Context, k: Kanal) = prefs(c).edit().putString("ost_id", k.id).putString("ost_nazwa", k.nazwa).putString("ost_logo", k.logo).apply()
     fun pozycja(c: Context, url: String): Long = prefs(c).getLong("poz_" + url.hashCode(), 0)
     fun zapiszPozycje(c: Context, url: String, ms: Long) = prefs(c).edit().putLong("poz_" + url.hashCode(), ms).apply()
+    fun dlugosc(c: Context, url: String): Long = prefs(c).getLong("dl_" + url.hashCode(), 0)
+    fun zapiszDlugosc(c: Context, url: String, ms: Long) = prefs(c).edit().putLong("dl_" + url.hashCode(), ms).apply()
+    /** Ostatnio ogladany odcinek serialu: "sezon|indeks". */
+    fun ostatniOdcinek(c: Context, serial: String): String = prefs(c).getString("odc_$serial", "") ?: ""
+    fun zapiszOdcinek(c: Context, serial: String, v: String) = prefs(c).edit().putString("odc_$serial", v).apply()
     // Ulubione: lista "rodzaj|id|nazwa|obraz|ext|kat"
     fun ulubione(c: Context): List<List<String>> = (prefs(c).getString("ulubione", "") ?: "").split("\n").filter { it.isNotEmpty() }.map { it.split("|") }.filter { it.size >= 6 }
     fun czyUlubiony(c: Context, rodzaj: String, id: String) = ulubione(c).any { it[0] == rodzaj && it[1] == id }
