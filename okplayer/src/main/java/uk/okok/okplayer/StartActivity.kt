@@ -312,7 +312,7 @@ class StartActivity : AppCompatActivity() {
                 f.setOnFocusChangeListener { _, ma -> if (ma) podglad(f, lpP, v) else stopPodglad() }
             }
         }
-        zajawkiWRzedzie(rv)
+        zajawkiWRzedzie(rv); karuzela3D(rv)
         k.addView(rv, LinearLayout.LayoutParams(-1, -2))
     }
 
@@ -327,10 +327,11 @@ class StartActivity : AppCompatActivity() {
         podgladGracz?.release(); podgladGracz = null
     }
     private fun podglad(kont: FrameLayout, lp: FrameLayout.LayoutParams, v: Vod) {
-        if (v.rodzaj != "f" || !ef("ef_rzad_zajawka")) return
+        if (!ef("ef_rzad_zajawka")) return
         stopPodglad()
-        podgladH.postDelayed({
-            if (!kont.isAttachedToWindow) return@postDelayed
+        podgladH.postDelayed({ lifecycleScope.launch {
+            val adr = adresZajawki(v) ?: return@launch
+            if (!kont.isAttachedToWindow) return@launch
             stopBaner?.invoke()
             val pv = (layoutInflater.inflate(R.layout.mini_gracz, null) as androidx.media3.ui.PlayerView).apply {
                 useController = false; resizeMode = androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_ZOOM; alpha = 0f
@@ -340,8 +341,8 @@ class StartActivity : AppCompatActivity() {
             kont.addView(pv, lp)
             podgladWidok = pv
             var gotowe = false
-            podgladGracz = androidx.media3.exoplayer.ExoPlayer.Builder(this).build().apply {
-                volume = 0f; setMediaItem(androidx.media3.common.MediaItem.fromUri(Serwer.adresFilmu(this@StartActivity, v.id, v.ext))); prepare()
+            podgladGracz = androidx.media3.exoplayer.ExoPlayer.Builder(this@StartActivity).build().apply {
+                volume = 0f; setMediaItem(androidx.media3.common.MediaItem.fromUri(adr)); prepare()
                 addListener(object : androidx.media3.common.Player.Listener {
                     override fun onPlaybackStateChanged(st: Int) {
                         if (st == androidx.media3.common.Player.STATE_READY && !gotowe) { gotowe = true
@@ -352,7 +353,29 @@ class StartActivity : AppCompatActivity() {
                     override fun onPlayerError(e: androidx.media3.common.PlaybackException) { stopPodglad() } })
             }
             pv.player = podgladGracz
-        }, 1500)
+        } }, 1500)
+    }
+    /** 2.21: adres zajawki - film wprost, serial: pierwszy odcinek pierwszego sezonu (z opisu serialu). */
+    private val adresyZajawek = HashMap<String, String>()
+    private suspend fun adresZajawki(v: Vod): String? {
+        if (v.rodzaj == "f") return Serwer.adresFilmu(this, v.id, v.ext)
+        adresyZajawek[v.id]?.let { return it }
+        val o = withContext(Dispatchers.IO) { Serwer.infoZPamieci(this@StartActivity, true, v.id) ?: Serwer.infoSerialu(this@StartActivity, v.id) } ?: return null
+        val ep = o.optJSONObject("episodes") ?: return null
+        val sez = ep.keys().asSequence().toList().minByOrNull { it.toIntOrNull() ?: 999 } ?: return null
+        val odc = ep.optJSONArray(sez)?.optJSONObject(0) ?: return null
+        val id = odc.optString("id").ifEmpty { return null }
+        return Serwer.adresOdcinka(this, id, odc.optString("container_extension").ifEmpty { "mp4" }).also { adresyZajawek[v.id] = it }
+    }
+    /** 2.21: karuzela 3D - plakaty po bokach rzedu lekko obrocone i mniejsze, srodkowy prosto. */
+    private fun karuzela3D(rv: RecyclerView) {
+        if (!ef("ef_karuzela")) return
+        fun ustaw(r: RecyclerView) { val sr = r.width / 2f; if (sr <= 0) return
+            for (x in 0 until r.childCount) { val c = r.getChildAt(x); val d = ((c.left + c.width / 2f) - sr) / sr
+                c.rotationY = (-d * 18f).coerceIn(-22f, 22f); val sk = 1f - (kotlin.math.abs(d) * 0.08f).coerceAtMost(0.12f); c.scaleX = sk; c.scaleY = sk
+                c.cameraDistance = c.width * 12f } }
+        rv.addOnScrollListener(object : RecyclerView.OnScrollListener() { override fun onScrolled(r: RecyclerView, dx: Int, dy: Int) { ustaw(r) } })
+        rv.addOnLayoutChangeListener { v, _, _, _, _, _, _, _, _ -> ustaw(v as RecyclerView) }
     }
     /** Telefon: gdy rzad sie zatrzyma, zajawka rusza na pierwszym w calosci widocznym plakacie. TV: na zaznaczonym. */
     private fun zajawkiWRzedzie(rv: RecyclerView) {
@@ -401,7 +424,7 @@ class StartActivity : AppCompatActivity() {
                 w.setOnFocusChangeListener { _, f -> if (f) podglad(fr, FrameLayout.LayoutParams(-1, -1), v) else stopPodglad() }
             }
         }
-        zajawkiWRzedzie(rv)
+        zajawkiWRzedzie(rv); karuzela3D(rv)
         k.addView(rv, LinearLayout.LayoutParams(-1, -2))
     }
 
@@ -631,12 +654,15 @@ class StartActivity : AppCompatActivity() {
             stopZwiastun()
             val v = l[n]; val nowy = obrazy[1 - widoczny]; val stary = obrazy[widoczny]
             // 2.12: zajawka - po 3 s na banerze leci wyciety losowy fragment z samego filmu (bez dzwieku, ok. 20 s)
-            if (v.rodzaj == "f") karta.postDelayed({
+            karta.postDelayed({
                 if (i != n || !karta.isAttachedToWindow || podgladGracz != null || !ef("ef_baner_zajawka")) return@postDelayed
+                lifecycleScope.launch {
+                val adr = adresZajawki(v) ?: return@launch
+                if (i != n || !karta.isAttachedToWindow || podgladGracz != null) return@launch
                 var przewiniete = false
                 zwiastun = androidx.media3.exoplayer.ExoPlayer.Builder(this@StartActivity).build().apply {
                     volume = 0f
-                    setMediaItem(androidx.media3.common.MediaItem.fromUri(Serwer.adresFilmu(this@StartActivity, v.id, v.ext))); prepare(); playWhenReady = false
+                    setMediaItem(androidx.media3.common.MediaItem.fromUri(adr)); prepare(); playWhenReady = false
                     addListener(object : androidx.media3.common.Player.Listener {
                         override fun onPlaybackStateChanged(st: Int) {
                             if (st == androidx.media3.common.Player.STATE_READY && !przewiniete) {
@@ -651,6 +677,7 @@ class StartActivity : AppCompatActivity() {
                         override fun onPlayerError(e: androidx.media3.common.PlaybackException) { stopZwiastun() } })
                 }
                 zwiastunWidok.player = zwiastun
+                }
             }, 3000)
             nowy.alpha = 0f; nowy.scaleX = 1f; nowy.scaleY = 1f; nowy.translationX = 0f
             nowy.load(v.okladka) { allowHardware(false); listener(onSuccess = { _, r ->
@@ -902,6 +929,7 @@ class StartActivity : AppCompatActivity() {
     }
 
     private fun otworz(v: Vod, zrodlo: View? = null) {
+        if (Ust.panelB(this, "ef_dzwiek") == true) (getSystemService(AUDIO_SERVICE) as android.media.AudioManager).playSoundEffect(android.media.AudioManager.FX_KEY_CLICK, 0.6f)
         val i = Intent(this, DetaleActivity::class.java).putExtra("id", v.id).putExtra("nazwa", v.nazwa)
             .putExtra("okladka", v.okladka).putExtra("ext", v.ext).putExtra("rodzaj", v.rodzaj).putExtra("ocena", v.ocena)
         // 2.11: plakat plynnie powieksza sie z miejsca, w ktorym go kliknieto, na caly ekran (jak w Apple TV)

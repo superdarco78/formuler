@@ -1,3 +1,4 @@
+Efekty paczka 3 i 4|seriale bez zajawki, start filmu bez efektu, rzędy płaskie|zajawka z 1. odcinka także dla seriali, kurtyna przy starcie filmu, karuzela 3D w rzędach, dźwięk kliknięcia (włączany w panelu)
 Wszystko z panelu|panel sterował tylko efektami i zrzutami|panel steruje też okienkiem TV, układem startu, PIN-em, rzędami strony głównej i zakładkami menu
 Ustawienia z panelu|panel jeszcze nie wysyłał ustawień|aplikacja pobiera ustawienia z nowej strony edytora „Aplikacja OK Player” (globalnie i dla użytkownika)
 Efekty paczka 2|tło, tytuł, NA ŻYWO i cyfry Top 10 bez ruchu|tło płynnie zmienia kolor z plakatem, tytuł wjeżdża od dołu, czerwona kropka NA ŻYWO pulsuje, cyfry Top 10 wpadają z odbiciem

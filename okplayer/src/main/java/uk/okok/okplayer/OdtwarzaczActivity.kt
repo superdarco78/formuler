@@ -56,6 +56,12 @@ class OdtwarzaczActivity : AppCompatActivity() {
         }.start()
     }
     private var sluchacz: Player.Listener? = null
+    private var kurtyna: List<android.view.View> = emptyList()
+    private fun odslonKurtyne() {
+        val k = kurtyna; if (k.isEmpty()) return; kurtyna = emptyList()
+        k.forEachIndexed { i, v -> v.animate().translationX((if (i == 0) -1 else 1) * (v.width + 4f)).setStartDelay(150).setDuration(900)
+            .setInterpolator(android.view.animation.DecelerateInterpolator(1.6f)).withEndAction { (v.parent as? android.view.ViewGroup)?.removeView(v) }.start() }
+    }
     private lateinit var widok: PlayerView
     private lateinit var napis: TextView
     private var grupa: List<Kanal> = emptyList()
@@ -85,6 +91,13 @@ class OdtwarzaczActivity : AppCompatActivity() {
         Jezyk.wlacz(this)
         val f = FrameLayout(this).apply { setBackgroundColor(Color.BLACK) }
         widok = PlayerView(this).apply { useController = true; setShowBuffering(PlayerView.SHOW_BUFFERING_NEVER); controllerShowTimeoutMs = 3000 }
+        // 2.21: kurtyna - przy starcie filmu dwie czarne polowki rozsuwaja sie na boki
+        if (Ust.panelB(this, "ef_kurtyna") ?: true) {
+            kurtyna = List(2) { k -> android.view.View(this).apply { setBackgroundColor(Color.BLACK); elevation = 1f } }
+            kurtyna.forEachIndexed { k, v -> widok.addView(v, android.widget.FrameLayout.LayoutParams(-1, -1)) }
+            widok.postDelayed({ odslonKurtyne() }, 4000) // zapas: radio i bledy nie maja klatki obrazu
+            widok.post { val w2 = widok.width / 2; kurtyna.forEachIndexed { k, v -> v.layoutParams = android.widget.FrameLayout.LayoutParams(w2 + 2, -1).apply { gravity = if (k == 0) android.view.Gravity.START else android.view.Gravity.END } } }
+        }
         // Przyciski odtwarzacza w kolorach aplikacji (rozowy / fiolet) zamiast bialych.
         run {
             // 1.98: przyciski to grafiki z Canvy (res/values/canva_odtwarzacz.xml) - bez barwienia, liczba "10" jest juz na grafice.
@@ -583,6 +596,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         widok.player = p; gracz = p
         sluchacz?.let { p.removeListener(it) }
         sluchacz = object : Player.Listener {
+            override fun onRenderedFirstFrame() { odslonKurtyne() }
             override fun onPlayerError(error: PlaybackException) {
                 val c0 = error.cause
                 val powod = (c0 as? androidx.media3.datasource.HttpDataSource.InvalidResponseCodeException)?.responseCode?.let { "HTTP $it" } ?: (c0?.javaClass?.simpleName ?: "")
