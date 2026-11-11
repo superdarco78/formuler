@@ -76,6 +76,11 @@ class OdtwarzaczActivity : AppCompatActivity() {
             setOnClickListener { if (przewodnikOtwarty) zamknijPrzewodnik() else otworzPrzewodnik() }
         }
         pn.addView(przyciskProgram)
+        pn.addView(TextView(this).apply {
+            text = "⧉"; setTextColor(Color.WHITE); textSize = 20f; gravity = Gravity.CENTER; isFocusable = true
+            background = android.graphics.drawable.GradientDrawable().apply { shape = android.graphics.drawable.GradientDrawable.OVAL; setColor(0xFF333333.toInt()) }
+            setOnClickListener { wejdzWOkienko(true) }
+        }, android.widget.LinearLayout.LayoutParams(110, 110).apply { marginStart = 16 })
         korzen.addView(pn); panel = pn
         przewodnik = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.VERTICAL; visibility = android.view.View.GONE }
         korzen.addView(przewodnik, android.widget.LinearLayout.LayoutParams(-1, 0, 1f))
@@ -442,9 +447,9 @@ class OdtwarzaczActivity : AppCompatActivity() {
     }
 
     /** Okienko (obraz w obrazie): po wyjsciu do ekranu glownego telefonu TV gra dalej w malym okienku. */
-    private fun wejdzWOkienko() {
-        if (gracz?.isPlaying != true) return
-        if (!Ust.prefs(this).getBoolean("okienko", true)) return
+    private fun wejdzWOkienko(reczne: Boolean = false) {
+        if (!reczne && gracz?.isPlaying != true) return
+        if (!reczne && !Ust.prefs(this).getBoolean("okienko", true)) return
         try {
             val b = android.app.PictureInPictureParams.Builder().setAspectRatio(android.util.Rational(16, 9))
             if (android.os.Build.VERSION.SDK_INT >= 31) b.setAutoEnterEnabled(true).setSeamlessResizeEnabled(true)
