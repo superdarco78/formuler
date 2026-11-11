@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg">
@@ -58,9 +59,13 @@
                     android:layout_height="54dp"
                     android:layout_weight="1"
                     android:text="@string/det_watch"
-                    android:textStyle="bold"
-                    android:textColor="#FFFFFF"
-                    android:backgroundTint="@color/accent" />
+                    android:textStyle="normal"
+                    android:textColor="#111111"
+                    android:textAllCaps="false"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    app:cornerRadius="28dp"
+                    android:backgroundTint="#E6E6E6" />
 
                 <Button
                     android:id="@+id/btnFav"
@@ -69,8 +74,11 @@
                     android:layout_marginStart="10dp"
                     android:padding="0dp"
                     android:textSize="22sp"
-                    android:textColor="#FFFFFF"
-                    android:backgroundTint="@color/panel2" />
+                    android:textColor="#BDBDBD"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    app:cornerRadius="27dp"
+                    android:backgroundTint="#2A2A2A" />
             </LinearLayout>
 
             <TextView

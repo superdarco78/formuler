@@ -326,7 +326,12 @@ class DetailsActivity : AppCompatActivity() {
                 lifecycleScope.launch {
                     val yt = v?.trailer?.takeIf { it.isNotEmpty() }?.let { t -> Regex("([A-Za-z0-9_-]{11})$").find(t.substringBefore("&"))?.groupValues?.get(1) } ?: idZwiastuna()
                     if (tab != 0) return@launch
-                    if (yt == null) { napis.text = "Brak danych"; return@launch }
+                    if (yt == null) {
+                        napis.text = "▶  Zwiastun na YouTube"; napis.setTextColor(0xFFFFFFFF.toInt())
+                        val nazwa = (intent.getStringExtra("name") ?: "").replace(Regex("\\(\\d{4}\\)"), "").trim()
+                        ramka.setOnClickListener { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/results?search_query=" + Uri.encode("$nazwa ${v?.year ?: ""} zwiastun")))) }
+                        return@launch
+                    }
                     mini.load("https://img.youtube.com/vi/$yt/hqdefault.jpg")
                     napis.text = "▶"; napis.textSize = 54f; napis.setTextColor(0xFFFFFFFF.toInt())
                     napis.setShadowLayer(12f, 0f, 0f, 0xFF000000.toInt())
