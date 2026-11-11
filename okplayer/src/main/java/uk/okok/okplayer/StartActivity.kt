@@ -168,6 +168,7 @@ class StartActivity : AppCompatActivity() {
     private fun pokaz(i: Int) {
         if (i != 1 && i != 7 && ::gora2.isInitialized && gora2.visibility == View.VISIBLE) zwinGorny(true)
         zakladka = i
+        programKanal = null; if (::gProgram.isInitialized) gProgram.text = "☰ Program"
         for (k in 0 until dol.childCount) (dol.getChildAt(k) as ImageView).apply {
             val wyb = tag == i
             setColorFilter(if (wyb) Color.WHITE else 0xFF7A7A7A.toInt())
@@ -730,6 +731,7 @@ class StartActivity : AppCompatActivity() {
         }
         // TV jak w starej aplikacji: obraz na gorze zakladki TV, pod nim ta sama lista kanalow (bez drugiej listy).
         val bylaTv = (zakladka == 1 || zakladka == 7) && gornyKanal != null
+        if (programKanal != null && programKanal != ch.id) { programKanal = null; gProgram.text = "☰ Program" }
         gornyKanal = ch
         val jestRadio = kategorie.firstOrNull { it.id == ch.kat }?.let { czyRadio(it) } == true
         if (ch.kat.isNotEmpty() && !bylaTv) { if (jestRadio) Ust.prefs(this).edit().putString("grupa_radio", ch.kat).apply() else Ust.zapiszGrupe(this, ch.kat) }
@@ -746,6 +748,9 @@ class StartActivity : AppCompatActivity() {
     private lateinit var gora2: LinearLayout
     private lateinit var gornyWidok: androidx.media3.ui.PlayerView
     private lateinit var gLogo: ImageView
+    private lateinit var gProgram: TextView
+    /** Id kanalu, ktorego program jest teraz pokazany pod obrazem (null = lista kanalow). */
+    private var programKanal: String? = null
     private lateinit var gNazwa: TextView
     private lateinit var gTeraz: TextView
     private lateinit var gPasek: android.widget.ProgressBar
@@ -774,7 +779,8 @@ class StartActivity : AppCompatActivity() {
         gGodz = tekst("", 12f, SZARY).apply { maxLines = 1 }
         o.addView(gNazwa); o.addView(gTeraz); o.addView(gPasek, LinearLayout.LayoutParams(-1, dp(3)).apply { topMargin = dp(4); bottomMargin = dp(2) }); o.addView(gGodz)
         p.addView(o, LinearLayout.LayoutParams(0, -2, 1f))
-        p.addView(tekst("☰ Program", 14f, Color.WHITE, gruby = true).apply { setPadding(dp(14), dp(8), dp(14), dp(8)); background = android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(0xFFFF3D5A.toInt(), 0xFFB52AD6.toInt())).apply { cornerRadius = dp(20).toFloat() }; isFocusable = true
+        gProgram = tekst("☰ Program", 14f, Color.WHITE, gruby = true)
+        p.addView(gProgram.apply { setPadding(dp(14), dp(8), dp(14), dp(8)); background = android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(0xFFFF3D5A.toInt(), 0xFFB52AD6.toInt())).apply { cornerRadius = dp(20).toFloat() }; isFocusable = true
             setOnClickListener { gornyKanal?.let { ch -> doProgramu(ch) } } })
         k.addView(p)
         return k
@@ -803,10 +809,63 @@ class StartActivity : AppCompatActivity() {
 
     /** Program (EPG) z archiwum: odtwarzacz z otwartym przewodnikiem. */
     private fun doProgramu(ch: Kanal) {
-        zwinGorny(false)
-        WspolnyGracz.wlasciciel = "duzy"
-        startActivity(Intent(this, OdtwarzaczActivity::class.java)
-            .putExtra("url", Serwer.adresKanalu(this, ch.id)).putExtra("nazwa", ch.nazwa).putExtra("logo", ch.logo).putExtra("id", ch.id).putExtra("kat", ch.kat).putExtra("przewodnik", true))
+        // Drugie dotkniecie: z powrotem lista kanalow.
+        if (programKanal == ch.id) { programKanal = null; gProgram.text = "☰ Program"; tresc.removeAllViews(); listaKanalow(zakladka == 7); return }
+        programKanal = ch.id; gProgram.text = "☰ Kanały"
+        tresc.removeAllViews()
+        val k = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        tresc.addView(k)
+        k.addView(tekst("Ładuję program kanału " + ch.nazwa + "…", 15f, SZARY).apply { setPadding(dp(16), dp(16), dp(16), 0) })
+        lifecycleScope.launch {
+            val wpisy = withContext(Dispatchers.IO) { Serwer.przewodnik(this@StartActivity, ch.id) }
+            if (programKanal != ch.id) return@launch
+            val dz = java.text.SimpleDateFormat("yyyy-MM-dd", Jezyk.loc)
+            rysujProgram(k, ch, wpisy, dz.format(java.util.Date()))
+        }
+    }
+
+    /** Program TYLKO jednego kanalu: dni z archiwum + dzis; dotkniecie audycji z archiwum = gra w obrazie na gorze. */
+    private fun rysujProgram(k: LinearLayout, ch: Kanal, wpisy: List<Wpis>, dzien: String) {
+        k.removeAllViews()
+        val teraz = System.currentTimeMillis() / 1000
+        val dz = java.text.SimpleDateFormat("yyyy-MM-dd", Jezyk.loc)
+        val dzis = dz.format(java.util.Date())
+        k.addView(tekst("Program: " + ch.nazwa, 16f, Color.WHITE, gruby = true).apply { setPadding(dp(16), dp(10), dp(16), dp(4)) })
+        if (wpisy.isEmpty()) { k.addView(tekst("Brak programu dla tego kanału", 15f, SZARY).apply { setPadding(dp(16), dp(8), dp(16), 0) }); return }
+        val dni = wpisy.filter { it.archiwum || dz.format(java.util.Date(it.start * 1000)) == dzis }
+            .map { dz.format(java.util.Date(it.start * 1000)) }.distinct().filter { it <= dzis }.ifEmpty { listOf(dzis) }
+        val pasek = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(dp(10), dp(4), dp(10), dp(6)) }
+        val nazwaDnia = java.text.SimpleDateFormat("EEE d.MM", Jezyk.loc)
+        for (d in dni) pasek.addView(tekst(if (d == dzis) "Dziś" else nazwaDnia.format(dz.parse(d)!!), 14f, if (d == dzien) Color.BLACK else Color.WHITE).apply {
+            setPadding(dp(14), dp(7), dp(14), dp(7)); isFocusable = true
+            background = GradientDrawable().apply { setColor(if (d == dzien) Color.WHITE else 0xFF2A2A2A.toInt()); cornerRadius = dp(18).toFloat() }
+            setOnClickListener { rysujProgram(k, ch, wpisy, d) }
+        }, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(6) })
+        k.addView(android.widget.HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; addView(pasek) })
+        val sv = ScrollView(this); val lista = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(10), 0, dp(10), dp(140)) }
+        sv.addView(lista); k.addView(sv, LinearLayout.LayoutParams(-1, 0, 1f))
+        val godz = java.text.SimpleDateFormat("HH:mm", Jezyk.loc)
+        var biezacy: View? = null
+        for (w in wpisy.filter { dz.format(java.util.Date(it.start * 1000)) == dzien && it.start <= teraz && (it.archiwum || it.koniec > teraz) }) {
+            val naZywo = w.start <= teraz && w.koniec > teraz
+            val wiersz = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; background = tlo(if (naZywo) 0xFF3A1F4A.toInt() else KARTA, 10); setPadding(dp(12), dp(10), dp(12), dp(10)); isFocusable = true
+                addView(tekst(godz.format(java.util.Date(w.start * 1000)), 15f, AKCENT, gruby = true), LinearLayout.LayoutParams(dp(60), -2))
+                addView(tekst(w.tytul, 15f), LinearLayout.LayoutParams(0, -2, 1f))
+                addView(tekst(if (naZywo) "● teraz" else if (w.archiwum) "⏪" else "", 14f, if (naZywo) 0xFFFF3D5A.toInt() else SZARY))
+                setOnClickListener {
+                    if (naZywo) { WspolnyGracz.wlasciciel = "gora"; gornyWidok.player = WspolnyGracz.pobierz(this@StartActivity); WspolnyGracz.graj(this@StartActivity, Serwer.adresKanalu(this@StartActivity, ch.id), odNowa = true); ustawGornyPanel(ch) }
+                    else if (w.archiwum) {
+                        WspolnyGracz.wlasciciel = "gora"; gornyWidok.player = WspolnyGracz.pobierz(this@StartActivity)
+                        WspolnyGracz.graj(this@StartActivity, Serwer.adresArchiwum(this@StartActivity, ch.id, w), odNowa = true)
+                        gTeraz.text = "⏪ Archiwum: " + w.tytul; gGodz.text = godz.format(java.util.Date(w.start * 1000)) + "–" + godz.format(java.util.Date(w.koniec * 1000)); gPasek.visibility = View.GONE
+                    }
+                }
+            }
+            lista.addView(wiersz, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(6) })
+            if (naZywo) biezacy = wiersz
+        }
+        biezacy?.let { b -> sv.post { sv.scrollTo(0, (b.top - dp(80)).coerceAtLeast(0)) } }
     }
 
     /** Chowa obraz z gory; doMini = true -> TV gra dalej w malym kwadracie. */
@@ -814,6 +873,7 @@ class StartActivity : AppCompatActivity() {
         if (!::gora2.isInitialized || gora2.visibility != View.VISIBLE) return
         val ch = gornyKanal
         gornyWidok.player = null; gora2.visibility = View.GONE; gornyKanal = null
+        if (programKanal != null) { programKanal = null; gProgram.text = "☰ Program"; if (zakladka == 1 || zakladka == 7) { tresc.removeAllViews(); listaKanalow(zakladka == 7) } }
         if (doMini && ch != null) {
             Ust.prefs(this).edit().putString("mini", listOf(ch.id, ch.nazwa, ch.logo ?: "", ch.kat).joinToString("\u0001")).apply()
             WspolnyGracz.wlasciciel = "mini"; pokazMini()

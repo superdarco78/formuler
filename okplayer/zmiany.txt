@@ -1,2 +1,2 @@
-Lista pod obrazem na żywo|lista wszystkich kanałów i przełącznik Program/Kanały|tylko program z archiwum kanału, który leci – nic innego
-Wstecz z pełnego ekranu|zależało od ustawień i miejsca, czasem nic się nie działo|jedno Wstecz zawsze od razu zmniejsza obraz do małego okna przypiętego na dole aplikacji, na wierzchu (TV, archiwum, film, odcinek)
+Program na podglądzie na żywo|„☰ Program” otwierał osobny ekran, gdzie mogły pojawić się inne kanały|„☰ Program” pokazuje pod obrazem tylko program i archiwum kanału, który leci; dotknięcie audycji z archiwum = gra na górze; „☰ Kanały” wraca do listy
+Małe okno|działa (1.74)|bez zmian – zostaje tak jak w 1.74
