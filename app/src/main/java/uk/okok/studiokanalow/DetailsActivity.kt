@@ -102,6 +102,30 @@ class DetailsActivity : AppCompatActivity() {
         b.tvPlot.text = v.plot
     }
 
+    /** Szuka zwiastuna na YouTube (telefon laczy sie z YouTube bezposrednio) i otwiera pierwszy wynik. */
+    private fun odtworzZwiastun() {
+        val nazwa = (intent.getStringExtra("name") ?: "").replace(Regex("\\(\\d{4}\\)"), "").trim()
+        val q = Uri.encode(nazwa + " zwiastun")
+        val szukaj = Uri.parse("https://www.youtube.com/results?search_query=$q")
+        android.widget.Toast.makeText(this, "Szukam zwiastuna…", android.widget.Toast.LENGTH_SHORT).show()
+        lifecycleScope.launch {
+            val id = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                try {
+                    val req = okhttp3.Request.Builder().url(szukaj.toString())
+                        .header("User-Agent", "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36")
+                        .header("Accept-Language", "pl-PL,pl;q=0.9")
+                        .header("Cookie", "CONSENT=YES+1; SOCS=CAI")
+                        .build()
+                    val html = okhttp3.OkHttpClient().newCall(req).execute().use { it.body?.string() ?: "" }
+                    Regex("\"videoId\":\"([A-Za-z0-9_-]{11})\"").find(html)?.groupValues?.get(1)
+                } catch (e: Exception) { null }
+            }
+            try { rap("zwiastun " + (id ?: "brak")) } catch (_: Exception) {}
+            val cel = if (id != null) Uri.parse("https://www.youtube.com/watch?v=$id") else szukaj
+            startActivity(Intent(Intent.ACTION_VIEW, cel))
+        }
+    }
+
     private fun render() {
         tabs.forEachIndexed { i, t ->
             t.setTextColor(getColor(if (i == tab) R.color.tx else R.color.muted))
@@ -119,11 +143,8 @@ class DetailsActivity : AppCompatActivity() {
                 }
                 getString(R.string.det_open_trailer)
             } else {
-                b.tvTabContent.setOnClickListener {
-                    val q = Uri.encode((intent.getStringExtra("name") ?: "") + " zwiastun")
-                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/results?search_query=$q")))
-                }
-                "▶  Znajdź zwiastun na YouTube"
+                b.tvTabContent.setOnClickListener { odtworzZwiastun() }
+                "▶  Odtwórz zwiastun"
             }
             1 -> v?.cast?.takeIf { it.isNotEmpty() } ?: none
             2 -> if (intent.getBooleanExtra("serial", false))
