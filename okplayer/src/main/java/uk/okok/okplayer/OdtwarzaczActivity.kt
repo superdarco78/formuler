@@ -63,7 +63,15 @@ class OdtwarzaczActivity : AppCompatActivity() {
         potemTv = TextView(this).apply { setTextColor(0xFF9A9A9A.toInt()); textSize = 13f }
         opisy.addView(nazwaTv); opisy.addView(terazTv); opisy.addView(potemTv)
         panel.addView(opisy, android.widget.LinearLayout.LayoutParams(0, -2, 1f))
+        przyciskProgram = TextView(this).apply {
+            text = "☰ Program"; setTextColor(Color.BLACK); textSize = 14f; setPadding(30, 18, 30, 18); isFocusable = true
+            background = android.graphics.drawable.GradientDrawable().apply { setColor(0xFFE6E6E6.toInt()); cornerRadius = 40f }
+            setOnClickListener { if (przewodnikOtwarty) zamknijPrzewodnik() else otworzPrzewodnik() }
+        }
+        panel.addView(przyciskProgram)
         korzen.addView(panel)
+        przewodnik = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.VERTICAL; visibility = android.view.View.GONE }
+        korzen.addView(przewodnik, android.widget.LinearLayout.LayoutParams(-1, 0, 1f))
         listaTv = androidx.recyclerview.widget.RecyclerView(this).apply { layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this@OdtwarzaczActivity) }
         korzen.addView(listaTv, android.widget.LinearLayout.LayoutParams(-1, 0, 1f))
         setContentView(korzen)
@@ -82,6 +90,84 @@ class OdtwarzaczActivity : AppCompatActivity() {
     }
 
     private var ramka: FrameLayout? = null
+    private var przewodnik: android.widget.LinearLayout? = null
+    private lateinit var przyciskProgram: TextView
+    private var przewodnikOtwarty = false
+    private var wpisy: List<Wpis> = emptyList()
+    private var dzien = ""
+
+    /** Przewodnik jak w starej aplikacji: dni u gory, audycje pod spodem; przeszle z archiwum (⏪) mozna obejrzec. */
+    private fun otworzPrzewodnik() {
+        val ch = biezacy ?: return
+        val pr = przewodnik ?: return
+        przewodnikOtwarty = true; przyciskProgram.text = "✕ Kanały"
+        listaTv?.visibility = android.view.View.GONE; pr.visibility = android.view.View.VISIBLE
+        pr.removeAllViews()
+        pr.addView(TextView(this).apply { text = "Ładuję program…"; setTextColor(0xFF9A9A9A.toInt()); setPadding(32, 24, 32, 24) })
+        lifecycleScope.launch {
+            wpisy = withContext(Dispatchers.IO) { Serwer.przewodnik(this@OdtwarzaczActivity, ch.id) }
+            if (!przewodnikOtwarty || biezacy?.id != ch.id) return@launch
+            val dz = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale("pl"))
+            dzien = dz.format(java.util.Date())
+            rysujPrzewodnik()
+        }
+    }
+
+    private fun zamknijPrzewodnik() {
+        przewodnikOtwarty = false; przyciskProgram.text = "☰ Program"
+        przewodnik?.visibility = android.view.View.GONE; listaTv?.visibility = android.view.View.VISIBLE
+    }
+
+    private fun rysujPrzewodnik() {
+        val pr = przewodnik ?: return
+        pr.removeAllViews()
+        if (wpisy.isEmpty()) { pr.addView(TextView(this).apply { text = "Brak programu dla tego kanału"; setTextColor(0xFF9A9A9A.toInt()); setPadding(32, 24, 32, 24) }); return }
+        val dz = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale("pl"))
+        val nazwaDnia = java.text.SimpleDateFormat("EEE d.MM", java.util.Locale("pl"))
+        val dni = wpisy.map { dz.format(java.util.Date(it.start * 1000)) }.distinct()
+        val dzis = dz.format(java.util.Date())
+        val pasek = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.HORIZONTAL; setPadding(20, 12, 20, 12) }
+        for (d in dni) {
+            pasek.addView(TextView(this).apply {
+                text = if (d == dzis) "Dziś" else nazwaDnia.format(dz.parse(d)!!)
+                textSize = 15f; setPadding(30, 14, 30, 14); isFocusable = true
+                val wyb = d == dzien
+                setTextColor(if (wyb) Color.BLACK else Color.WHITE)
+                background = android.graphics.drawable.GradientDrawable().apply { setColor(if (wyb) Color.WHITE else 0xFF2A2A2A.toInt()); cornerRadius = 40f }
+                setOnClickListener { dzien = d; rysujPrzewodnik() }
+            }, android.widget.LinearLayout.LayoutParams(-2, -2).apply { marginEnd = 14 })
+        }
+        pr.addView(android.widget.HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; addView(pasek) })
+        val lista = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.VERTICAL }
+        val sv = android.widget.ScrollView(this).apply { addView(lista) }
+        pr.addView(sv, android.widget.LinearLayout.LayoutParams(-1, 0, 1f))
+        val t = System.currentTimeMillis() / 1000
+        val godz = java.text.SimpleDateFormat("HH:mm", java.util.Locale("pl"))
+        var terazView: android.view.View? = null
+        for (w in wpisy.filter { dz.format(java.util.Date(it.start * 1000)) == dzien }) {
+            val teraz = w.start <= t && w.koniec > t
+            val archiwum = w.archiwum && w.koniec <= t
+            val r = android.widget.LinearLayout(this).apply {
+                orientation = android.widget.LinearLayout.HORIZONTAL; setPadding(32, 22, 32, 22); isFocusable = true
+                setBackgroundColor(if (teraz) 0xFF2A2A2A.toInt() else Color.TRANSPARENT)
+                addView(TextView(this@OdtwarzaczActivity).apply { text = godz.format(java.util.Date(w.start * 1000)); setTextColor(if (teraz) Color.WHITE else 0xFF9A9A9A.toInt()); textSize = 15f; minWidth = 150 })
+                addView(TextView(this@OdtwarzaczActivity).apply {
+                    text = w.tytul + (if (teraz) "   ● TERAZ" else if (archiwum) "   ⏪" else "")
+                    setTextColor(if (w.koniec <= t && !archiwum) 0xFF777777.toInt() else Color.WHITE); textSize = 15f
+                }, android.widget.LinearLayout.LayoutParams(0, -2, 1f))
+                setOnClickListener {
+                    when {
+                        archiwum -> { val u = Serwer.adresArchiwum(this@OdtwarzaczActivity, biezacy!!.id, w); intent.putExtra("url", u); pokazNapis("Archiwum: " + w.tytul); proby = 0; graj(u) }
+                        teraz -> { val u = Serwer.adresKanalu(this@OdtwarzaczActivity, biezacy!!.id); intent.putExtra("url", u); pokazNapis("Na żywo"); graj(u) }
+                        else -> pokazNapis(if (w.start > t) "Audycja jeszcze się nie zaczęła" else "Ta audycja nie ma archiwum")
+                    }
+                }
+            }
+            lista.addView(r)
+            if (teraz) terazView = r
+        }
+        terazView?.let { v -> sv.post { sv.scrollTo(0, (v.top - 200).coerceAtLeast(0)) } }
+    }
     private lateinit var korzen: android.widget.LinearLayout
     private var panel: android.widget.LinearLayout? = null
     private var listaTv: androidx.recyclerview.widget.RecyclerView? = null
@@ -95,7 +181,8 @@ class OdtwarzaczActivity : AppCompatActivity() {
         val poziomo = o == android.content.res.Configuration.ORIENTATION_LANDSCAPE
         f.layoutParams = android.widget.LinearLayout.LayoutParams(-1, if (poziomo) -1 else resources.displayMetrics.widthPixels * 9 / 16)
         panel?.visibility = if (poziomo) android.view.View.GONE else android.view.View.VISIBLE
-        listaTv?.visibility = if (poziomo) android.view.View.GONE else android.view.View.VISIBLE
+        listaTv?.visibility = if (poziomo || przewodnikOtwarty) android.view.View.GONE else android.view.View.VISIBLE
+        przewodnik?.visibility = if (!poziomo && przewodnikOtwarty) android.view.View.VISIBLE else android.view.View.GONE
         val c = androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)
         if (poziomo) c.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars()) else c.show(androidx.core.view.WindowInsetsCompat.Type.systemBars())
     }
@@ -152,6 +239,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         val url = Serwer.adresKanalu(this, n.id)
         intent.putExtra("url", url)
         pokazNapis(n.nazwa); graj(url); ustawPanel()
+        if (przewodnikOtwarty) otworzPrzewodnik()
         listaTv?.adapter?.notifyDataSetChanged()
     }
 
