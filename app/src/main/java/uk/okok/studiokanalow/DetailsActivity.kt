@@ -148,10 +148,16 @@ class DetailsActivity : AppCompatActivity() {
         b.btnWatch.isAllCaps = false
         b.btnWatch.textSize = 18f
         b.btnWatch.setTextColor(0xFF111111.toInt())
-        b.btnWatch.background = android.graphics.drawable.GradientDrawable().apply { setColor(0xFFE6E6E6.toInt()); cornerRadius = dp(30).toFloat() }
-        b.btnWatch.backgroundTintList = null
-        b.btnFav.background = android.graphics.drawable.GradientDrawable().apply { shape = android.graphics.drawable.GradientDrawable.OVAL; setColor(0xFF2A2A2A.toInt()) }
-        b.btnFav.backgroundTintList = null
+        (b.btnWatch as? com.google.android.material.button.MaterialButton)?.apply {
+            backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFE6E6E6.toInt())
+            cornerRadius = dp(30); insetTop = 0; insetBottom = 0; elevation = 0f; stateListAnimator = null
+            rippleColor = android.content.res.ColorStateList.valueOf(0x33000000)
+        }
+        (b.btnFav as? com.google.android.material.button.MaterialButton)?.apply {
+            backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF2A2A2A.toInt())
+            cornerRadius = dp(30); insetTop = 0; insetBottom = 0; elevation = 0f; stateListAnimator = null
+        }
+        b.btnBack.backgroundTintList = android.content.res.ColorStateList.valueOf(0x99000000.toInt())
         b.btnFav.setTextColor(0xFFBDBDBD.toInt())
     }
 
@@ -177,10 +183,8 @@ class DetailsActivity : AppCompatActivity() {
         val sb = android.text.SpannableStringBuilder()
         fun kropka() { if (sb.isNotEmpty()) sb.append("  •  ") }
         fun plakietka(t: String, tlo: Int, kol: Int) {
-            val st = sb.length; sb.append(" $t ")
-            sb.setSpan(android.text.style.BackgroundColorSpan(tlo), st, sb.length, 0)
-            sb.setSpan(android.text.style.ForegroundColorSpan(kol), st, sb.length, 0)
-            sb.setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), st, sb.length, 0)
+            val st = sb.length; sb.append(t)
+            sb.setSpan(Plakietka(tlo, kol, dp(6).toFloat(), dp(7).toFloat()), st, sb.length, 0)
         }
         if (v.wiek.isNotEmpty() && v.wiek != "0") { plakietka(v.wiek, 0xFF3A3A3A.toInt(), 0xFFFFFFFF.toInt()) }
         val pr = procent(v.rating)
@@ -232,6 +236,28 @@ class DetailsActivity : AppCompatActivity() {
             } while (koniec > 10)
             tv.text = krotki
         }
+    }
+
+    private var zwiastunId: String? = null
+    private var zwiastunSzukany = false
+
+    /** Id filmu YouTube ze zwiastunem (szukane raz). */
+    private suspend fun idZwiastuna(): String? {
+        if (zwiastunSzukany) return zwiastunId
+        val nazwa = (intent.getStringExtra("name") ?: "").replace(Regex("\\(\\d{4}\\)"), "").trim()
+        val rok = info?.year ?: ""
+        val q = Uri.encode("$nazwa $rok zwiastun")
+        zwiastunId = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                val req = okhttp3.Request.Builder().url("https://www.youtube.com/results?search_query=$q")
+                    .header("User-Agent", "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36")
+                    .header("Accept-Language", "pl-PL,pl;q=0.9").header("Cookie", "CONSENT=YES+1; SOCS=CAI").build()
+                val html = okhttp3.OkHttpClient().newCall(req).execute().use { it.body?.string() ?: "" }
+                Regex("\"videoId\":\"([A-Za-z0-9_-]{11})\"").find(html)?.groupValues?.get(1)
+            } catch (e: Exception) { null }
+        }
+        zwiastunSzukany = true
+        return zwiastunId
     }
 
     /** Szuka zwiastuna na YouTube (telefon laczy sie z YouTube bezposrednio) i otwiera pierwszy wynik. */
@@ -286,16 +312,26 @@ class DetailsActivity : AppCompatActivity() {
         b.tvTabContent.gravity = android.view.Gravity.START
         b.tvTabContent.setOnClickListener(null)
         when (tab) {
-            0 -> if (v != null && v.trailer.isNotEmpty()) {
-                b.tvTabContent.setOnClickListener {
-                    val id = v.trailer
-                    val u = if (id.startsWith("http")) id else "https://www.youtube.com/watch?v=$id"
-                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(u)))
+            0 -> {
+                b.tvTabContent.visibility = android.view.View.GONE
+                val ramka = android.widget.FrameLayout(this).apply {
+                    background = android.graphics.drawable.GradientDrawable().apply { setColor(0xFF1E1E1E.toInt()); cornerRadius = dp(8).toFloat() }
+                    clipToOutline = true
                 }
-                b.tvTabContent.text = getString(R.string.det_open_trailer)
-            } else {
-                b.tvTabContent.setOnClickListener { odtworzZwiastun() }
-                b.tvTabContent.text = "▶  Odtwórz zwiastun"
+                val mini = android.widget.ImageView(this).apply { scaleType = android.widget.ImageView.ScaleType.CENTER_CROP }
+                ramka.addView(mini, android.widget.FrameLayout.LayoutParams(-1, -1))
+                val napis = tekst("Szukam zwiastuna…", 16f, 0xFFBDBDBD.toInt()).apply { gravity = android.view.Gravity.CENTER }
+                ramka.addView(napis, android.widget.FrameLayout.LayoutParams(-1, -1))
+                kontener.addView(ramka, android.widget.LinearLayout.LayoutParams(-1, resources.displayMetrics.widthPixels * 9 / 16))
+                lifecycleScope.launch {
+                    val yt = v?.trailer?.takeIf { it.isNotEmpty() }?.let { t -> Regex("([A-Za-z0-9_-]{11})$").find(t.substringBefore("&"))?.groupValues?.get(1) } ?: idZwiastuna()
+                    if (tab != 0) return@launch
+                    if (yt == null) { napis.text = "Brak danych"; return@launch }
+                    mini.load("https://img.youtube.com/vi/$yt/hqdefault.jpg")
+                    napis.text = "▶"; napis.textSize = 54f; napis.setTextColor(0xFFFFFFFF.toInt())
+                    napis.setShadowLayer(12f, 0f, 0f, 0xFF000000.toInt())
+                    ramka.setOnClickListener { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/watch?v=$yt"))) }
+                }
             }
             1 -> {
                 val lista = v?.cast?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() } ?: emptyList()
@@ -368,5 +404,23 @@ class DetailsActivity : AppCompatActivity() {
                 kontener.addView(karta, android.widget.LinearLayout.LayoutParams(-1, -2).apply { setMargins(dp(12), 0, dp(12), dp(24)) })
             }
         }
+    }
+}
+
+/** Zaokraglona plakietka w tekscie (jak "TMDb" i "18" w MyTvOnline). */
+class Plakietka(private val tlo: Int, private val kol: Int, private val promien: Float, private val pad: Float) : android.text.style.ReplacementSpan() {
+    override fun getSize(p: android.graphics.Paint, t: CharSequence, s: Int, e: Int, fm: android.graphics.Paint.FontMetricsInt?): Int {
+        val pp = android.graphics.Paint(p).apply { isFakeBoldText = true }
+        return (pp.measureText(t, s, e) + pad * 2).toInt()
+    }
+    override fun draw(c: android.graphics.Canvas, t: CharSequence, s: Int, e: Int, x: Float, top: Int, y: Int, bottom: Int, p: android.graphics.Paint) {
+        val pp = android.graphics.Paint(p).apply { isFakeBoldText = true }
+        val w = pp.measureText(t, s, e) + pad * 2
+        val fm = pp.fontMetrics
+        val r = android.graphics.RectF(x, y + fm.ascent - pad / 3, x + w, y + fm.descent + pad / 3)
+        val bg = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = tlo }
+        c.drawRoundRect(r, promien, promien, bg)
+        pp.color = kol
+        c.drawText(t, s, e, x + pad, y.toFloat(), pp)
     }
 }
