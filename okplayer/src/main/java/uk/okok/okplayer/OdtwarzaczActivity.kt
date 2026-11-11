@@ -70,6 +70,15 @@ class OdtwarzaczActivity : AppCompatActivity() {
     private val limitEpg = kotlinx.coroutines.sync.Semaphore(4)
     private var proby = 0
 
+    /** 2.02: tlo z grafiki Canvy bez rozpychania widoku (panele 9-patch, zdjecia bez wlasnego rozmiaru), z zachowaniem odstepow. */
+    private fun android.view.View.tloCanvy(r: Int) {
+        val l = paddingLeft; val t = paddingTop; val p = paddingRight; val b = paddingBottom
+        val d = context.getDrawable(r)
+        background = if (d is android.graphics.drawable.NinePatchDrawable || d == null) d else object : android.graphics.drawable.DrawableWrapper(d) {
+            override fun getIntrinsicWidth() = -1; override fun getIntrinsicHeight() = -1 }
+        setPadding(l, t, p, b)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Pilot.wlacz(this)
@@ -84,7 +93,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
             for (n in listOf(androidx.media3.ui.R.id.exo_rew_with_amount, androidx.media3.ui.R.id.exo_ffwd_with_amount))
                 (widok.findViewById<android.view.View>(n) as? android.widget.TextView)?.let { tv -> tv.setTextColor(Color.TRANSPARENT); tv.foreground = null }
             // Dolny pasek odtwarzacza na tle z Canvy.
-            widok.findViewById<android.view.View>(androidx.media3.ui.R.id.exo_bottom_bar)?.setBackgroundResource(R.drawable.ok_gr_pasek)
+            widok.findViewById<android.view.View>(androidx.media3.ui.R.id.exo_bottom_bar)?.tloCanvy(R.drawable.ok_gr_pasek)
             widok.findViewById<androidx.media3.ui.DefaultTimeBar>(androidx.media3.ui.R.id.exo_progress)?.apply {
                 setPlayedColor(0xFFFF3D5A.toInt()); setScrubberColor(0xFFC85BFF.toInt()); setBufferedColor(0x66FFFFFF); setUnplayedColor(0x33FFFFFF)
             }
@@ -112,8 +121,8 @@ class OdtwarzaczActivity : AppCompatActivity() {
         }
         f.addView(napis, FrameLayout.LayoutParams(-2, -2).apply { gravity = Gravity.TOP or Gravity.START; setMargins(24, 24, 24, 24) })
         val przyciski = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.HORIZONTAL }
-        fun prz(t: String, a: () -> Unit) = TextView(this).apply { text = t; setTextColor(Color.WHITE); textSize = 15f; setTypeface(typeface, android.graphics.Typeface.BOLD); gravity = Gravity.CENTER; setPadding(40, 22, 40, 22); setBackgroundResource(R.drawable.ok_gr_przycisk); isFocusable = true
-            setOnFocusChangeListener { v, f -> v.setBackgroundResource(if (f) R.drawable.ok_gr_przycisk_roz else R.drawable.ok_gr_przycisk) }; setOnClickListener { a() } }
+        fun prz(t: String, a: () -> Unit) = TextView(this).apply { text = t; setTextColor(Color.WHITE); textSize = 15f; setTypeface(typeface, android.graphics.Typeface.BOLD); gravity = Gravity.CENTER; setPadding(40, 22, 40, 22); tloCanvy(R.drawable.ok_gr_przycisk); isFocusable = true
+            setOnFocusChangeListener { v, f -> v.tloCanvy(if (f) R.drawable.ok_gr_przycisk_roz else R.drawable.ok_gr_przycisk) }; setOnClickListener { a() } }
         if (!intent.getBooleanExtra("vod", false)) przyciski.addView(prz("⏮ Od początku") { odPoczatku() }, android.widget.LinearLayout.LayoutParams(-2, -2).apply { marginEnd = 16 })
         if (!intent.getBooleanExtra("vod", false)) przyciski.addView(prz("⇄ Poprzedni") { poprzedni?.let { przelacz(it) } ?: pokazNapis("Brak poprzedniego kanału") }, android.widget.LinearLayout.LayoutParams(-2, -2).apply { marginEnd = 16 })
         przyciski.addView(prz("⚙ Opcje") { opcje() })
@@ -133,7 +142,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         ramka = f
         korzen = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.VERTICAL; setBackgroundColor(Color.BLACK) }
         korzen.addView(f, android.widget.LinearLayout.LayoutParams(-1, resources.displayMetrics.widthPixels * 9 / 16))
-        val pn = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(32, 24, 32, 24); setBackgroundResource(R.drawable.ok_gr_tlo_panel) }
+        val pn = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(32, 24, 32, 24); tloCanvy(R.drawable.ok_gr_tlo_panel) }
         logoTv = android.widget.ImageView(this).apply { scaleType = android.widget.ImageView.ScaleType.FIT_CENTER }
         pn.addView(logoTv, android.widget.LinearLayout.LayoutParams(160, 100))
         val opisy = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.VERTICAL; setPadding(28, 0, 0, 0) }
@@ -149,7 +158,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         pn.addView(opisy, android.widget.LinearLayout.LayoutParams(0, -2, 1f))
         przyciskProgram = TextView(this).apply {
             text = "☰ Program"; setTextColor(Color.WHITE); textSize = 14f; setTypeface(typeface, android.graphics.Typeface.BOLD); setPadding(30, 18, 30, 18); isFocusable = true
-            setBackgroundResource(R.drawable.ok_gr_przycisk_roz); setPadding(44, 22, 44, 22)
+            tloCanvy(R.drawable.ok_gr_przycisk_roz); setPadding(44, 22, 44, 22)
             setOnClickListener { if (przewodnikOtwarty) zamknijPrzewodnik() else otworzPrzewodnik() }
         }
         // Z przycisku Program na podgladzie: tylko archiwum tego kanalu (bez listy i bez przelacznika). Zwykle: lista kanalow + Program.

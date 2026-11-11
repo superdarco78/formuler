@@ -43,6 +43,15 @@ class DetaleActivity : AppCompatActivity() {
     private lateinit var sekcjaOdc: LinearLayout
     private var sezon = 0
 
+    /** 2.02: tlo z grafiki Canvy bez rozpychania widoku (panele 9-patch, zdjecia bez wlasnego rozmiaru), z zachowaniem odstepow. */
+    private fun android.view.View.tloCanvy(r: Int) {
+        val l = paddingLeft; val t = paddingTop; val p = paddingRight; val b = paddingBottom
+        val d = context.getDrawable(r)
+        background = if (d is android.graphics.drawable.NinePatchDrawable || d == null) d else object : android.graphics.drawable.DrawableWrapper(d) {
+            override fun getIntrinsicWidth() = -1; override fun getIntrinsicHeight() = -1 }
+        setPadding(l, t, p, b)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Pilot.wlacz(this)
@@ -50,7 +59,7 @@ class DetaleActivity : AppCompatActivity() {
         val id = intent.getStringExtra("id") ?: ""
         val nazwa = intent.getStringExtra("nazwa") ?: ""
         val serial = intent.getStringExtra("rodzaj") == "s"
-        val sv = ScrollView(this).apply { setBackgroundResource(R.drawable.ok_gr_tlo_aplikacji) }
+        val sv = ScrollView(this).apply { tloCanvy(R.drawable.ok_gr_tlo_aplikacji) }
         kol = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         sv.addView(kol)
         val plakat = ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_CROP; intent.getStringExtra("okladka")?.let { load(it) } }

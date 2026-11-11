@@ -55,6 +55,15 @@ class StartActivity : AppCompatActivity() {
     private fun tekst(t: CharSequence, rozm: Float, kol: Int = Color.WHITE, gruby: Boolean = false) = TextView(this).apply {
         text = t; textSize = rozm; setTextColor(kol); if (gruby) setTypeface(typeface, Typeface.BOLD)
     }
+    /** 2.02: tlo z grafiki Canvy bez rozpychania widoku (panele 9-patch, zdjecia bez wlasnego rozmiaru), z zachowaniem odstepow. */
+    private fun android.view.View.tloCanvy(r: Int) {
+        val l = paddingLeft; val t = paddingTop; val p = paddingRight; val b = paddingBottom
+        val d = context.getDrawable(r)
+        background = if (d is android.graphics.drawable.NinePatchDrawable || d == null) d else object : android.graphics.drawable.DrawableWrapper(d) {
+            override fun getIntrinsicWidth() = -1; override fun getIntrinsicHeight() = -1 }
+        setPadding(l, t, p, b)
+    }
+
     private fun tlo(kol: Int, r: Int) = GradientDrawable().apply { setColor(kol); cornerRadius = dp(r).toFloat() }
     /** 2.01: swiecaca ramka z Canvy na zaznaczonym plakacie (pilot / dotyk). */
     private fun ramkaCanvy() = android.graphics.drawable.StateListDrawable().apply {
@@ -112,7 +121,7 @@ class StartActivity : AppCompatActivity() {
     // ---------------- ekran glowny ----------------
     private fun ekranGlowny() {
         parowanie?.cancel()
-        val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundResource(R.drawable.ok_gr_tlo_aplikacji) }
+        val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; tloCanvy(R.drawable.ok_gr_tlo_aplikacji) }
         glowny = root
         val gora = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(18), dp(14), dp(18), dp(10)) }
         gora.addView(ImageView(this).apply { setImageResource(R.drawable.ok_gr_logo); scaleType = ImageView.ScaleType.FIT_START; adjustViewBounds = true }, LinearLayout.LayoutParams(dp(110), dp(40)))
@@ -159,7 +168,7 @@ class StartActivity : AppCompatActivity() {
         banerCanvy = ImageView(this).apply { adjustViewBounds = true; scaleType = ImageView.ScaleType.FIT_XY; visibility = View.GONE }
         root.addView(banerCanvy, LinearLayout.LayoutParams(-1, -2))
         root.addView(obszar, LinearLayout.LayoutParams(-1, 0, 1f))
-        dol = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setBackgroundResource(R.drawable.ok_gr_pasek); setPadding(dp(6), dp(2), dp(6), dp(2)) }
+        dol = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; tloCanvy(R.drawable.ok_gr_pasek); setPadding(dp(6), dp(2), dp(6), dp(2)) }
         // Dolne menu jak w MyTvOnline: same ikonki (Start, TV, Filmy, Seriale, Ulubione)
         listOf(R.drawable.ok_gr_menu_start to 0, R.drawable.ok_gr_menu_tv to 1, R.drawable.ok_gr_menu_filmy to 2, R.drawable.ok_gr_menu_seriale to 3, R.drawable.ok_gr_menu_radio to 7, R.drawable.ok_gr_menu_ulubione to 6).forEach { (ik, z) ->
             dol.addView(ImageView(this).apply {
@@ -179,7 +188,7 @@ class StartActivity : AppCompatActivity() {
         for (k in 0 until dol.childCount) (dol.getChildAt(k) as ImageView).apply {
             val wyb = tag == i
             // 2.01: ikony 3D z Canvy - wybrana pelna i powiekszona, pozostale przygaszone.
-            animate().alpha(if (wyb) 1f else 0.45f).scaleX(if (wyb) 1.15f else 0.95f).scaleY(if (wyb) 1.15f else 0.95f).setDuration(200).start()
+            animate().alpha(if (wyb) 1f else 0.62f).scaleX(if (wyb) 1.15f else 0.95f).scaleY(if (wyb) 1.15f else 0.95f).setDuration(200).start()
         }
         tresc.removeAllViews()
         // Wejscie w TV: obraz od razu na gorze (kanal z malego kwadratu albo ostatnio ogladany), pod nim lista - jak na zdjeciu.
@@ -336,7 +345,7 @@ class StartActivity : AppCompatActivity() {
             override fun getItemCount() = l.size
             override fun onCreateViewHolder(p: ViewGroup, t: Int) = object : RecyclerView.ViewHolder(LinearLayout(p.context).apply {
                 orientation = LinearLayout.VERTICAL; isFocusable = true; layoutParams = RecyclerView.LayoutParams(dp(118), -2).apply { marginEnd = dp(10) }
-                addView(ImageView(p.context).apply { scaleType = ImageView.ScaleType.FIT_CENTER; setBackgroundResource(R.drawable.ok_gr_okno); setPadding(dp(14), dp(10), dp(14), dp(10)); foreground = ramkaCanvy(); isDuplicateParentStateEnabled = true }, LinearLayout.LayoutParams(-1, dp(76)))
+                addView(ImageView(p.context).apply { scaleType = ImageView.ScaleType.FIT_CENTER; tloCanvy(R.drawable.ok_gr_okno); setPadding(dp(14), dp(10), dp(14), dp(10)); foreground = ramkaCanvy(); isDuplicateParentStateEnabled = true }, LinearLayout.LayoutParams(-1, dp(76)))
                 addView(tekst("", 14f).apply { gravity = Gravity.CENTER; maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END; setPadding(0, dp(6), 0, 0) })
             }) {}
             override fun onBindViewHolder(h: RecyclerView.ViewHolder, i: Int) {
@@ -393,7 +402,7 @@ class StartActivity : AppCompatActivity() {
             rv.adapter = object : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
                 override fun getItemCount() = trwa.size
                 override fun onCreateViewHolder(p: ViewGroup, t: Int) = object : RecyclerView.ViewHolder(LinearLayout(p.context).apply {
-                    orientation = LinearLayout.VERTICAL; isFocusable = true; setPadding(dp(14), dp(12), dp(14), dp(12)); setBackgroundResource(R.drawable.ok_gr_okno); foreground = ramkaCanvy()
+                    orientation = LinearLayout.VERTICAL; isFocusable = true; setPadding(dp(14), dp(12), dp(14), dp(12)); tloCanvy(R.drawable.ok_gr_okno); foreground = ramkaCanvy()
                     layoutParams = RecyclerView.LayoutParams(dp(230), -2).apply { marginEnd = dp(10) }
                     addView(LinearLayout(p.context).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
                         addView(ImageView(p.context).apply { scaleType = ImageView.ScaleType.FIT_CENTER }, LinearLayout.LayoutParams(dp(54), dp(34)))
@@ -411,7 +420,7 @@ class StartActivity : AppCompatActivity() {
                     ((w.getChildAt(0) as LinearLayout).getChildAt(1) as TextView).apply {
                         text = liga?.second ?: ""; setTextColor(Color.WHITE)
                         // bez rozpoznanej ligi: plakietka NA ZYWO z Canvy
-                        if (liga == null) { setBackgroundResource(R.drawable.ok_gr_plakietka_zywo); minWidth = dp(84); minHeight = dp(24); setPadding(0, 0, 0, 0) }
+                        if (liga == null) { tloCanvy(R.drawable.ok_gr_plakietka_zywo); minWidth = dp(84); minHeight = dp(24); setPadding(0, 0, 0, 0) }
                         else { background = tlo(liga.third, 8); minWidth = 0; minHeight = 0; setPadding(dp(8), dp(3), dp(8), dp(3)) }
                         (layoutParams as? LinearLayout.LayoutParams)?.marginStart = dp(10)
                     }
@@ -448,7 +457,7 @@ class StartActivity : AppCompatActivity() {
     private var waznoscPamiec: String? = null
     private fun kartaZegara(): View {
         val karta = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(16), dp(12), dp(16), dp(12))
-            setBackgroundResource(R.drawable.ok_gr_okno) }
+            tloCanvy(R.drawable.ok_gr_okno) }
         val lewa = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         lewa.addView(android.widget.TextClock(this).apply { format24Hour = "HH:mm"; format12Hour = "HH:mm"; textSize = 34f; setTextColor(Color.WHITE); setTypeface(typeface, android.graphics.Typeface.BOLD) })
         lewa.addView(android.widget.TextClock(this).apply { format24Hour = "EEEE, d MMMM yyyy"; format12Hour = "EEEE, d MMMM yyyy"; textSize = 14f; setTextColor(0xFFBDBDBD.toInt()) })
@@ -592,7 +601,7 @@ class StartActivity : AppCompatActivity() {
         fun kiedy(c: Long): String { val m = (teraz - c) / 60000; return when { m < 1 -> "przed chwilą"; m < 60 -> "$m min temu"; m < 1440 -> "${m / 60} godz. temu"; else -> java.text.SimpleDateFormat("d.MM, HH:mm", Jezyk.loc).format(java.util.Date(c)) } }
         for (o in l) {
             val tv = o.optString("t") == "tv"; val u = o.optString("u")
-            val w = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setBackgroundResource(R.drawable.ok_gr_okno); foreground = ramkaCanvy(); setPadding(dp(10), dp(10), dp(12), dp(10)); isFocusable = true }
+            val w = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; tloCanvy(R.drawable.ok_gr_okno); foreground = ramkaCanvy(); setPadding(dp(10), dp(10), dp(12), dp(10)); isFocusable = true }
             w.addView(ImageView(this).apply { scaleType = if (tv) ImageView.ScaleType.FIT_CENTER else ImageView.ScaleType.CENTER_CROP; background = tlo(0xFF2A2A30.toInt(), 8); clipToOutline = true
                 o.optString("o").takeIf { it.startsWith("http") }?.let { load(it) } }, LinearLayout.LayoutParams(if (tv) dp(84) else dp(56), if (tv) dp(52) else dp(80)))
             val p = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), 0, 0, 0) }
@@ -820,7 +829,7 @@ class StartActivity : AppCompatActivity() {
     }
 
     private fun kafelKanalu(ch: Kanal) = LinearLayout(this).apply {
-        orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setBackgroundResource(R.drawable.ok_gr_okno); foreground = ramkaCanvy(); setPadding(dp(12), dp(8), dp(12), dp(8)); isFocusable = true
+        orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; tloCanvy(R.drawable.ok_gr_okno); foreground = ramkaCanvy(); setPadding(dp(12), dp(8), dp(12), dp(8)); isFocusable = true
         addView(ImageView(this@StartActivity).apply { scaleType = ImageView.ScaleType.FIT_CENTER; if (ch.logo != null) load(ch.logo) { canva("ok_gr_brak_logo").takeIf { it != 0 }?.let { error(it) } } else canva("ok_gr_brak_logo").takeIf { it != 0 }?.let { setImageResource(it) } }, LinearLayout.LayoutParams(dp(80), dp(52)))
         addView(tekst(ch.nazwa, 17f).apply { setPadding(dp(14), 0, 0, 0) }, LinearLayout.LayoutParams(0, -2, 1f))
         addView(ImageView(this@StartActivity).apply { setImageResource(R.drawable.ok_gr_play) }, LinearLayout.LayoutParams(dp(40), dp(40)))
@@ -1087,7 +1096,7 @@ class StartActivity : AppCompatActivity() {
         val k = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), dp(8), dp(16), dp(16)) }
         tresc.addView(ScrollView(this).apply { addView(k) })
         fun wiersz(t: String, opis: String, akcja: () -> Unit) = k.addView(LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL; setBackgroundResource(R.drawable.ok_gr_okno); foreground = ramkaCanvy(); setPadding(dp(16), dp(16), dp(16), dp(16)); isFocusable = true
+            orientation = LinearLayout.VERTICAL; tloCanvy(R.drawable.ok_gr_okno); foreground = ramkaCanvy(); setPadding(dp(16), dp(16), dp(16), dp(16)); isFocusable = true
             addView(tekst(t, 17f)); addView(tekst(opis, 14f, SZARY))
             setOnClickListener { akcja() }
         }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
@@ -1129,7 +1138,7 @@ class StartActivity : AppCompatActivity() {
         val logo = ImageView(this).apply { setImageResource(R.drawable.ok_gr_logo); scaleType = ImageView.ScaleType.FIT_CENTER; alpha = 0f; scaleX = 0.4f; scaleY = 0.4f }
         logoF.addView(logo, FrameLayout.LayoutParams(dp(230), dp(170)).apply { gravity = Gravity.CENTER })
         sr.addView(logoF, LinearLayout.LayoutParams(dp(320), dp(230)))
-        val tor = FrameLayout(this).apply { setBackgroundResource(R.drawable.ok_gr_pasek_tor); alpha = 0f }
+        val tor = FrameLayout(this).apply { tloCanvy(R.drawable.ok_gr_pasek_tor); alpha = 0f }
         val pelny = android.graphics.drawable.ClipDrawable(getDrawable(R.drawable.ok_gr_pasek_pelny), Gravity.START, android.graphics.drawable.ClipDrawable.HORIZONTAL).apply { level = 0 }
         tor.addView(View(this).apply { background = pelny }, FrameLayout.LayoutParams(-1, -1))
         sr.addView(tor, LinearLayout.LayoutParams(dp(260), dp(14)).apply { topMargin = dp(18) })
@@ -1161,7 +1170,7 @@ class StartActivity : AppCompatActivity() {
 
     private fun oknoWyjscia() {
         val d = android.app.Dialog(this)
-        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL; setPadding(dp(24), dp(24), dp(24), dp(20)); setBackgroundResource(R.drawable.ok_gr_okno) }
+        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL; setPadding(dp(24), dp(24), dp(24), dp(20)); tloCanvy(R.drawable.ok_gr_okno) }
         val ik = ImageView(this).apply { setImageResource(R.mipmap.ic_launcher) }
         box.addView(ik, LinearLayout.LayoutParams(dp(72), dp(72)).apply { bottomMargin = dp(14) })
         box.addView(tekst("Zamknąć OK Player?", 21f, gruby = true).apply { gravity = Gravity.CENTER })
@@ -1224,7 +1233,7 @@ class StartActivity : AppCompatActivity() {
             val opis = w.getChildAt(2) as LinearLayout
             (opis.getChildAt(0) as TextView).text = ch.nazwa
             // 2.01: wiersz kanalu na szklanym panelu z Canvy, grajacy kanal na rozowej pigulce z Canvy
-            w.setBackgroundResource(if (gornyKanal?.id == ch.id) R.drawable.ok_gr_przycisk_roz else R.drawable.ok_gr_okno); w.foreground = ramkaCanvy()
+            w.tloCanvy(if (gornyKanal?.id == ch.id) R.drawable.ok_gr_przycisk_roz else R.drawable.ok_gr_okno); w.foreground = ramkaCanvy()
             val epg = opis.getChildAt(1) as TextView
             val pas = opis.getChildAt(2) as android.widget.ProgressBar
             epg.text = ""; epg.tag = ch.id; pas.visibility = android.view.View.INVISIBLE
@@ -1253,7 +1262,7 @@ class StartActivity : AppCompatActivity() {
             val t = h.itemView as TextView; val k = g[i]
             t.text = k.nazwa
             val wyb = k.id == wybrana
-            t.setBackgroundResource(if (wyb) R.drawable.ok_gr_przycisk_roz else R.drawable.ok_gr_przycisk); t.setTextColor(Color.WHITE); t.setPadding(dp(20), dp(12), dp(20), dp(12))
+            t.tloCanvy(if (wyb) R.drawable.ok_gr_przycisk_roz else R.drawable.ok_gr_przycisk); t.setTextColor(Color.WHITE); t.setPadding(dp(20), dp(12), dp(20), dp(12))
             t.setOnClickListener { klik(k.id) }
         }
     }

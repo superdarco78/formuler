@@ -1,11 +1,5 @@
-Animacja startu|fale i iskry z ikoną (2,6 s)|ok. 4 s z grafik Canvy: neonowe kino z plakatami wjeżdża z boków, logo OK PLAYER wyłania się i świeci, neonowy pasek ładuje się do końca, „Ładowanie kanałów…”, płynne wejście
-Tło całej aplikacji|czarne|neonowa fala z Canvy (Start, Filmy, Seriale, Szczegóły, Aktorzy)
-Górny pasek|mała ikona + napis, płaskie ikony|logo OK PLAYER z Canvy, okrągłe neonowe przyciski Szukaj i Ustawienia
-Dolne menu|płaskie szare ikonki|ikony 3D z Canvy (dom, TV, klaps, film, radio, gwiazdka) – wybrana świeci i rośnie
-Top 10|cyfry pisane|neonowe cyfry 1–10 z Canvy przy plakatach
-Plakaty i kafle|bez ramki|zaznaczony plakat/kanał w świecącej ramce z Canvy (pilot i dotyk)
-Lista kanałów i grupy|szare wiersze i białe pigułki|szklane panele i neonowe pigułki z Canvy, grający kanał na różowej pigułce
-Mecze, zegar, okna, kafle|szare karty|szklany panel z Canvy, plakietka NA ŻYWO z Canvy
-Brak plakatu / logo|stare grafiki|nowe grafiki „Brak plakatu”, „Brak logo kanału” z Canvy
-Małe okienko|bez ramki|neonowa ramka z Canvy
-Odtwarzacz|z 2.00|przyciski z Canvy bez zmian
+Dolne menu|ogromny pas tła zajmujący pół ekranu|wąski pasek z ikonami 3D z Canvy, tło nie rozpycha menu
+Karty w Ustawieniach i panele|ogromne puste karty, śmieci na górnej krawędzi|karty dopasowane do treści, czysty szklany panel z Canvy z neonową obwódką
+Przyciski-pigułki i ramka zaznaczenia|rozciągnięte, z poszarpanymi brzegami|równe pigułki i ramka z Canvy (dopasowują się do napisu)
+Dolne menu – nieaktywne ikony|mocno wyblakłe|wyraźniejsze
+Reszta|z 2.01|animacja startu i szata z Canvy bez zmian

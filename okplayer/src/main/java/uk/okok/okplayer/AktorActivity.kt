@@ -27,6 +27,15 @@ class AktorActivity : AppCompatActivity() {
     private fun tekst(t: CharSequence, r: Float, k: Int = Color.WHITE, g: Boolean = false) = TextView(this).apply { text = t; textSize = r; setTextColor(k); if (g) setTypeface(typeface, Typeface.BOLD) }
     private fun tlo(k: Int, r: Int) = GradientDrawable().apply { setColor(k); cornerRadius = dp(r).toFloat() }
 
+    /** 2.02: tlo z grafiki Canvy bez rozpychania widoku (panele 9-patch, zdjecia bez wlasnego rozmiaru), z zachowaniem odstepow. */
+    private fun android.view.View.tloCanvy(r: Int) {
+        val l = paddingLeft; val t = paddingTop; val p = paddingRight; val b = paddingBottom
+        val d = context.getDrawable(r)
+        background = if (d is android.graphics.drawable.NinePatchDrawable || d == null) d else object : android.graphics.drawable.DrawableWrapper(d) {
+            override fun getIntrinsicWidth() = -1; override fun getIntrinsicHeight() = -1 }
+        setPadding(l, t, p, b)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Pilot.wlacz(this)
@@ -34,7 +43,7 @@ class AktorActivity : AppCompatActivity() {
         val nazwa = intent.getStringExtra("aktor") ?: ""
         val rola = intent.getStringExtra("rola") ?: ""
         val kol = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), dp(12), dp(16), dp(24)) }
-        val sv = ScrollView(this).apply { setBackgroundResource(R.drawable.ok_gr_tlo_aplikacji); addView(kol) }
+        val sv = ScrollView(this).apply { tloCanvy(R.drawable.ok_gr_tlo_aplikacji); addView(kol) }
         setContentView(sv)
 
         val wstecz = tekst("‹", 30f).apply { gravity = Gravity.CENTER; background = tlo(0xAA222222.toInt(), 26); isFocusable = true; setOnClickListener { finish() } }
