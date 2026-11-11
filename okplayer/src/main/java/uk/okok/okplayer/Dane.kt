@@ -39,6 +39,20 @@ object Ust {
     }
     fun ostatnie(c: Context): List<Kanal> = (prefs(c).getString("ostatnie", "") ?: "").split("\n").filter { it.isNotEmpty() }
         .map { it.split("\u0001") }.filter { it.size >= 4 }.map { Kanal(it[0], it[1], it[2].ifEmpty { null }, it[3], 0) }
+    /** Historia ogladania (kanaly, filmy, odcinki): najnowsze na gorze, bez powtorzen, max 60. */
+    fun dodajHistorie(c: Context, typ: String, id: String, nazwa: String, obraz: String?, url: String, kat: String) {
+        if (url.isEmpty() || nazwa.isEmpty()) return
+        val stara = try { org.json.JSONArray(prefs(c).getString("historia", "[]")) } catch (e: Exception) { org.json.JSONArray() }
+        val nowa = org.json.JSONArray()
+        nowa.put(org.json.JSONObject().put("t", typ).put("id", id).put("n", nazwa).put("o", obraz ?: "").put("u", url).put("k", kat).put("c", System.currentTimeMillis()))
+        for (i in 0 until stara.length()) { val o = stara.optJSONObject(i) ?: continue
+            if (o.optString("u") == url || (typ == "tv" && o.optString("t") == "tv" && o.optString("id") == id)) continue
+            if (nowa.length() < 60) nowa.put(o) }
+        prefs(c).edit().putString("historia", nowa.toString()).apply()
+    }
+    fun historia(c: Context): List<org.json.JSONObject> = try { val a = org.json.JSONArray(prefs(c).getString("historia", "[]")); (0 until a.length()).mapNotNull { a.optJSONObject(it) } } catch (e: Exception) { emptyList() }
+    fun wyczyscHistorie(c: Context) = prefs(c).edit().remove("historia").apply()
+
     fun pozycja(c: Context, url: String): Long = prefs(c).getLong("poz_" + url.hashCode(), 0)
     fun zapiszPozycje(c: Context, url: String, ms: Long) = prefs(c).edit().putLong("poz_" + url.hashCode(), ms).apply()
     fun dlugosc(c: Context, url: String): Long = prefs(c).getLong("dl_" + url.hashCode(), 0)

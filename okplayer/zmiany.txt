@@ -1,4 +1,4 @@
-Nowy Start – kinowy|rzędy kafelków|duży baner z plakatem na całą szerokość (sam zmienia się co 5 s z płynnym przejściem), zegar i pogoda na banerze, przyciski Oglądaj / Moja lista / Info, filtry Wszystko–TV–Filmy–Seriale–Radio–Ulubione, Top filmów i seriali dziś wyżej
-Układ Startu do wyboru|jeden układ|Ustawienia → Układ Startu: Kinowy (nowy), Ikony (zegar, pogoda, okrągłe menu jak IBO) albo Klasyczny (jak w 1.89)
-Moje konto, okrągłe menu|–|z 1.92 (w układzie Ikony)
+Historia oglądania|nie było|nowa zakładka 🕘 Historia (filtr na Starcie i przycisk w układzie Ikony): kanały, filmy i odcinki z godziną, pasek ile obejrzane, dotknij = oglądaj dalej, „Wyczyść”
+Nagrywanie z archiwum|nie było|w programie przytrzymaj audycję z archiwum → „⬇ Nagraj”: zapisuje ją na telefonie (Filmy/OK Player), postęp w powiadomieniach
+Kinowy Start|–|z 1.93
 Małe okno i program|działa (1.80)|bez zmian

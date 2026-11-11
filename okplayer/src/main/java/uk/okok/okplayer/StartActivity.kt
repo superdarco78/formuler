@@ -184,7 +184,7 @@ class StartActivity : AppCompatActivity() {
                 listaKanalow(); return
             }
         }
-        when (i) { 0 -> start(); 1 -> listaKanalow(); 2 -> siatkaVod(filmy, katF, "f"); 3 -> siatkaVod(seriale, katS, "s"); 5 -> szukaj(); 6 -> ulubioneEkran(); 7 -> listaKanalow(radio = true); else -> ustawienia() }
+        when (i) { 0 -> start(); 1 -> listaKanalow(); 2 -> siatkaVod(filmy, katF, "f"); 3 -> siatkaVod(seriale, katS, "s"); 5 -> szukaj(); 6 -> ulubioneEkran(); 7 -> listaKanalow(radio = true); 8 -> historiaEkran(); else -> ustawienia() }
         animujZakladke()
     }
 
@@ -458,7 +458,7 @@ class StartActivity : AppCompatActivity() {
     private fun kafleMenu(): View {
         val siatka = android.widget.GridLayout(this).apply { columnCount = 4 }
         val poz = listOf(Triple("★", "Ulubione") { pokaz(6) }, Triple("📺", "Telewizja") { pokaz(1) }, Triple("🎬", "Filmy") { pokaz(2) }, Triple("🎞️", "Seriale") { pokaz(3) },
-            Triple("📻", "Radio") { pokaz(7) }, Triple("🔍", "Szukaj") { pokaz(5) }, Triple("👤", "Konto") { ekranKonta() }, Triple("⚙️", "Ustawienia") { pokaz(4) })
+            Triple("📻", "Radio") { pokaz(7) }, Triple("🕘", "Historia") { pokaz(8) }, Triple("👤", "Konto") { ekranKonta() }, Triple("⚙️", "Ustawienia") { pokaz(4) })
         poz.forEachIndexed { i, (ik, nazwa, akcja) ->
             val el = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL; setPadding(0, dp(6), 0, dp(6)); isFocusable = true; isClickable = true }
             val kolo = tekst(ik, 24f).apply { gravity = Gravity.CENTER
@@ -551,7 +551,7 @@ class StartActivity : AppCompatActivity() {
     /** Filtry pod banerem: szybkie przejscie do TV, filmow, seriali, radia, ulubionych. */
     private fun filtry(k: LinearLayout) {
         val rz = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(dp(14), dp(10), dp(14), dp(2)) }
-        listOf("Wszystko" to 0, "TV" to 1, "Filmy" to 2, "Seriale" to 3, "Radio" to 7, "Ulubione" to 6).forEachIndexed { j, (t, z) ->
+        listOf("Wszystko" to 0, "TV" to 1, "Filmy" to 2, "Seriale" to 3, "Radio" to 7, "Ulubione" to 6, "🕘 Historia" to 8).forEachIndexed { j, (t, z) ->
             rz.addView(tekst(t, 14f, if (j == 0) Color.BLACK else Color.WHITE, gruby = j == 0).apply {
                 setPadding(dp(14), dp(7), dp(14), dp(7)); isFocusable = true
                 background = GradientDrawable().apply { cornerRadius = dp(18).toFloat(); setColor(if (j == 0) Color.WHITE else 0xFF24242C.toInt()) }
@@ -559,6 +559,39 @@ class StartActivity : AppCompatActivity() {
             }, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(8) })
         }
         k.addView(android.widget.HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; addView(rz) })
+    }
+
+    /** Historia ogladania jak u konkurencji: kanaly i filmy z godzina, pasek postepu filmu, dotknij = ogladaj dalej. */
+    private fun historiaEkran() {
+        val k = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), dp(8), dp(12), dp(16)) }
+        tresc.addView(ScrollView(this).apply { addView(k) })
+        val l = Ust.historia(this)
+        val gora = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(4), dp(4), dp(4), dp(10)) }
+        gora.addView(tekst("🕘 Historia oglądania", 20f, gruby = true), LinearLayout.LayoutParams(0, -2, 1f))
+        if (l.isNotEmpty()) gora.addView(tekst("Wyczyść", 14f, 0xFFFF6B85.toInt()).apply { setPadding(dp(10), dp(6), dp(10), dp(6)); isFocusable = true; setOnClickListener { Ust.wyczyscHistorie(this@StartActivity); pokaz(8) } })
+        k.addView(gora)
+        if (l.isEmpty()) { k.addView(tekst("Tu pojawi się wszystko, co oglądasz: kanały, filmy i odcinki.", 15f, SZARY)); return }
+        val teraz = System.currentTimeMillis()
+        fun kiedy(c: Long): String { val m = (teraz - c) / 60000; return when { m < 1 -> "przed chwilą"; m < 60 -> "$m min temu"; m < 1440 -> "${m / 60} godz. temu"; else -> java.text.SimpleDateFormat("d.MM, HH:mm", Jezyk.loc).format(java.util.Date(c)) } }
+        for (o in l) {
+            val tv = o.optString("t") == "tv"; val u = o.optString("u")
+            val w = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; background = tlo(KARTA, 12); setPadding(dp(10), dp(10), dp(12), dp(10)); isFocusable = true }
+            w.addView(ImageView(this).apply { scaleType = if (tv) ImageView.ScaleType.FIT_CENTER else ImageView.ScaleType.CENTER_CROP; background = tlo(0xFF2A2A30.toInt(), 8); clipToOutline = true
+                o.optString("o").takeIf { it.startsWith("http") }?.let { load(it) } }, LinearLayout.LayoutParams(if (tv) dp(84) else dp(56), if (tv) dp(52) else dp(80)))
+            val p = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), 0, 0, 0) }
+            p.addView(tekst(o.optString("n"), 16f, gruby = true).apply { maxLines = 2; ellipsize = android.text.TextUtils.TruncateAt.END })
+            p.addView(tekst((if (tv) "📺 Kanał" else "🎬 Film / odcinek") + "  ·  " + kiedy(o.optLong("c")), 13f, SZARY))
+            if (!tv) { val poz = Ust.pozycja(this, u); val dl = Ust.dlugosc(this, u)
+                if (poz > 0 && dl > 0) p.addView(android.widget.ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply { max = 100; progress = (poz * 100 / dl).toInt()
+                    progressTintList = android.content.res.ColorStateList.valueOf(AKCENT) }, LinearLayout.LayoutParams(-1, dp(6)).apply { topMargin = dp(6) }) }
+            w.addView(p, LinearLayout.LayoutParams(0, -2, 1f))
+            w.addView(tekst("▶", 20f, AKCENT))
+            w.setOnClickListener {
+                if (tv) graj(kanaly.firstOrNull { it.id == o.optString("id") } ?: Kanal(o.optString("id"), o.optString("n"), o.optString("o").ifEmpty { null }, o.optString("k"), 0))
+                else startActivity(Intent(this, OdtwarzaczActivity::class.java).putExtra("url", u).putExtra("nazwa", o.optString("n")).putExtra("okladka", o.optString("o").ifEmpty { null }).putExtra("vod", true))
+            }
+            k.addView(w, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
+        }
     }
 
     private fun start() {

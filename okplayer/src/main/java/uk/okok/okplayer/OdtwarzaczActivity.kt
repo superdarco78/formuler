@@ -389,6 +389,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
                     androidx.appcompat.app.AlertDialog.Builder(this@OdtwarzaczActivity).setTitle(w.tytul)
                         .setMessage(godz.format(java.util.Date(w.start * 1000)) + "–" + godz.format(java.util.Date(w.koniec * 1000)) + "\n\n" + w.opis.ifEmpty { "Brak opisu" })
                         .setPositiveButton(if (archiwum) "⏪ Obejrzyj" else if (teraz) "▶ Na żywo" else "OK") { _, _ -> if (archiwum || teraz) performClick() }
+                        .apply { if (archiwum) setNeutralButton("⬇ Nagraj") { _, _ -> nagraj(w) } }
                         .setNegativeButton("Zamknij", null).show().also { Jezyk.okno(it) }; true
                 }
                 setOnClickListener {
@@ -521,6 +522,22 @@ class OdtwarzaczActivity : AppCompatActivity() {
         listaTv?.adapter?.notifyDataSetChanged()
     }
 
+    /** Nagrywanie audycji z archiwum na telefon (folder Filmy/OK Player), w tle przez systemowe pobieranie. */
+    private fun nagraj(w: Wpis) {
+        val ch = biezacy ?: return
+        try {
+            val dzien = java.text.SimpleDateFormat("yyyy-MM-dd HH.mm", java.util.Locale.US).format(java.util.Date(w.start * 1000))
+            val plik = (ch.nazwa + " " + dzien + " " + w.tytul).replace(Regex("[\\\\/:*?\"<>|]"), " ").take(120) + ".ts"
+            val r = android.app.DownloadManager.Request(android.net.Uri.parse(Serwer.adresArchiwum(this, ch.id, w)))
+                .setTitle("OK Player: " + w.tytul).setDescription(ch.nazwa + " • " + dzien)
+                .addRequestHeader("User-Agent", "VLC/3.0.20 LibVLC/3.0.20")
+                .setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                .setDestinationInExternalPublicDir(android.os.Environment.DIRECTORY_MOVIES, "OK Player/" + plik)
+            getSystemService(android.app.DownloadManager::class.java).enqueue(r)
+            pokazNapis("⬇ Nagrywam: " + w.tytul + " (Filmy/OK Player)")
+        } catch (e: Exception) { pokazNapis("Nie udało się nagrać: " + (e.message ?: "")) }
+    }
+
     private fun pokazNapis(t: String) {
         napis.text = t; napis.visibility = android.view.View.VISIBLE
         napis.removeCallbacks(ukryj); napis.postDelayed(ukryj, 4000)
@@ -563,6 +580,9 @@ class OdtwarzaczActivity : AppCompatActivity() {
         p.addListener(sluchacz!!)
         val url = intent.getStringExtra("url") ?: return
         val nowy = WspolnyGracz.graj(this, url)
+        // Historia ogladania: film/odcinek albo kanal (archiwum nie - liczy sie kanal).
+        if (intent.getBooleanExtra("vod", false)) Ust.dodajHistorie(this, "vod", "", intent.getStringExtra("nazwa") ?: "", intent.getStringExtra("okladka"), url, "")
+        else biezacy?.let { Ust.dodajHistorie(this, "tv", it.id, it.nazwa, it.logo, Serwer.adresKanalu(this, it.id), it.kat) }
         if (nowy || p.playbackState != Player.STATE_READY) pokazLadowanie(biezacy?.nazwa ?: intent.getStringExtra("nazwa") ?: "") else ukryjLadowanie()
         // Filmy i odcinki: wznawianie od miejsca przerwania (gdy film zaczyna sie od nowa).
         if (nowy && intent.getBooleanExtra("vod", false)) {
