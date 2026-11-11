@@ -153,7 +153,7 @@ class StartActivity : AppCompatActivity() {
         root.addView(obszar, LinearLayout.LayoutParams(-1, 0, 1f))
         dol = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setBackgroundColor(0xFF0D0D0D.toInt()) }
         // Dolne menu jak w MyTvOnline: same ikonki (Start, TV, Filmy, Seriale, Ulubione)
-        listOf(R.drawable.ik_start to 0, R.drawable.ik_tv to 1, R.drawable.ik_filmy to 2, R.drawable.ik_seriale to 3, R.drawable.ik_ulubione to 6).forEach { (ik, z) ->
+        listOf(R.drawable.ik_start to 0, R.drawable.ik_tv to 1, R.drawable.ik_filmy to 2, R.drawable.ik_seriale to 3, R.drawable.ik_radio to 7, R.drawable.ik_ulubione to 6).forEach { (ik, z) ->
             dol.addView(ImageView(this).apply {
                 setImageResource(ik); scaleType = ImageView.ScaleType.FIT_CENTER; setPadding(0, dp(17), 0, dp(17)); isFocusable = true; tag = z
                 setColorFilter(SZARY); setOnClickListener { pokaz(z) }
@@ -166,7 +166,7 @@ class StartActivity : AppCompatActivity() {
     }
 
     private fun pokaz(i: Int) {
-        if (i != 1 && ::gora2.isInitialized && gora2.visibility == View.VISIBLE) zwinGorny(true)
+        if (i != 1 && i != 7 && ::gora2.isInitialized && gora2.visibility == View.VISIBLE) zwinGorny(true)
         zakladka = i
         for (k in 0 until dol.childCount) (dol.getChildAt(k) as ImageView).apply {
             val wyb = tag == i
@@ -184,7 +184,7 @@ class StartActivity : AppCompatActivity() {
                 listaKanalow(); return
             }
         }
-        when (i) { 0 -> start(); 1 -> listaKanalow(); 2 -> siatkaVod(filmy, katF, "f"); 3 -> siatkaVod(seriale, katS, "s"); 5 -> szukaj(); 6 -> ulubioneEkran(); else -> ustawienia() }
+        when (i) { 0 -> start(); 1 -> listaKanalow(); 2 -> siatkaVod(filmy, katF, "f"); 3 -> siatkaVod(seriale, katS, "s"); 5 -> szukaj(); 6 -> ulubioneEkran(); 7 -> listaKanalow(radio = true); else -> ustawienia() }
         animujZakladke()
     }
 
@@ -404,9 +404,9 @@ class StartActivity : AppCompatActivity() {
         if (filmy.isEmpty() && kanaly.isEmpty()) { k.addView(tekst("Ładuję listę…", 15f, SZARY).apply { setPadding(dp(16), dp(16), 0, 0) }); return }
         val pop = { l: List<Vod> -> l.filter { it.ocena > 0 }.sortedByDescending { it.ocena }.take(20).ifEmpty { l.takeLast(20).reversed() } }
         // Kontynuuj ogladanie: ostatni kanal + filmy przerwane w polowie (z ulubionych i najnowszych)
-        rzadKanalow(k, "Ostatnio oglądane kanały", Ust.ostatnie(this).map { o -> kanaly.firstOrNull { it.id == o.id } ?: o })
-        // Sport na zywo: kanaly sportowe, ktore teraz nadaja mecz / transmisje (z programu TV)
+        // Na samej gorze: mecze i sport, ktore leca teraz
         rzadSportu(k)
+        rzadKanalow(k, "Ostatnio oglądane kanały", Ust.ostatnie(this).map { o -> kanaly.firstOrNull { it.id == o.id } ?: o })
         // Radio: stacje z grup z "radio" w nazwie
         val katRadio = kategorie.filter { it.nazwa.lowercase().contains("radio") }.map { it.id }.toSet()
         rzadKanalow(k, "📻 Radio", kanaly.filter { it.kat in katRadio }.take(40))
@@ -561,17 +561,20 @@ class StartActivity : AppCompatActivity() {
     }
 
     // ---------------- Kanaly ----------------
-    private fun listaKanalow() {
+    private fun czyRadio(k: Kat) = k.nazwa.lowercase().contains("radio")
+    /** Lista kanalow TV albo (radio = true) stacji radiowych - z grupami u gory. */
+    private fun listaKanalow(radio: Boolean = false) {
+        val kategorie = this.kategorie.filter { czyRadio(it) == radio }.ifEmpty { if (radio) emptyList() else this.kategorie }
         val k = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         tresc.addView(k)
-        if (kategorie.isEmpty()) { k.addView(tekst("Ładuję listę…", 15f, SZARY).apply { setPadding(dp(16), dp(16), 0, 0) }); return }
-        var wybrana = Ust.grupa(this).takeIf { id -> kategorie.any { it.id == id } } ?: kategorie.first().id
+        if (kategorie.isEmpty()) { k.addView(tekst(if (radio && this.kategorie.isNotEmpty()) "Brak stacji radiowych na liście." else "Ładuję listę…", 15f, SZARY).apply { setPadding(dp(16), dp(16), 0, 0) }); return }
+        var wybrana = (if (radio) Ust.prefs(this).getString("grupa_radio", null) else Ust.grupa(this)).takeIf { id -> kategorie.any { it.id == id } } ?: kategorie.first().id
         val lista = RecyclerView(this).apply { layoutManager = LinearLayoutManager(this@StartActivity) }
         val adapter = KanalyAdapter { ch -> graj(ch) }
         lista.adapter = adapter
         val grupy = RecyclerView(this).apply { layoutManager = LinearLayoutManager(this@StartActivity, LinearLayoutManager.HORIZONTAL, false); setPadding(dp(10), dp(4), dp(10), dp(8)); clipToPadding = false }
         lateinit var ga: GrupyAdapter
-        ga = GrupyAdapter(kategorie, wybrana) { id -> wybrana = id; Ust.zapiszGrupe(this, id); ga.wybrana = id; ga.notifyDataSetChanged(); adapter.ustaw(kanaly.filter { it.kat == id }) }
+        ga = GrupyAdapter(kategorie, wybrana) { id -> wybrana = id; if (radio) Ust.prefs(this).edit().putString("grupa_radio", id).apply() else Ust.zapiszGrupe(this, id); ga.wybrana = id; ga.notifyDataSetChanged(); adapter.ustaw(kanaly.filter { it.kat == id }) }
         grupy.adapter = ga
         k.addView(grupy, LinearLayout.LayoutParams(-1, -2))
         k.addView(lista, LinearLayout.LayoutParams(-1, 0, 1f))
@@ -694,16 +697,17 @@ class StartActivity : AppCompatActivity() {
             return
         }
         // TV jak w starej aplikacji: obraz na gorze zakladki TV, pod nim ta sama lista kanalow (bez drugiej listy).
-        val bylaTv = zakladka == 1 && gornyKanal != null
+        val bylaTv = (zakladka == 1 || zakladka == 7) && gornyKanal != null
         gornyKanal = ch
-        if (ch.kat.isNotEmpty() && !bylaTv) Ust.zapiszGrupe(this, ch.kat)
+        val jestRadio = kategorie.firstOrNull { it.id == ch.kat }?.let { czyRadio(it) } == true
+        if (ch.kat.isNotEmpty() && !bylaTv) { if (jestRadio) Ust.prefs(this).edit().putString("grupa_radio", ch.kat).apply() else Ust.zapiszGrupe(this, ch.kat) }
         WspolnyGracz.wlasciciel = "gora"
         val g = WspolnyGracz.pobierz(this)
         gornyWidok.player = g
         WspolnyGracz.graj(this, Serwer.adresKanalu(this, ch.id))
         gora2.visibility = View.VISIBLE
         ustawGornyPanel(ch)
-        if (zakladka != 1) pokaz(1) else (tresc.getChildAt(0) as? LinearLayout)?.let { odswiezZaznaczenie() }
+        if (zakladka != 1 && zakladka != 7) pokaz(if (kategorie.firstOrNull { it.id == ch.kat }?.let { czyRadio(it) } == true) 7 else 1) else odswiezZaznaczenie()
     }
 
     // ---------------- Obraz TV na gorze zakladki TV ----------------

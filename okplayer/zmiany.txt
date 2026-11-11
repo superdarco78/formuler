@@ -1,3 +1,4 @@
-Przełączanie zakładek|treść pojawiała się od razu, „skokiem”|płynne wejście: ekran lekko wjeżdża od dołu, a rzędy i listy pojawiają się po kolei
-Otwieranie filmu / serialu / aktora|nowy ekran wskakiwał od razu|płynne przybliżenie; plakat delikatnie się przybliża, a tytuł, przyciski i opis wjeżdżają jeden po drugim
-Start|–|nowe rzędy: Mecze i sport na żywo, Radio
+Radio w dolnym menu (nowość)|stacje radiowe były wymieszane z kanałami TV|osobna ikona radia na dole (za Serialami): grupy radiowe u góry, lista stacji pod spodem; dotknij stacji – gra na górze, zmiana jednym dotknięciem
+Lista TV|zawierała też grupy radiowe|tylko telewizja – radio ma swoją zakładkę
+Mecze na Starcie|rząd był niżej|„⚽ Mecze i sport na żywo” na samej górze Startu
+Animacje|treść wskakiwała od razu|płynne wejście zakładek, list i ekranów filmów
