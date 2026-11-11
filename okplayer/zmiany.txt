@@ -1,3 +1,2 @@
-Kanał w pionie|pod obrazem tylko program, nie dało się przełączać kanałów z listy|jak wcześniej: pod obrazem lista kanałów – dotknięcie kanału przełącza; „☰ Program” pokazuje archiwum tylko tego kanału
-„☰ Program” z podglądu w zakładce TV|–|od razu archiwum tylko tego kanału, bez listy innych kanałów
-Małe okno|działa (1.74)|bez zmian – jedno Wstecz = małe okno na wierzchu
+Zmiana kanału po archiwum|po przesunięciu na inny kanał obraz był czarny, a po powrocie grało dalej stare archiwum|nowy kanał od razu gra na żywo, program po boku tylko tego kanału; przesuwanie działa też w trakcie archiwum
+Małe okno|działa (1.74)|bez zmian

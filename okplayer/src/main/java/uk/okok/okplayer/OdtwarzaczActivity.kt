@@ -163,7 +163,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
     private val gest by lazy {
         android.view.GestureDetector(this, object : android.view.GestureDetector.SimpleOnGestureListener() {
             override fun onFling(e1: android.view.MotionEvent?, e2: android.view.MotionEvent, vx: Float, vy: Float): Boolean {
-                if (e1 == null || intent.getBooleanExtra("vod", false) || archiwumGra) return false
+                if (e1 == null || intent.getBooleanExtra("vod", false)) return false
                 val dy = e2.y - e1.y; val dx = e2.x - e1.x
                 if (Math.abs(dy) > 150 && Math.abs(dy) > Math.abs(dx) * 1.5f && Math.abs(vy) > 600) { zmien(if (dy < 0) 1 else -1); biezacy?.let { pokazNapis(it.nazwa) }; return true }
                 return false
@@ -405,6 +405,8 @@ class OdtwarzaczActivity : AppCompatActivity() {
     }
 
     private fun przelacz(n: Kanal) {
+        // Nowy kanal = zawsze na zywo: koniec archiwum i jego straznika.
+        widok.removeCallbacks(straznik); warianty = emptyList(); wariant = 0
         biezacy = n; proby = 0
         Ust.zapiszOstatni(this, n)
         val url = Serwer.adresKanalu(this, n.id)
@@ -421,6 +423,13 @@ class OdtwarzaczActivity : AppCompatActivity() {
     private val ukryj = Runnable { napis.visibility = android.view.View.GONE }
 
     private fun graj(url: String) {
+        // Zawsze ten sam, zywy odtwarzacz na ekranie (inaczej po zmianie kanalu obraz byl czarny albo zostawalo stare archiwum).
+        WspolnyGracz.wlasciciel = "duzy"
+        val p = WspolnyGracz.pobierz(this)
+        if (gracz !== p) {
+            sluchacz?.let { s -> gracz?.removeListener(s); p.addListener(s) }
+            gracz = p; widok.player = p
+        }
         WspolnyGracz.graj(this, url, odNowa = true)
     }
 
