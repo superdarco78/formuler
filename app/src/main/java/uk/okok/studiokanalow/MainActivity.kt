@@ -675,6 +675,7 @@ class MainActivity : AppCompatActivity() {
         i.putExtra("url", url)
         i.putExtra("name", ch.name)
         i.putExtra("demo", demo)
+        Kontekst.kanaly = if (ch.directUrl.isNullOrEmpty() || ch.directUrl!!.contains("/live/")) (try { channelAdapter.lista() } catch (e: Exception) { emptyList() }) else emptyList()
         startActivity(i)
     }
 

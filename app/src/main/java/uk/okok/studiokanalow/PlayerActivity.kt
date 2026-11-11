@@ -9,6 +9,9 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import uk.okok.studiokanalow.databinding.ActivityPlayerBinding
 
+/** Lista kanalow, z ktorej otwarto odtwarzacz (do przelaczania kanalow bez wychodzenia). */
+object Kontekst { var kanaly: List<uk.okok.studiokanalow.model.Channel> = emptyList() }
+
 class PlayerActivity : AppCompatActivity() {
 
     private lateinit var b: ActivityPlayerBinding
@@ -119,7 +122,7 @@ class PlayerActivity : AppCompatActivity() {
             if (m != null && !intent.getBooleanExtra("demo", false)) {
                 b.tvEpg.text = "Program TV: ładowanie…"
                 lifecycleScope.launch {
-                    val l = try { Api.programTv(Session.server(this@PlayerActivity), Session.user(this@PlayerActivity), Session.pass(this@PlayerActivity), m.groupValues[1]) } catch (e: Exception) { raport("epg blad " + e.javaClass.simpleName + " " + (e.message ?: "").take(60)); emptyList() }
+                    val l = try { Api.programTv(Session.server(this@PlayerActivity), Session.user(this@PlayerActivity), Session.pass(this@PlayerActivity), m.groupValues[1], 3) } catch (e: Exception) { raport("epg blad " + e.javaClass.simpleName + " " + (e.message ?: "").take(60)); emptyList() }
                     if (l.isEmpty()) { b.tvEpg.text = "Program TV: brak danych dla tego kanału"; return@launch }
                     pokazProgram(l)
                     raport("epg " + l.size + " pozycji")
@@ -141,12 +144,39 @@ class PlayerActivity : AppCompatActivity() {
                 b.tvEpg.setOnClickListener { pokazPrzewodnik(m.groupValues[1]) }
             }
         }
+        if (Kontekst.kanaly.isNotEmpty() && !intent.getBooleanExtra("demo", false)) {
+            val ad = ChannelAdapter({ ch -> zmienKanal(ch) }, null, true)
+            b.rvKanaly.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
+            b.rvKanaly.adapter = ad
+            ad.submit(Kontekst.kanaly)
+            val nr = Kontekst.kanaly.indexOfFirst { c -> (intent.getStringExtra("url") ?: "").contains("/" + c.streamId + ".") }
+            if (nr > 0) b.rvKanaly.scrollToPosition(nr)
+        } else b.rvKanaly.visibility = android.view.View.GONE
         b.playerView.setFullscreenButtonClickListener { pelny ->
             requestedOrientation = if (pelny) android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
         }
         // Odtwarzacz otwiera sie od razu na pelnym ekranie (poziomo), jak w popularnych aplikacjach IPTV.
         requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         uloz(resources.configuration.orientation)
+    }
+
+    /** Przelacza kanal w tym samym odtwarzaczu (jak w MyTVOnline+). */
+    private fun zmienKanal(ch: uk.okok.studiokanalow.model.Channel) {
+        val p = player ?: return
+        val url = ch.directUrl ?: Api.liveStreamUrl(Session.server(this), Session.user(this), Session.pass(this), ch.streamId)
+        intent.putExtra("url", url); intent.putExtra("name", ch.name)
+        b.tvName.text = ch.name
+        b.tvEpg.text = "Program TV: ładowanie…"
+        try { Session.saveLast(this, url, ch.name) } catch (e: Exception) { }
+        proby = 0; probowane.clear()
+        try { probowane.add(Session.server(this) + "|" + Session.user(this)) } catch (e: Exception) { }
+        lifecycleScope.launch {
+            val u2 = rozwiaz(url)
+            rozwiazany = u2
+            p.setMediaItem(MediaItem.fromUri(u2)); p.prepare(); czuwajNad(p); p.playWhenReady = true
+            val l = try { Api.programTv(Session.server(this@PlayerActivity), Session.user(this@PlayerActivity), Session.pass(this@PlayerActivity), ch.streamId, 3) } catch (e: Exception) { emptyList() }
+            if (l.isEmpty()) b.tvEpg.text = "Program TV: brak danych dla tego kanału" else pokazProgram(l)
+        }
     }
 
     private fun pokazPrzewodnik(id: String) {

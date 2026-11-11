@@ -53,6 +53,8 @@ class ChannelAdapter(
 
     private val items = ArrayList<Channel>()
 
+    fun lista(): List<Channel> = items.toList()
+
     fun submit(list: List<Channel>) {
         items.clear()
         items.addAll(list)
