@@ -368,18 +368,17 @@ class DetailsActivity : AppCompatActivity() {
             2 -> {
                 val txt = if (serial) (if (sezony.isEmpty()) "" else "Sezonów: ${sezony.size}\nOdcinków: ${sezony.sumOf { it.second.size }}")
                     else listOf((intent.getStringExtra("url") ?: "").substringAfterLast('.', "").uppercase(), v?.media ?: "", Session.opt(this, "nosnik_" + (intent.getStringExtra("id") ?: ""))).filter { x -> x.isNotEmpty() }.joinToString("\n")
-                val obraz = v?.backdrop?.ifEmpty { null } ?: v?.poster?.ifEmpty { null }
-                if (obraz != null) {
+                val obrazy = (v?.galeria ?: emptyList()).ifEmpty { listOfNotNull(v?.backdrop?.ifEmpty { null } ?: v?.poster?.ifEmpty { null }) }
+                obrazy.forEach { u ->
                     kontener.addView(android.widget.ImageView(this).apply {
-                        scaleType = android.widget.ImageView.ScaleType.CENTER_CROP; load(obraz)
+                        scaleType = android.widget.ImageView.ScaleType.CENTER_CROP; load(u)
                         clipToOutline = true
-                        background = android.graphics.drawable.GradientDrawable().apply { setColor(0xFF1E1E1E.toInt()); cornerRadius = dp(8).toFloat() }
-                    }, android.widget.LinearLayout.LayoutParams(-1, (resources.displayMetrics.widthPixels * 9 / 16)))
+                        background = android.graphics.drawable.GradientDrawable().apply { setColor(0xFF1E1E1E.toInt()); cornerRadius = dp(8).toFloat(); setStroke(dp(1), 0xFF3A3A3A.toInt()) }
+                    }, android.widget.LinearLayout.LayoutParams(-1, (resources.displayMetrics.widthPixels * 9 / 16)).apply { bottomMargin = dp(10) })
                 }
-                b.tvTabContent.text = txt.ifEmpty { if (obraz == null) none else "" }
-                if (txt.isEmpty() && obraz != null) b.tvTabContent.visibility = android.view.View.GONE
-                // tekst pod obrazem
-                if (obraz != null && txt.isNotEmpty()) { b.tvTabContent.visibility = android.view.View.GONE; kontener.addView(tekst(txt, 15f, 0xFFE6E6E6.toInt()).apply { setPadding(dp(16), dp(12), dp(16), 0) }) }
+                b.tvTabContent.visibility = android.view.View.GONE
+                if (txt.isNotEmpty()) kontener.addView(tekst(txt, 15f, 0xFFE6E6E6.toInt()).apply { setPadding(dp(16), dp(6), dp(16), dp(16)) })
+                else if (obrazy.isEmpty()) { b.tvTabContent.visibility = android.view.View.VISIBLE; b.tvTabContent.text = none }
             }
             else -> {
                 if (v == null) { b.tvTabContent.text = none; return }
