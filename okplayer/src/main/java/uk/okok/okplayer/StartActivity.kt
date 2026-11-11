@@ -131,11 +131,12 @@ class StartActivity : AppCompatActivity() {
         mini.setOnClickListener { miniKanal?.let { val ch = it; zamknijMini(); graj(ch) } }
         root.addView(mini, LinearLayout.LayoutParams(-1, -2))
         dol = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setBackgroundColor(0xFF0D0D0D.toInt()) }
-        listOf("Start", "TV", "Filmy", "Seriale", "Ustawienia").forEachIndexed { i, n ->
-            dol.addView(tekst(n, 15f, SZARY).apply {
-                gravity = Gravity.CENTER; setPadding(0, dp(16), 0, dp(16)); isFocusable = true
-                setOnClickListener { pokaz(i) }
-            }, LinearLayout.LayoutParams(0, -2, 1f))
+        // Dolne menu jak w MyTvOnline: same ikonki (Start, TV, Filmy, Seriale, Ulubione)
+        listOf(R.drawable.ik_start to 0, R.drawable.ik_tv to 1, R.drawable.ik_filmy to 2, R.drawable.ik_seriale to 3, R.drawable.ik_ulubione to 6).forEach { (ik, z) ->
+            dol.addView(ImageView(this).apply {
+                setImageResource(ik); scaleType = ImageView.ScaleType.CENTER; setPadding(0, dp(16), 0, dp(16)); isFocusable = true; tag = z
+                setColorFilter(SZARY); setOnClickListener { pokaz(z) }
+            }, LinearLayout.LayoutParams(0, dp(62), 1f))
         }
         root.addView(dol)
         setContentView(root)
@@ -145,9 +146,9 @@ class StartActivity : AppCompatActivity() {
 
     private fun pokaz(i: Int) {
         zakladka = i
-        for (k in 0 until dol.childCount) (dol.getChildAt(k) as TextView).setTextColor(if (k == i) Color.WHITE else SZARY)
+        for (k in 0 until dol.childCount) (dol.getChildAt(k) as ImageView).setColorFilter(if (dol.getChildAt(k).tag == i) Color.WHITE else SZARY)
         tresc.removeAllViews()
-        when (i) { 0 -> start(); 1 -> listaKanalow(); 2 -> siatkaVod(filmy, katF, "f"); 3 -> siatkaVod(seriale, katS, "s"); 5 -> szukaj(); else -> ustawienia() }
+        when (i) { 0 -> start(); 1 -> listaKanalow(); 2 -> siatkaVod(filmy, katF, "f"); 3 -> siatkaVod(seriale, katS, "s"); 5 -> szukaj(); 6 -> ulubioneEkran(); else -> ustawienia() }
     }
 
     /** Dane: najpierw z pamieci telefonu (od razu), potem swieze z serwera w tle. */
@@ -325,6 +326,21 @@ class StartActivity : AppCompatActivity() {
         val rv = RecyclerView(this).apply { layoutManager = LinearLayoutManager(this@StartActivity, LinearLayoutManager.HORIZONTAL, false); setPadding(dp(12), 0, dp(12), 0); clipToPadding = false }
         rv.adapter = PlakatyAdapter(l, dp(112))
         k.addView(rv, LinearLayout.LayoutParams(-1, -2))
+    }
+
+    // ---------------- Ulubione: kanaly, filmy, seriale ----------------
+    private fun ulubioneEkran() {
+        val sv = ScrollView(this); val k = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(0, 0, 0, dp(16)) }
+        sv.addView(k); tresc.addView(sv)
+        val ul = Ust.ulubione(this)
+        val kan = ul.filter { it[0] == "k" }.mapNotNull { u -> kanaly.firstOrNull { it.id == u[1] } ?: Kanal(u[1], u[2], u[3].ifEmpty { null }, u[5], 0) }
+        val vod = ul.filter { it[0] != "k" }.map { Vod(it[1], it[2], it[3].ifEmpty { null }, it[5], 0.0, it[4], it[0]) }
+        if (kan.isEmpty() && vod.isEmpty()) {
+            k.addView(tekst("Nie masz jeszcze ulubionych.\n\nKanał: przytrzymaj go palcem na liście TV.\nFilm lub serial: gwiazdka ☆ w opisie.", 16f, SZARY).apply { setPadding(dp(18), dp(24), dp(18), 0) }); return
+        }
+        rzadKanalow(k, "Ulubione kanały", kan)
+        rzadVod(k, "Ulubione filmy", vod.filter { it.rodzaj == "f" })
+        rzadVod(k, "Ulubione seriale", vod.filter { it.rodzaj == "s" })
     }
 
     // ---------------- Szukaj: kanaly, filmy, seriale, aktor ----------------
@@ -647,6 +663,10 @@ class StartActivity : AppCompatActivity() {
                 val pr = Serwer.postep(ch.id); if (pr >= 0) { pas.progress = pr; pas.visibility = android.view.View.VISIBLE }
             }
             w.setOnClickListener { klik(ch) }
+            w.setOnLongClickListener {
+                val teraz = Ust.przelaczUlubiony(this@StartActivity, "k", ch.id, ch.nazwa, ch.logo, "", ch.kat)
+                android.widget.Toast.makeText(this@StartActivity, if (teraz) "★ ${ch.nazwa} dodany do ulubionych" else "${ch.nazwa} usunięty z ulubionych", android.widget.Toast.LENGTH_SHORT).show(); true
+            }
         }
     }
 

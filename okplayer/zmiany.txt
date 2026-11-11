@@ -1,4 +1,5 @@
-• Mini-okno na dole: był tylko ✕ → teraz ⏸ pauza, ⛶ pełny ekran (od razu poziomo, na cały ekran), ✕ zamyka całkiem
-• Dotknięcie mini-okna: bez zmian – otwiera TV z listą kanałów
-• Pływające okienko (poza aplikacją): powiększenie otwierało TV w pionie → teraz od razu pełny ekran
-• Okno aktualizacji: było samo „Nowa wersja” → teraz lista zmian
+• Dolne menu: były napisy Start, TV, Filmy, Seriale, Ustawienia → teraz same ikonki jak w MyTvOnline: dom, telewizor, klaps filmowy, seriale, gwiazdka
+• Ulubione: były tylko rzędem na Starcie → teraz osobna zakładka (gwiazdka) z ulubionymi kanałami, filmami i serialami
+• Kanał do ulubionych: nie dało się → przytrzymaj kanał palcem na liście TV
+• Ustawienia: z dolnego menu przeniesione pod ⚙ w prawym górnym rogu
+• Mini-okno: ⏸ pauza, ⛶ pełny ekran, ✕ zamyka
