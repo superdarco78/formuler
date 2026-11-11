@@ -59,7 +59,7 @@ object Session {
     private fun opts(ctx: Context) = ctx.getSharedPreferences("ustawienia", Context.MODE_PRIVATE)
     fun autostart(ctx: Context) = opts(ctx).getBoolean("autostart", true)
     fun setAutostart(ctx: Context, v: Boolean) = opts(ctx).edit().putBoolean("autostart", v).apply()
-    fun resume(ctx: Context) = opts(ctx).getBoolean("resume", true)
+    fun resume(ctx: Context) = opts(ctx).getBoolean("resume", false)
     fun setResume(ctx: Context, v: Boolean) = opts(ctx).edit().putBoolean("resume", v).apply()
 
     fun opt(ctx: Context, key: String, def: String = ""): String = opts(ctx).getString(key, def) ?: def
