@@ -62,7 +62,12 @@ object Session {
     private fun opts(ctx: Context) = ctx.getSharedPreferences("ustawienia", Context.MODE_PRIVATE)
     fun autostart(ctx: Context) = opts(ctx).getBoolean("autostart", true)
     fun setAutostart(ctx: Context, v: Boolean) = opts(ctx).edit().putBoolean("autostart", v).apply()
-    fun resume(ctx: Context) = opts(ctx).getBoolean("resume", true)
+    fun resume(ctx: Context): Boolean {
+        // 3.59: start zawsze na zakladce Start (jednorazowo wylacza wznawianie ustawione wczesniej domyslnie).
+        val o = opts(ctx)
+        if (!o.getBoolean("resume_migr_359", false)) o.edit().putBoolean("resume", false).putBoolean("resume_migr_359", true).apply()
+        return o.getBoolean("resume", false)
+    }
     fun setResume(ctx: Context, v: Boolean) = opts(ctx).edit().putBoolean("resume", v).apply()
 
     fun opt(ctx: Context, key: String, def: String = ""): String = opts(ctx).getString(key, def) ?: def
