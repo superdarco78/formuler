@@ -79,10 +79,11 @@ object Dodatki {
     }
 
     /** Tytul do porownan: male litery, bez roku w nawiasie, bez przedrostkow typu "PL - ", tylko litery i cyfry. */
-    fun klucz(t: String): String = t.lowercase()
-        .replace(Regex("^[a-z]{2,3}\\s*[-|:]\\s*"), "")
-        .replace(Regex("[(\\[]\\s*\\d{4}\\s*[)\\]]"), "")
-        .replace(Regex("[^\\p{L}\\p{Nd}]"), "")
+    private val rePrzedrostek = Regex("^[a-z]{2,3}\\s*[-|:]\\s*")
+    private val reRok = Regex("[(\\[]\\s*\\d{4}\\s*[)\\]]")
+    private val reZnaki = Regex("[^\\p{L}\\p{Nd}]")
+    /** Szybkie porownywanie tytulow (wyrazenia przygotowane raz, nie przy kazdym tytule). */
+    fun klucz(t: String): String = t.lowercase().replace(rePrzedrostek, "").replace(reRok, "").replace(reZnaki, "")
 
     /** Zapas jak w starej aplikacji: opis, gatunek, rok i okladka z publicznej bazy iTunes (bez klucza). */
     fun itunes(tytul: String, serial: Boolean): JSONObject? = try {

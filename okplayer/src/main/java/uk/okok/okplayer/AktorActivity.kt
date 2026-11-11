@@ -16,6 +16,7 @@ import androidx.lifecycle.lifecycleScope
 import coil.load
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
 
 /** Ekran aktora: duze zdjecie, nazwisko, pod spodem jego filmy i seriale z listy (do klikniecia), nizej reszta filmografii. */
@@ -85,15 +86,18 @@ class AktorActivity : AppCompatActivity() {
             if (u.isNotEmpty()) foto.load(u)
         }
         lifecycleScope.launch {
+            // Lista z telefonu wczytuje sie rownolegle z pobieraniem filmografii.
+            val lista = async(Dispatchers.IO) { listOf("filmy", "seriale").associateWith { n -> (Pamiec.vod(this@AktorActivity, n) ?: emptyList()).map { it to Dodatki.klucz(it.nazwa) } } }
             val wynik = withContext(Dispatchers.IO) { kotlinx.coroutines.withTimeoutOrNull(45_000) {
                 val fg = filmyZPamieci(nazwa)
                 val klucze = HashMap<String, Int>()
                 fg.forEachIndexed { i, f -> listOf(f.first, f.second).map { Dodatki.klucz(it) }.filter { it.length >= 2 }.forEach { k -> klucze.putIfAbsent(k, i) } }
                 val trafione = HashSet<Int>()
                 val moje = ArrayList<Vod>()
+                val zTelefonu = lista.await()
                 for (n in listOf("filmy", "seriale")) {
-                    for (v in Pamiec.vod(this@AktorActivity, n) ?: emptyList()) {
-                        val i = klucze[Dodatki.klucz(v.nazwa)] ?: continue
+                    for ((v, kl) in zTelefonu[n] ?: emptyList()) {
+                        val i = klucze[kl] ?: continue
                         if (moje.none { it.nazwa == v.nazwa && it.rodzaj == v.rodzaj }) { moje.add(v); trafione.add(i) }
                     }
                 }

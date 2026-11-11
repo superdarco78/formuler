@@ -1,3 +1,2 @@
-Wiek aktora|sama data urodzenia|data urodzenia i wiek, np. „18.12.1963 (62 lata)” (u zmarłych – wiek w chwili śmierci)
-Ładowanie biografii|puste miejsce, nie było wiadomo, czy się ładuje|napis „Ładuję dane i biografię…”, a gdy Wikipedia nic nie ma – „Brak biografii w Wikipedii”
-Dane filmu|braki obsady, reżysera, opisu|uzupełniane z Wikipedii (reżyser, obsada z rolami, gatunek, kraj, czas, zwiastun, opis)
+Filmy aktora – szybkość|„Szukam filmów…” trwało długo (szczególnie przy aktorach z wieloma filmami, np. Anthony Hopkins)|porównywanie tytułów kilkadziesiąt razy szybsze, a Twoja lista wczytuje się równocześnie z pobieraniem filmografii
+Wiek aktora|sama data urodzenia|data i wiek, np. „31.12.1937 (88 lat)”
