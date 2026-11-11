@@ -120,7 +120,16 @@ object Dodatki {
             if (a.length() > 0) {
                 val o = a.getJSONObject(0)
                 fun v(k: String) = o.optJSONObject(k)?.optString("value") ?: ""
-                v("ur").take(10).takeIf { it.isNotEmpty() }?.let { out["Urodzony"] = it.split("-").reversed().joinToString(".") }
+                v("ur").take(10).takeIf { it.isNotEmpty() }?.let { d ->
+                    val data = d.split("-").reversed().joinToString(".")
+                    // Wiek (albo wiek w chwili smierci)
+                    val wiek = try {
+                        val ur = java.time.LocalDate.parse(d); val do_ = v("smL").take(10).takeIf { it.length == 10 }?.let { java.time.LocalDate.parse(it) } ?: java.time.LocalDate.now()
+                        java.time.Period.between(ur, do_).years
+                    } catch (_: Exception) { -1 }
+                    val slowo = if (wiek % 10 in 2..4 && wiek % 100 !in 12..14) "lata" else "lat"
+                    out["Urodzony"] = if (wiek > 0) "$data  ($wiek $slowo)" else data
+                }
                 v("mL").takeIf { it.isNotEmpty() }?.let { out["Miejsce urodzenia"] = it }
                 v("smL").take(10).takeIf { it.isNotEmpty() }?.let { out["Zmarł"] = it.split("-").reversed().joinToString(".") }
                 val wiki = v("plw").ifEmpty { v("enw") }

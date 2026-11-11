@@ -1,3 +1,3 @@
-Dane filmu i serialu|często brakowało obsady, reżysera, gatunku i opisu|aplikacja sama uzupełnia braki z Wikipedii: reżyser, obsada z rolami (ze zdjęciami), gatunek, kraj, czas trwania, premiera, zwiastun i opis po polsku
-Zakładka Detale|premiera, gatunek, reżyseria, czas, ocena, obsada|dodatkowo kraj produkcji
-Aktor|krótka biografia|cały artykuł, wzrost, małżonkowie, dzieci, nagrody; drugi raz otwiera się od razu
+Wiek aktora|sama data urodzenia|data urodzenia i wiek, np. „18.12.1963 (62 lata)” (u zmarłych – wiek w chwili śmierci)
+Ładowanie biografii|puste miejsce, nie było wiadomo, czy się ładuje|napis „Ładuję dane i biografię…”, a gdy Wikipedia nic nie ma – „Brak biografii w Wikipedii”
+Dane filmu|braki obsady, reżysera, opisu|uzupełniane z Wikipedii (reżyser, obsada z rolami, gatunek, kraj, czas, zwiastun, opis)

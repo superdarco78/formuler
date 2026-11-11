@@ -56,8 +56,12 @@ class AktorActivity : AppCompatActivity() {
         // Dane aktora: kim jest, urodzony, miejsce, biografia (rozwijana dotknieciem)
         val dane = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(0, 0, 0, dp(8)) }
         kol.addView(dane)
+        val czekaj = tekst("Ładuję dane i biografię…", 14f, SZARY).apply { setPadding(0, dp(6), 0, dp(6)) }
+        dane.addView(czekaj)
         lifecycleScope.launch {
             val b = withContext(Dispatchers.IO) { bioZPamieci(nazwa) }
+            dane.removeView(czekaj)
+            if (b.isEmpty()) dane.addView(tekst("Brak biografii w Wikipedii.", 14f, SZARY))
             b["Kim jest"]?.let { opis.addView(tekst(it, 14f, 0xFFBDBDBD.toInt()).apply { setPadding(0, dp(6), 0, 0) }, 1) }
             for (k in listOf("Urodzony", "Miejsce urodzenia", "Zmarł", "Wzrost", "Małżonkowie", "Dzieci", "Nagrody")) b[k]?.let { v ->
                 dane.addView(LinearLayout(this@AktorActivity).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(4), 0, dp(4))
