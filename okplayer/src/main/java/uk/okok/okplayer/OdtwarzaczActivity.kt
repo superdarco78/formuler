@@ -717,7 +717,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
     /** Okienko (obraz w obrazie): po wyjsciu do ekranu glownego telefonu TV gra dalej w malym okienku. */
     private fun wejdzWOkienko(reczne: Boolean = false): Boolean {
         if (!reczne && gracz?.isPlaying != true) return false
-        if (!reczne && !Ust.prefs(this).getBoolean("okienko", true)) return false
+        if (!reczne && !Ust.okienko(this)) return false
         try {
             val b = android.app.PictureInPictureParams.Builder().setAspectRatio(android.util.Rational(16, 9))
             if (android.os.Build.VERSION.SDK_INT >= 31) b.setAutoEnterEnabled(true).setSeamlessResizeEnabled(true)

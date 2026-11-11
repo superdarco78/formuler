@@ -23,6 +23,12 @@ data class Vod(val id: String, val nazwa: String, val okladka: String?, val kat:
 object Ust {
     @Volatile private var p: SharedPreferences? = null
     fun prefs(c: Context): SharedPreferences = p ?: synchronized(this) { p ?: c.applicationContext.getSharedPreferences("okplayer", Context.MODE_PRIVATE).also { p = it } }
+    // 2.20: ustawienia narzucone z panelu edytora (null = panel nie narzuca, decyduje klient)
+    fun panelB(c: Context, k: String): Boolean? = if (prefs(c).contains("glob_$k")) prefs(c).getBoolean("glob_$k", true) else null
+    fun panelS(c: Context, k: String): String? = prefs(c).getString("globs_$k", null)?.takeIf { it.isNotEmpty() }
+    fun okienko(c: Context) = panelB(c, "okienko") ?: prefs(c).getBoolean("okienko", true)
+    fun uklad(c: Context) = panelS(c, "uklad") ?: (prefs(c).getString("uklad", "kinowy") ?: "kinowy")
+    fun widoczne(c: Context, k: String) = panelB(c, k) ?: true
     fun klucz(c: Context): String = prefs(c).getString("klucz", "") ?: ""
     fun zalogowany(c: Context) = klucz(c).isNotEmpty()
     fun zapiszKlucz(c: Context, k: String) = prefs(c).edit().putString("klucz", k).apply()
@@ -101,7 +107,9 @@ object Serwer {
         val ed = Ust.prefs(c).edit()
         Ust.prefs(c).all.keys.filter { it.startsWith("glob_") }.forEach { ed.remove(it) }
         // efekty i inne ustawienia (np. blokada_zrzutow) - tylko z panelu
-        listOf("efekty", "ustawienia").forEach { sek -> j.optJSONObject(sek)?.let { e -> e.keys().forEach { k -> ed.putBoolean("glob_$k", e.optBoolean(k, true)) } } }
+        listOf("efekty", "ustawienia", "rzedy", "zakladki").forEach { sek -> j.optJSONObject(sek)?.let { e -> e.keys().forEach { k -> ed.putBoolean("glob_$k", e.optBoolean(k, true)) } } }
+        Ust.prefs(c).all.keys.filter { it.startsWith("globs_") }.forEach { ed.remove(it) }
+        j.optJSONObject("wartosci")?.let { e -> e.keys().forEach { k -> ed.putString("globs_$k", e.optString(k, "")) } }
         ed.apply()
     } catch (e: Exception) { }
 
