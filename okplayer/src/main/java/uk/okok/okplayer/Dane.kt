@@ -97,7 +97,7 @@ object Serwer {
     /** 2.15: globalne ustawienia aplikacji z panelu edytora (app.php?a=ustawienia) - np. {"efekty":{"ef_baner_zajawka":false}}.
      *  Zapisywane jako glob_<klucz>; panel ma pierwszenstwo przed ustawieniem na urzadzeniu. */
     fun ustawieniaGlobalne(c: Context) = try {
-        val j = JSONObject(tekst("$BAZA/app.php?a=ustawienia&dev=${idUrzadzenia(c)}&k=${Ust.klucz(c)}"))
+        val j = JSONObject(tekst("$BAZA/okp_ust.php?dev=${idUrzadzenia(c)}&k=${Ust.klucz(c)}"))
         val ed = Ust.prefs(c).edit()
         Ust.prefs(c).all.keys.filter { it.startsWith("glob_") }.forEach { ed.remove(it) }
         // efekty i inne ustawienia (np. blokada_zrzutow) - tylko z panelu
