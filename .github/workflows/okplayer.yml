@@ -1,0 +1,43 @@
+name: Budowa APK (OK Player - nowa)
+
+on:
+  push:
+    branches: [ main ]
+    paths: [ 'okplayer/**', '.github/workflows/okplayer.yml' ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: wydanie-okplayer
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Wrapper Gradle
+        run: gradle wrapper --gradle-version 8.7
+      - name: Zbuduj OK Player
+        run: ./gradlew :okplayer:assembleRelease --no-daemon --stacktrace
+      - name: Przygotuj pliki
+        run: |
+          mkdir -p dist
+          cp okplayer/build/outputs/apk/release/okplayer-release.apk dist/okplayer.apk
+          VC=$(grep -m1 'versionCode' okplayer/build.gradle | grep -o '[0-9]\+')
+          VN=$(grep -m1 'versionName' okplayer/build.gradle | sed 's/.*"\(.*\)".*/\1/')
+          echo "{\"versionCode\": $VC, \"versionName\": \"$VN\", \"url\": \"https://github.com/superdarco78/formuler/releases/download/okplayer-latest/okplayer.apk\"}" > dist/wersja.json
+          cat dist/wersja.json
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: okplayer-latest
+          name: OK Player (nowa) - najnowszy APK
+          files: |
+            dist/okplayer.apk
+            dist/wersja.json

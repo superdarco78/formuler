@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="tlo">#000000</color>
+    <color name="ikona_tlo">#0B1020</color>
+    <style name="Motyw" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">@color/tlo</item>
+        <item name="android:statusBarColor">@color/tlo</item>
+        <item name="android:navigationBarColor">@color/tlo</item>
+        <item name="colorAccent">#FFFFFF</item>
+    </style>
+    <style name="Motyw.Odtwarzacz">
+        <item name="android:windowFullscreen">true</item>
+    </style>
+</resources>

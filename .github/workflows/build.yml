@@ -3,6 +3,7 @@ name: Budowa APK (Studio Kanalow TV)
 on:
   push:
     branches: [ main, master ]
+    paths: [ 'app/**', '.github/workflows/build.yml' ]
   workflow_dispatch:
 
 permissions:
