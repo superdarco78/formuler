@@ -203,16 +203,7 @@ class StartActivity : AppCompatActivity() {
         zakladka = i
         pokazMenu(i)
         tresc.removeAllViews()
-        // Wejscie w TV: obraz od razu na gorze (kanal z malego kwadratu albo ostatnio ogladany), pod nim lista - jak na zdjeciu.
-        if (i == 1 && ::gora2.isInitialized && gora2.visibility != View.VISIBLE && kanaly.isNotEmpty()) {
-            val zMini = miniKanal?.takeIf { miniFilm == null }; val ost = Ust.ostatni(this)
-            val ch = zMini ?: ost?.let { o -> kanaly.firstOrNull { it.id == o.id } }
-            if (ch != null && miniFilm == null) {
-                if (zMini != null) { Ust.prefs(this).edit().remove("mini").apply(); miniWidok.player = null; miniGracz = null; miniKanal = null; mini.visibility = View.GONE }
-                graj(kanaly.firstOrNull { it.id == ch.id } ?: ch)
-                listaKanalow(); return
-            }
-        }
+        // 2.09: wejscie w TV nie wlacza juz samo kanalu - kanal gra dopiero po kliknieciu.
         when (i) { 0 -> start(); 1 -> listaKanalow(); 2 -> siatkaVod(filmy, katF, "f"); 3 -> siatkaVod(seriale, katS, "s"); 5 -> szukaj(); 6 -> ulubioneEkran(); 7 -> listaKanalow(radio = true); 8 -> historiaEkran(); else -> ustawienia() }
         naglowekCanva(i)
         animujZakladke()
