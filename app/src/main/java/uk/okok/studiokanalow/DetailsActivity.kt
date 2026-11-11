@@ -33,6 +33,7 @@ class DetailsActivity : AppCompatActivity() {
         val serial = intent.getBooleanExtra("serial", false)
 
         b.tvName.text = name
+        stylMyTvOnline()
         if (!logo.isNullOrEmpty()) b.ivPoster.load(logo)
         b.btnWatch.setOnClickListener {
             if (serial) { pokazSezony(name, demo); return@setOnClickListener }
@@ -134,12 +135,68 @@ class DetailsActivity : AppCompatActivity() {
         bs.setContentView(root); bs.show()
     }
 
+    private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
+
+    /** Wyglad 1:1 jak MyTvOnline: czarne tlo, jasny przycisk Ogladaj, szare kolko z gwiazdka. */
+    private fun stylMyTvOnline() {
+        b.root.setBackgroundColor(0xFF000000.toInt())
+        b.tvName.setTextColor(0xFFFFFFFF.toInt())
+        b.tvMeta.setTextColor(0xFFE6E6E6.toInt()); b.tvMeta.textSize = 16f
+        b.tvRating.setTextColor(0xFFFFFFFF.toInt()); b.tvRating.textSize = 16f
+        b.tvPlot.setTextColor(0xFFA6A6A6.toInt())
+        b.btnWatch.text = "▶   Oglądaj"
+        b.btnWatch.isAllCaps = false
+        b.btnWatch.textSize = 18f
+        b.btnWatch.setTextColor(0xFF111111.toInt())
+        b.btnWatch.background = android.graphics.drawable.GradientDrawable().apply { setColor(0xFFE6E6E6.toInt()); cornerRadius = dp(30).toFloat() }
+        b.btnWatch.backgroundTintList = null
+        b.btnFav.background = android.graphics.drawable.GradientDrawable().apply { shape = android.graphics.drawable.GradientDrawable.OVAL; setColor(0xFF2A2A2A.toInt()) }
+        b.btnFav.backgroundTintList = null
+        b.btnFav.setTextColor(0xFFBDBDBD.toInt())
+    }
+
+    /** "01:44:59" / "105" / "105 min" -> "1godz. 45m" */
+    private fun czasLadny(d: String): String {
+        val cz = d.trim()
+        val min = Regex("^(\\d+):(\\d{1,2})(?::(\\d{1,2}))?$").find(cz)?.let { m ->
+            val a = m.groupValues[1].toInt(); val bb = m.groupValues[2].toInt(); val c = m.groupValues[3].toIntOrNull()
+            if (c != null) a * 60 + bb + (if (c >= 30) 1 else 0) else a * 60 + bb
+        } ?: Regex("(\\d+)").find(cz)?.groupValues?.get(1)?.toIntOrNull()
+        if (min == null || min <= 0) return cz
+        return if (min >= 60) "${min / 60}godz. ${min % 60}m" else "${min}m"
+    }
+
+    private fun procent(r: String): String {
+        val x = r.replace(',', '.').toDoubleOrNull() ?: return ""
+        if (x <= 0) return ""
+        return "${Math.round(if (x <= 10) x * 10 else x)}%"
+    }
+
+    /** Linia: [18] • [TMDb] 73% • 1godz. 45m */
+    private fun liniaOceny(v: VodInfo): CharSequence {
+        val sb = android.text.SpannableStringBuilder()
+        fun kropka() { if (sb.isNotEmpty()) sb.append("  •  ") }
+        fun plakietka(t: String, tlo: Int, kol: Int) {
+            val st = sb.length; sb.append(" $t ")
+            sb.setSpan(android.text.style.BackgroundColorSpan(tlo), st, sb.length, 0)
+            sb.setSpan(android.text.style.ForegroundColorSpan(kol), st, sb.length, 0)
+            sb.setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), st, sb.length, 0)
+        }
+        if (v.wiek.isNotEmpty() && v.wiek != "0") { plakietka(v.wiek, 0xFF3A3A3A.toInt(), 0xFFFFFFFF.toInt()) }
+        val pr = procent(v.rating)
+        if (pr.isNotEmpty()) {
+            kropka(); plakietka("TMDb", 0xFF1ED98A.toInt(), 0xFF000000.toInt())
+            val st = sb.length; sb.append(" $pr")
+            sb.setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), st, sb.length, 0)
+        }
+        if (v.duration.isNotEmpty()) { kropka(); sb.append(czasLadny(v.duration)) }
+        return sb
+    }
+
     private fun fill(v: VodInfo, logo: String?) {
         if (v.poster.isNotEmpty() && logo.isNullOrEmpty()) b.ivPoster.load(v.poster)
-        b.tvMeta.text = listOf(v.year, v.genre).filter { it.isNotEmpty() }.joinToString(" • ")
-        b.tvRating.text = listOf(
-            if (v.rating.isNotEmpty()) "★ ${v.rating}" else "", v.duration
-        ).filter { it.isNotEmpty() }.joinToString(" • ")
+        b.tvMeta.text = listOf(v.year, v.genre).filter { it.isNotEmpty() }.joinToString("  •  ")
+        b.tvRating.text = liniaOceny(v)
         ustawOpis(v.plot)
     }
 
@@ -201,40 +258,110 @@ class DetailsActivity : AppCompatActivity() {
         }
     }
 
+    /** Kontener pod zakladkami (obrazy, siatka obsady, karta detali). */
+    private val kontener by lazy {
+        android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            val rodzic = b.tvTabContent.parent as android.view.ViewGroup
+            rodzic.addView(this, rodzic.indexOfChild(b.tvTabContent) + 1,
+                android.widget.LinearLayout.LayoutParams(-1, -2))
+        }
+    }
+
+    private fun tekst(t: CharSequence, rozm: Float, kol: Int, gruby: Boolean = false) = TextView(this).apply {
+        text = t; textSize = rozm; setTextColor(kol); if (gruby) setTypeface(typeface, android.graphics.Typeface.BOLD)
+    }
+
     private fun render() {
         tabs.forEachIndexed { i, t ->
-            t.setTextColor(getColor(if (i == tab) R.color.tx else R.color.muted))
+            t.setTextColor(if (i == tab) 0xFFFFFFFF.toInt() else 0xFF9E9E9E.toInt())
             t.paint.isUnderlineText = i == tab
+            t.invalidate()
         }
         val none = getString(R.string.det_none)
         val v = info
+        val serial = intent.getBooleanExtra("serial", false)
+        kontener.removeAllViews()
+        b.tvTabContent.visibility = android.view.View.VISIBLE
+        b.tvTabContent.gravity = android.view.Gravity.START
         b.tvTabContent.setOnClickListener(null)
-        b.tvTabContent.text = when (tab) {
+        when (tab) {
             0 -> if (v != null && v.trailer.isNotEmpty()) {
                 b.tvTabContent.setOnClickListener {
                     val id = v.trailer
                     val u = if (id.startsWith("http")) id else "https://www.youtube.com/watch?v=$id"
                     startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(u)))
                 }
-                getString(R.string.det_open_trailer)
+                b.tvTabContent.text = getString(R.string.det_open_trailer)
             } else {
                 b.tvTabContent.setOnClickListener { odtworzZwiastun() }
-                "▶  Odtwórz zwiastun"
+                b.tvTabContent.text = "▶  Odtwórz zwiastun"
             }
-            1 -> v?.cast?.takeIf { it.isNotEmpty() } ?: none
-            2 -> if (intent.getBooleanExtra("serial", false))
-                    (if (sezony.isEmpty()) none else "Sezonów: ${sezony.size}\nOdcinków: ${sezony.sumOf { it.second.size }}")
-                else listOf((intent.getStringExtra("url") ?: "").substringAfterLast('.', "").uppercase(), v?.media ?: "", Session.opt(this, "nosnik_" + (intent.getStringExtra("id") ?: ""))).filter { x -> x.isNotEmpty() }.joinToString("\n").ifEmpty { none }
-            else -> v?.let {
+            1 -> {
+                val lista = v?.cast?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() } ?: emptyList()
+                if (lista.isEmpty()) { b.tvTabContent.gravity = android.view.Gravity.CENTER; b.tvTabContent.text = "Brak danych" }
+                else {
+                    b.tvTabContent.visibility = android.view.View.GONE
+                    lista.chunked(2).forEach { para ->
+                        val rz = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.HORIZONTAL; setPadding(0, 0, 0, dp(14)) }
+                        para.forEach { aktor ->
+                            val k = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.VERTICAL; setPadding(dp(4), 0, dp(4), 0) }
+                            val inic = aktor.split(" ").mapNotNull { it.firstOrNull()?.uppercaseChar() }.take(2).joinToString("")
+                            k.addView(tekst(inic, 40f, 0xFF8A8A8A.toInt(), true).apply {
+                                gravity = android.view.Gravity.CENTER
+                                background = android.graphics.drawable.GradientDrawable().apply { setColor(0xFF1E1E1E.toInt()); cornerRadius = dp(8).toFloat() }
+                            }, android.widget.LinearLayout.LayoutParams(-1, dp(220)))
+                            k.addView(tekst(aktor, 17f, 0xFFFFFFFF.toInt()).apply { setPadding(0, dp(6), 0, 0) })
+                            rz.addView(k, android.widget.LinearLayout.LayoutParams(0, -2, 1f))
+                        }
+                        if (para.size == 1) rz.addView(android.view.View(this), android.widget.LinearLayout.LayoutParams(0, 1, 1f))
+                        kontener.addView(rz)
+                    }
+                }
+            }
+            2 -> {
+                val txt = if (serial) (if (sezony.isEmpty()) "" else "Sezonów: ${sezony.size}\nOdcinków: ${sezony.sumOf { it.second.size }}")
+                    else listOf((intent.getStringExtra("url") ?: "").substringAfterLast('.', "").uppercase(), v?.media ?: "", Session.opt(this, "nosnik_" + (intent.getStringExtra("id") ?: ""))).filter { x -> x.isNotEmpty() }.joinToString("\n")
+                val obraz = v?.backdrop?.ifEmpty { null } ?: v?.poster?.ifEmpty { null }
+                if (obraz != null) {
+                    kontener.addView(android.widget.ImageView(this).apply {
+                        scaleType = android.widget.ImageView.ScaleType.CENTER_CROP; load(obraz)
+                        clipToOutline = true
+                        background = android.graphics.drawable.GradientDrawable().apply { setColor(0xFF1E1E1E.toInt()); cornerRadius = dp(8).toFloat() }
+                    }, android.widget.LinearLayout.LayoutParams(-1, (resources.displayMetrics.widthPixels * 9 / 16)))
+                }
+                b.tvTabContent.text = txt.ifEmpty { if (obraz == null) none else "" }
+                if (txt.isEmpty() && obraz != null) b.tvTabContent.visibility = android.view.View.GONE
+                // tekst pod obrazem
+                if (obraz != null && txt.isNotEmpty()) { b.tvTabContent.visibility = android.view.View.GONE; kontener.addView(tekst(txt, 15f, 0xFFE6E6E6.toInt()).apply { setPadding(dp(16), dp(12), dp(16), 0) }) }
+            }
+            else -> {
+                if (v == null) { b.tvTabContent.text = none; return }
+                b.tvTabContent.visibility = android.view.View.GONE
+                val karta = android.widget.LinearLayout(this).apply {
+                    orientation = android.widget.LinearLayout.VERTICAL; setPadding(dp(20), dp(20), dp(20), dp(20))
+                    background = android.graphics.drawable.GradientDrawable().apply { setColor(0xFF1E1E1E.toInt()); cornerRadius = dp(10).toFloat() }
+                }
+                val ocena = v.rating.replace(',', '.').toDoubleOrNull()?.let { r -> " (" + (if (r > 10) r / 10 else r).let { x -> String.format(java.util.Locale.US, "%.1f", x) } + ")" } ?: ""
+                val tytul = (intent.getStringExtra("name") ?: "").let { n -> if (v.year.isNotEmpty() && !n.contains(v.year)) "$n (${v.year})" else n } + ocena
+                karta.addView(tekst(tytul, 24f, 0xFFFFFFFF.toInt(), true))
+                val meta = listOf(v.year, v.genre).filter { it.isNotEmpty() }.joinToString("  •  ")
+                if (meta.isNotEmpty()) karta.addView(tekst(meta, 16f, 0xFFE6E6E6.toInt()).apply { setPadding(0, dp(10), 0, 0) })
+                karta.addView(tekst(liniaOceny(v), 16f, 0xFFFFFFFF.toInt()).apply { setPadding(0, dp(8), 0, 0) })
                 listOfNotNull(
-                    it.premiera.ifEmpty { it.year }.takeIf { x -> x.isNotEmpty() }?.let { x -> "Premiera: $x" },
-                    it.genre.takeIf { x -> x.isNotEmpty() }?.let { x -> "Gatunek: $x" },
-                    it.duration.takeIf { x -> x.isNotEmpty() }?.let { x -> "Czas: $x" },
-                    it.rating.takeIf { x -> x.isNotEmpty() }?.let { x -> "Ocena: $x" },
-                    it.director.takeIf { x -> x.isNotEmpty() }?.let { x -> "Reżyseria: $x" },
-                    it.country.takeIf { x -> x.isNotEmpty() }?.let { x -> "Kraj: $x" }
-                ).joinToString("\n")
-            }?.ifEmpty { none } ?: none
+                    v.premiera.takeIf { it.length >= 8 }?.let { "Premiera: $it" },
+                    v.director.takeIf { it.isNotEmpty() }?.let { "Reżyseria: $it" }
+                ).forEach { karta.addView(tekst(it, 15f, 0xFFBDBDBD.toInt()).apply { setPadding(0, dp(6), 0, 0) }) }
+                if (v.plot.isNotEmpty()) karta.addView(tekst(v.plot, 16f, 0xFFA6A6A6.toInt()).apply { setPadding(0, dp(14), 0, 0) })
+                val obsada = v.cast.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                if (obsada.isNotEmpty()) {
+                    karta.addView(android.view.View(this).apply { setBackgroundColor(0xFF3A3A3A.toInt()) },
+                        android.widget.LinearLayout.LayoutParams(-1, dp(1)).apply { topMargin = dp(16); bottomMargin = dp(16) })
+                    karta.addView(tekst("Obsada:", 16f, 0xFFA6A6A6.toInt()).apply { setPadding(0, 0, 0, dp(10)) })
+                    obsada.forEach { karta.addView(tekst(it, 17f, 0xFFFFFFFF.toInt()).apply { setPadding(0, dp(3), 0, dp(3)) }) }
+                }
+                kontener.addView(karta, android.widget.LinearLayout.LayoutParams(-1, -2).apply { setMargins(dp(12), 0, dp(12), dp(24)) })
+            }
         }
     }
 }

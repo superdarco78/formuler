@@ -314,6 +314,9 @@ object Api {
                     duration = t("duration"),
                     trailer = t("youtube_trailer"),
                     director = t("director"), country = t("country"), premiera = t("releasedate"),
+                    backdrop = (info.optJSONArray("backdrop_path")?.optString(0) ?: t("backdrop_path")).let { x -> if (x == "null") "" else x },
+                    wiek = t("age").ifEmpty { t("mpaa_rating") }.replace("+", ""),
+                    tmdb = t("tmdb_id").ifEmpty { t("tmdb") },
                     media = listOfNotNull(
                         info.optJSONObject("video")?.let { v -> listOf(v.optString("codec_name"), v.optString("width") + "x" + v.optString("height")).filter { x -> x.isNotEmpty() && x != "x" }.joinToString(" ") }?.ifEmpty { null },
                         info.optJSONObject("audio")?.let { au -> listOf(au.optString("codec_name"), au.optString("channel_layout")).filter { x -> x.isNotEmpty() }.joinToString(" ") }?.ifEmpty { null }
@@ -371,5 +374,6 @@ object Api {
 data class VodInfo(
     val poster: String, val plot: String, val cast: String, val genre: String,
     val year: String, val rating: String, val duration: String, val trailer: String,
-    val director: String = "", val country: String = "", val premiera: String = "", val media: String = ""
+    val director: String = "", val country: String = "", val premiera: String = "", val media: String = "",
+    val backdrop: String = "", val wiek: String = "", val tmdb: String = ""
 )
