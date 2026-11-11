@@ -598,21 +598,52 @@ class StartActivity : AppCompatActivity() {
     }
 
     /** Animacja otwarcia: ikona wkreca sie i rosnie, napis wjezdza, potem ekran plynnie sie odslania (ok. 1,3 s, nie blokuje). */
+    /** Animacja startu (ok. 2,6 s): fale rozchodza sie od srodka, logo wpada z odbiciem, napis sie sklada, pasek laduje sie do konca, potem plynne wejscie. */
     private fun animacjaStartu() {
         val dekor = window.decorView as ViewGroup
-        val n = FrameLayout(this).apply { background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(0xFF2A0A1E.toInt(), Color.BLACK)) }
+        val n = FrameLayout(this).apply { background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(0xFF2A0A1E.toInt(), 0xFF0B0B12.toInt(), Color.BLACK)) }
+        // Fale: trzy kregi w kolorach logo rozchodzace sie od srodka
+        val fale = listOf(0xFFFF3D5A.toInt(), 0xFFB52AD6.toInt(), 0xFF7A1FFF.toInt()).mapIndexed { i, k ->
+            View(this).apply {
+                background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setStroke(dp(3), k); setColor(Color.TRANSPARENT) }
+                alpha = 0f; scaleX = 0.3f; scaleY = 0.3f
+            }.also { v ->
+                n.addView(v, FrameLayout.LayoutParams(dp(220), dp(220)).apply { gravity = Gravity.CENTER; bottomMargin = dp(70) })
+                v.animate().alpha(0.9f).setStartDelay(150L + i * 220).setDuration(150).withEndAction {
+                    v.animate().scaleX(2.6f).scaleY(2.6f).alpha(0f).setDuration(1100).setInterpolator(android.view.animation.DecelerateInterpolator()).start()
+                }.start()
+            }
+        }
         val sr = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER }
-        val ik = ImageView(this).apply { setImageResource(R.mipmap.ic_launcher) }
-        sr.addView(ik, LinearLayout.LayoutParams(dp(120), dp(120)))
-        val na = tekst("OK Player", 30f, gruby = true).apply { setPadding(0, dp(16), 0, 0); letterSpacing = 0.08f }
+        val ik = ImageView(this).apply { setImageResource(R.mipmap.ic_launcher); elevation = dp(12).toFloat() }
+        sr.addView(ik, LinearLayout.LayoutParams(dp(130), dp(130)))
+        val na = tekst("OK Player", 34f, gruby = true).apply { setPadding(0, dp(18), 0, 0); letterSpacing = 0.6f; alpha = 0f }
         sr.addView(na)
+        val pod = tekst("Telewizja  •  Filmy  •  Seriale", 15f, 0xFFBDBDBD.toInt()).apply { setPadding(0, dp(8), 0, 0); alpha = 0f }
+        sr.addView(pod)
+        val tor = FrameLayout(this).apply { background = tlo(0xFF2A2A2A.toInt(), 2) }
+        val pas = View(this).apply { background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(0xFFFF3D5A.toInt(), 0xFF7A1FFF.toInt())).apply { cornerRadius = dp(2).toFloat() }; pivotX = 0f; scaleX = 0f }
+        tor.addView(pas, FrameLayout.LayoutParams(dp(160), dp(4)))
+        sr.addView(tor, LinearLayout.LayoutParams(dp(160), dp(4)).apply { topMargin = dp(28) })
         n.addView(sr, FrameLayout.LayoutParams(-1, -1))
         dekor.addView(n, ViewGroup.LayoutParams(-1, -1))
-        ik.scaleX = 0.2f; ik.scaleY = 0.2f; ik.alpha = 0f; ik.rotation = -360f
-        na.alpha = 0f; na.translationY = dp(24).toFloat()
-        ik.animate().scaleX(1f).scaleY(1f).alpha(1f).rotation(0f).setDuration(650).setInterpolator(android.view.animation.OvershootInterpolator(1.2f)).start()
-        na.animate().alpha(1f).translationY(0f).setStartDelay(300).setDuration(400).start()
-        n.animate().alpha(0f).scaleX(1.08f).scaleY(1.08f).setStartDelay(1000).setDuration(350).withEndAction { dekor.removeView(n) }.start()
+        // Logo: wpada z gory, obraca sie i odbija
+        ik.translationY = -dp(260).toFloat(); ik.alpha = 0f; ik.rotation = -200f; ik.scaleX = 0.6f; ik.scaleY = 0.6f
+        ik.animate().translationY(0f).alpha(1f).rotation(0f).scaleX(1f).scaleY(1f).setStartDelay(100).setDuration(900)
+            .setInterpolator(android.view.animation.OvershootInterpolator(1.4f)).withEndAction {
+                // Puls po wyladowaniu
+                ik.animate().scaleX(1.12f).scaleY(1.12f).setDuration(180).withEndAction { ik.animate().scaleX(1f).scaleY(1f).setDuration(220).start() }.start()
+            }.start()
+        // Napis: litery "zjezdzaja sie" do siebie
+        na.postDelayed({
+            android.animation.ValueAnimator.ofFloat(0.6f, 0.06f).apply { duration = 700; interpolator = android.view.animation.DecelerateInterpolator()
+                addUpdateListener { na.letterSpacing = it.animatedValue as Float } }.start()
+            na.animate().alpha(1f).setDuration(500).start()
+        }, 700)
+        pod.animate().alpha(1f).setStartDelay(1200).setDuration(500).start()
+        pas.animate().scaleX(1f).setStartDelay(900).setDuration(1300).setInterpolator(android.view.animation.AccelerateDecelerateInterpolator()).start()
+        // Wyjscie: lekkie powiekszenie i rozmycie w aplikacje
+        n.animate().alpha(0f).scaleX(1.12f).scaleY(1.12f).setStartDelay(2350).setDuration(450).withEndAction { dekor.removeView(n) }.start()
     }
 
     /** Okno wyjscia w stylu aplikacji; Wyjdz = animacja zamkniecia i calkowite zamkniecie (znika z ostatnich aplikacji). */

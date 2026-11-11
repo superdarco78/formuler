@@ -1,2 +1,2 @@
-Kanał z listy TV|otwierał się od razu na pełnym ekranie|otwiera się jak w starej aplikacji: obraz na górze, pod nim program (EPG) i lista kanałów
-Mini-okno|bez zmian|Wstecz = mały kwadrat; dotknięcie kwadratu = pełny ekran; Wstecz z pełnego ekranu = znowu kwadrat
+Animacja przy uruchomieniu|krótka (ok. 1 s): logo się obracało i znikało|nowa, dłuższa (ok. 2,5 s): kolorowe fale rozchodzą się od środka, logo wpada z góry z odbiciem i pulsuje, napis „OK Player” składa się z rozsuniętych liter, pod nim „Telewizja • Filmy • Seriale” i kolorowy pasek ładowania, na koniec płynne wejście do aplikacji
+Kanał z listy TV|otwierał się od razu na pełnym ekranie|obraz na górze, pod nim program (EPG) i lista kanałów – jak w starej aplikacji
