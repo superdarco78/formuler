@@ -1,5 +1,5 @@
-• Przejście duży ekran ↔ mini-okno: było od nowa (czarny ekran i ładowanie kilka sekund) → teraz płynnie, obraz gra bez przerwy
-• Dotknięcie mini-okna: duży ekran od razu, bez ponownego ładowania
-• ⛶ w mini-oknie: od razu pełny ekran poziomo, bez przerwy w obrazie
-• Pływające okienko poza aplikacją → powiększenie = pełny ekran
-• Dolne menu: same ikonki, zakładka Ulubione (gwiazdka), przytrzymaj kanał = ulubiony
+• Dolne menu: były napisy → teraz profesjonalne ikonki (dom, telewizor, klaps, seriale, gwiazdka); wybrana biała z różową kreską u góry
+• Lupa i ustawienia w nagłówku: były emotki 🔍 ⚙ → teraz ładne, równe ikony
+• Mini-okno: były emotki ⏸ ⛶ ✕ → teraz profesjonalne ikony pauza, pełny ekran, zamknij
+• Duży ekran ↔ mini-okno: płynnie, bez ponownego ładowania obrazu
+• Zakładka Ulubione (gwiazdka); przytrzymaj kanał = dodaj do ulubionych

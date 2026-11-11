@@ -109,8 +109,8 @@ class StartActivity : AppCompatActivity() {
         val gora = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(18), dp(14), dp(18), dp(10)) }
         gora.addView(ImageView(this).apply { setImageResource(R.mipmap.ic_launcher) }, LinearLayout.LayoutParams(dp(36), dp(36)))
         gora.addView(tekst("OK Player", 22f, gruby = true).apply { setPadding(dp(10), 0, 0, 0) }, LinearLayout.LayoutParams(0, -2, 1f))
-        gora.addView(tekst("🔍", 22f).apply { setPadding(dp(12), dp(4), dp(16), dp(4)); isFocusable = true; setOnClickListener { pokaz(5) } })
-        gora.addView(tekst("⚙", 24f).apply { setPadding(dp(4), dp(4), dp(14), dp(4)); isFocusable = true; setOnClickListener { pokaz(4) } })
+        gora.addView(ImageView(this).apply { setImageResource(R.drawable.ik_szukaj); scaleType = ImageView.ScaleType.FIT_CENTER; isFocusable = true; setPadding(dp(8), dp(8), dp(8), dp(8)); setOnClickListener { pokaz(5) } }, LinearLayout.LayoutParams(dp(46), dp(46)))
+        gora.addView(ImageView(this).apply { setImageResource(R.drawable.ik_ustawienia); scaleType = ImageView.ScaleType.FIT_CENTER; isFocusable = true; setPadding(dp(9), dp(9), dp(9), dp(9)); setOnClickListener { pokaz(4) } }, LinearLayout.LayoutParams(dp(46), dp(46)).apply { marginEnd = dp(8) })
         gora.addView(tekst("v$wersja", 12f, SZARY))
         root.addView(gora)
         tresc = FrameLayout(this)
@@ -123,18 +123,18 @@ class StartActivity : AppCompatActivity() {
         miniTeraz = tekst("", 13f, SZARY).apply { maxLines = 1 }
         mOpis.addView(miniNazwa); mOpis.addView(miniTeraz)
         mini.addView(mOpis, LinearLayout.LayoutParams(0, -2, 1f))
-        mini.addView(tekst("⏸", 22f).apply { gravity = Gravity.CENTER; isFocusable = true
-            setOnClickListener { miniGracz?.let { g -> g.playWhenReady = !g.playWhenReady; text = if (g.playWhenReady) "⏸" else "▶" } } }, LinearLayout.LayoutParams(dp(44), dp(84)))
-        mini.addView(tekst("⛶", 22f).apply { gravity = Gravity.CENTER; isFocusable = true
+        mini.addView(ImageView(this).apply { setImageResource(R.drawable.ik_pauza); scaleType = ImageView.ScaleType.CENTER; isFocusable = true
+            setOnClickListener { miniGracz?.let { g -> g.playWhenReady = !g.playWhenReady; setImageResource(if (g.playWhenReady) R.drawable.ik_pauza else R.drawable.ik_graj) } } }, LinearLayout.LayoutParams(dp(44), dp(84)))
+        mini.addView(ImageView(this).apply { setImageResource(R.drawable.ik_pelny); scaleType = ImageView.ScaleType.CENTER; isFocusable = true
             setOnClickListener { miniKanal?.let { miniNaDuzy(it, true) } } }, LinearLayout.LayoutParams(dp(44), dp(84)))
-        mini.addView(tekst("✕", 22f).apply { gravity = Gravity.CENTER; isFocusable = true; setOnClickListener { zamknijMini() } }, LinearLayout.LayoutParams(dp(48), dp(84)))
+        mini.addView(ImageView(this).apply { setImageResource(R.drawable.ik_zamknij); scaleType = ImageView.ScaleType.CENTER; isFocusable = true; setOnClickListener { zamknijMini() } }, LinearLayout.LayoutParams(dp(50), dp(84)))
         mini.setOnClickListener { miniKanal?.let { miniNaDuzy(it, false) } }
         root.addView(mini, LinearLayout.LayoutParams(-1, -2))
         dol = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setBackgroundColor(0xFF0D0D0D.toInt()) }
         // Dolne menu jak w MyTvOnline: same ikonki (Start, TV, Filmy, Seriale, Ulubione)
         listOf(R.drawable.ik_start to 0, R.drawable.ik_tv to 1, R.drawable.ik_filmy to 2, R.drawable.ik_seriale to 3, R.drawable.ik_ulubione to 6).forEach { (ik, z) ->
             dol.addView(ImageView(this).apply {
-                setImageResource(ik); scaleType = ImageView.ScaleType.CENTER; setPadding(0, dp(16), 0, dp(16)); isFocusable = true; tag = z
+                setImageResource(ik); scaleType = ImageView.ScaleType.FIT_CENTER; setPadding(0, dp(17), 0, dp(17)); isFocusable = true; tag = z
                 setColorFilter(SZARY); setOnClickListener { pokaz(z) }
             }, LinearLayout.LayoutParams(0, dp(62), 1f))
         }
@@ -146,7 +146,11 @@ class StartActivity : AppCompatActivity() {
 
     private fun pokaz(i: Int) {
         zakladka = i
-        for (k in 0 until dol.childCount) (dol.getChildAt(k) as ImageView).setColorFilter(if (dol.getChildAt(k).tag == i) Color.WHITE else SZARY)
+        for (k in 0 until dol.childCount) (dol.getChildAt(k) as ImageView).apply {
+            val wyb = tag == i
+            setColorFilter(if (wyb) Color.WHITE else 0xFF7A7A7A.toInt())
+            background = if (wyb) android.graphics.drawable.LayerDrawable(arrayOf(GradientDrawable().apply { setColor(AKCENT) })).apply { setLayerHeight(0, dp(3)); setLayerGravity(0, Gravity.TOP); setLayerInsetLeft(0, dp(22)); setLayerInsetRight(0, dp(22)) } else null
+        }
         tresc.removeAllViews()
         when (i) { 0 -> start(); 1 -> listaKanalow(); 2 -> siatkaVod(filmy, katF, "f"); 3 -> siatkaVod(seriale, katS, "s"); 5 -> szukaj(); 6 -> ulubioneEkran(); else -> ustawienia() }
     }
