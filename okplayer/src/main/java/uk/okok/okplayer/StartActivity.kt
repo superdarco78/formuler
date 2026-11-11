@@ -735,7 +735,8 @@ class StartActivity : AppCompatActivity() {
     private var stopBaner: (() -> Unit)? = null
     // 2.15: efekt dziala, gdy wlaczony w panelu edytora (globalnie) i na urzadzeniu
     private fun efPanel(k: String) = Ust.prefs(this).getBoolean("glob_$k", true)
-    private fun ef(k: String) = efPanel(k) && Ust.prefs(this).getBoolean(k, true)
+    // 2.16: efektami rzadzi tylko panel edytora (globalnie lub dla danego klienta)
+    private fun ef(k: String) = efPanel(k)
     override fun onPause() { stopBaner?.invoke(); stopPodglad(); super.onPause() }
     private fun start() {
         val sv = ScrollView(this)
@@ -1222,19 +1223,6 @@ class StartActivity : AppCompatActivity() {
             val ter = o.indexOfFirst { it.first == Ust.prefs(this).getString("uklad", "kinowy") }
             androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Układ Startu").setSingleChoiceItems(o.map { it.second }.toTypedArray(), ter) { d, i -> Ust.prefs(this).edit().putString("uklad", o[i].first).apply(); d.dismiss(); pokaz(4) }
                 .setNegativeButton("Zamknij", null).show().also { Jezyk.okno(it) }
-        }
-        val efekty = listOf("ef_baner_zajawka" to "Zajawka z filmu na banerze", "ef_rzad_zajawka" to "Zajawki na plakatach w rzędach", "ef_przyblizanie" to "Powolne przybliżanie plakatu banera",
-            "ef_paralaksa" to "Paralaksa banera przy przewijaniu", "ef_powiekszenie" to "Powiększenie plakatu przy wejściu w film", "ef_kolor" to "Kolor z plakatu w ekranie filmu")
-        wiersz("Efekty", "Włączone: " + efekty.count { ef(it.first) } + " z " + efekty.size + " – dotknij, żeby włączać i wyłączać") {
-            val zazn = efekty.map { ef(it.first) }.toBooleanArray()
-            val nazwy = efekty.map { if (efPanel(it.first)) it.second else it.second + " (wyłączone w panelu)" }.toTypedArray()
-            androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Efekty").setMultiChoiceItems(nazwy, zazn) { d, i, b ->
-                if (!efPanel(efekty[i].first)) { (d as androidx.appcompat.app.AlertDialog).listView.setItemChecked(i, false); return@setMultiChoiceItems }
-                Ust.prefs(this).edit().putBoolean(efekty[i].first, b).apply() }
-                .setPositiveButton("Gotowe") { _, _ -> stopPodglad(); pokaz(4) }.show().also { Jezyk.okno(it) }
-        }
-        wiersz("Blokada zrzutów ekranu", if (Ust.prefs(this).getBoolean("blokada_zrzutow", true)) "Włączona – nie da się zrobić zrzutu ani nagrać ekranu aplikacji (jak w Netflixie)" else "Wyłączona – zrzuty ekranu działają") {
-            Ust.prefs(this).edit().putBoolean("blokada_zrzutow", !Ust.prefs(this).getBoolean("blokada_zrzutow", true)).apply(); Pilot.wlacz(this); pokaz(4)
         }
         wiersz("Kontrola rodzicielska", if (pin().isEmpty()) "Wyłączona – ustaw PIN, żeby blokować grupy (np. dla dorosłych)" else "Włączona – zablokowanych grup: " + zablokowaneGrupy().size) { kontrolaRodzicielska() }
         wiersz("Odśwież listę", "Pobiera świeżą listę kanałów, filmów i seriali z serwera") { laduj() }

@@ -1,3 +1,4 @@
+Sterowanie z panelu|efekty i blokadę zrzutów klient przełączał w Ustawieniach aplikacji|tylko panel edytora (dla wszystkich lub dla wybranego klienta), w aplikacji nie ma już tych przełączników
 Efekty z panelu|efekty tylko na urządzeniu|panel edytora może globalnie wyłączyć efekt u wszystkich klientów (w aplikacji widać „wyłączone w panelu”)
 Ustawienia → Efekty|efektów nie dało się wyłączyć|nowy wiersz Efekty: każdy efekt osobno włączasz i wyłączasz
 Zajawki w rzędach|w Top filmach i polecanych same plakaty|na zaznaczonym plakacie (TV) lub pierwszym widocznym po przewinięciu (telefon) leci fragment filmu bez dźwięku

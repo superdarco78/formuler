@@ -98,10 +98,10 @@ object Serwer {
      *  Zapisywane jako glob_<klucz>; panel ma pierwszenstwo przed ustawieniem na urzadzeniu. */
     fun ustawieniaGlobalne(c: Context) = try {
         val j = JSONObject(tekst("$BAZA/app.php?a=ustawienia&dev=${idUrzadzenia(c)}&k=${Ust.klucz(c)}"))
-        val e = j.optJSONObject("efekty") ?: JSONObject()
         val ed = Ust.prefs(c).edit()
         Ust.prefs(c).all.keys.filter { it.startsWith("glob_") }.forEach { ed.remove(it) }
-        e.keys().forEach { k -> ed.putBoolean("glob_$k", e.optBoolean(k, true)) }
+        // efekty i inne ustawienia (np. blokada_zrzutow) - tylko z panelu
+        listOf("efekty", "ustawienia").forEach { sek -> j.optJSONObject(sek)?.let { e -> e.keys().forEach { k -> ed.putBoolean("glob_$k", e.optBoolean(k, true)) } } }
         ed.apply()
     } catch (e: Exception) { }
 

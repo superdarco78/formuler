@@ -21,7 +21,7 @@ object Pilot {
 
     fun wlacz(a: Activity) {
         // 2.08: blokada zrzutow i nagrywania ekranu (jak w Netflixie) - mozna wylaczyc w Ustawieniach
-        if (Ust.prefs(a).getBoolean("blokada_zrzutow", true)) a.window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+        if (Ust.prefs(a).getBoolean("glob_blokada_zrzutow", true)) a.window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
         else a.window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
         val d = a.resources.displayMetrics.density
         val szer = a.resources.displayMetrics.widthPixels
