@@ -11,7 +11,5 @@ jobs:
       - name: Zasoby media3-ui
         run: |
           curl -sSfL -o ui.aar https://dl.google.com/android/maven2/androidx/media3/media3-ui/1.3.1/media3-ui-1.3.1.aar
-          unzip -l ui.aar | grep -i "styled_controls\|exo_player_control" 
-          unzip -p ui.aar res/layout/exo_player_control_rewind_button.xml || true
-          unzip -p ui.aar res/layout/exo_player_control_ffwd_button.xml || true
-          unzip -p ui.aar res/values/values.xml | grep -n "ExoStyledControls.Button.Center" -A6 | head -80
+          unzip -p ui.aar res/values/values.xml | grep -n "styled_controls\|name=\"ExoStyledControls.Button.Center\|RewWithAmount\|exo_icon_size\|exo_styled_controls_button_size\|center_button" | head -80
+          unzip -p ui.aar res/values/values.xml | grep -n "ExoStyledControls.Button.Center" -A8 | head -60
