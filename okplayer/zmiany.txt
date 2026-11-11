@@ -1,2 +1,1 @@
-Małe okno i okno w oknie|po zmianach z wersji 1.70–1.71 mini i PiP nie działały|przywrócony 1:1 kod odtwarzacza i małego okna z wersji 1.56, która działała
-Program na podglądzie TV|lista wszystkich kanałów|archiwum tylko tego kanału, jak w 1.52–1.56
+Małe okno na wierzchu|po Wstecz obraz nie przypinał się na wierzchu albo pojawiał się w innym miejscu, dopiero po zmianie zakładki|po jednym Wstecz małe okno od razu na wierzchu w prawym dolnym rogu, obraz gra dalej

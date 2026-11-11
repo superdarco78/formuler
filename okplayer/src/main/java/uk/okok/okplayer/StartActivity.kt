@@ -124,7 +124,7 @@ class StartActivity : AppCompatActivity() {
             visibility = View.GONE; isFocusable = true; elevation = dp(10).toFloat()
             background = tlo(Color.BLACK, 12); clipToOutline = true
         }
-        miniWidok = androidx.media3.ui.PlayerView(this).apply { useController = false; setBackgroundColor(Color.BLACK); resizeMode = androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_ZOOM }
+        miniWidok = layoutInflater.inflate(R.layout.mini_gracz, null) as androidx.media3.ui.PlayerView
         mini.addView(miniWidok, FrameLayout.LayoutParams(-1, -1))
         mini.addView(ImageView(this).apply {
             setImageResource(R.drawable.ik_zamknij); scaleType = ImageView.ScaleType.FIT_CENTER; setPadding(dp(5), dp(5), dp(5), dp(5)); isFocusable = true
@@ -637,7 +637,8 @@ class StartActivity : AppCompatActivity() {
         val ch = Kanal(z[0], z[1], z[2].ifEmpty { null }, z[3], 0)
         miniKanal = ch; miniNazwa.text = ch.nazwa; miniTeraz.text = ""
         miniFilm = if (ch.id == "vod") z.getOrNull(4) else null
-        mini.visibility = View.VISIBLE
+        if (mini.visibility != View.VISIBLE) { mini.translationX = 0f; mini.translationY = 0f }
+        mini.visibility = View.VISIBLE; mini.bringToFront()
         WspolnyGracz.wlasciciel = "mini"
         miniGracz = WspolnyGracz.pobierz(this)
         miniWidok.player = miniGracz
