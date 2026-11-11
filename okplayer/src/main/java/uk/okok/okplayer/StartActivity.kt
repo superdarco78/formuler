@@ -150,8 +150,8 @@ class StartActivity : AppCompatActivity() {
         obszar.addView(mini, FrameLayout.LayoutParams(dp(208), dp(117)).apply { gravity = Gravity.BOTTOM or Gravity.END; setMargins(0, 0, dp(12), dp(12)) })
         gora2 = budujGornyGracz()
         root.addView(gora2, LinearLayout.LayoutParams(-1, -2))
-        naglowek = ImageView(this).apply { adjustViewBounds = true; scaleType = ImageView.ScaleType.FIT_XY; visibility = View.GONE }
-        root.addView(naglowek, LinearLayout.LayoutParams(-1, -2))
+        banerCanvy = ImageView(this).apply { adjustViewBounds = true; scaleType = ImageView.ScaleType.FIT_XY; visibility = View.GONE }
+        root.addView(banerCanvy, LinearLayout.LayoutParams(-1, -2))
         root.addView(obszar, LinearLayout.LayoutParams(-1, 0, 1f))
         dol = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setBackgroundColor(0xFF0D0D0D.toInt()) }
         // Dolne menu jak w MyTvOnline: same ikonki (Start, TV, Filmy, Seriale, Ulubione)
@@ -601,15 +601,15 @@ class StartActivity : AppCompatActivity() {
 
     /** Grafika z Canvy (wbudowana przy budowie) albo 0, gdy jej brak. */
     private fun canva(n: String) = resources.getIdentifier(n, "drawable", packageName)
-    private lateinit var naglowek: ImageView
+    private lateinit var banerCanvy: ImageView
     /** Baner z Canvy nad zakladka: Filmy = "Nowosci filmowe", TV = "Kanaly na zywo", Seriale/Ulubione = "Witaj w OK Player". */
     private fun naglowekCanva(i: Int) {
-        if (!::naglowek.isInitialized) return
+        if (!::banerCanvy.isInitialized) return
         val n = when (i) { 1 -> if (::gora2.isInitialized && gora2.visibility == View.VISIBLE) null else "baner_kanaly"; 2 -> "baner_filmy"; 3, 6 -> "baner_witaj"; else -> null }
         val id = n?.let { canva(it) } ?: 0
-        if (id == 0) { naglowek.visibility = View.GONE; return }
-        naglowek.setImageResource(id); naglowek.visibility = View.VISIBLE
-        naglowek.alpha = 0f; naglowek.translationY = -dp(16).toFloat(); naglowek.animate().alpha(1f).translationY(0f).setDuration(420).start()
+        if (id == 0) { banerCanvy.visibility = View.GONE; return }
+        banerCanvy.setImageResource(id); banerCanvy.visibility = View.VISIBLE
+        banerCanvy.alpha = 0f; banerCanvy.translationY = -dp(16).toFloat(); banerCanvy.animate().alpha(1f).translationY(0f).setDuration(420).start()
     }
 
     private fun start() {
