@@ -1,4 +1,3 @@
-Radio w dolnym menu (nowość)|stacje radiowe były wymieszane z kanałami TV|osobna ikona radia na dole (za Serialami): grupy radiowe u góry, lista stacji pod spodem; dotknij stacji – gra na górze, zmiana jednym dotknięciem
-Lista TV|zawierała też grupy radiowe|tylko telewizja – radio ma swoją zakładkę
-Mecze na Starcie|rząd był niżej|„⚽ Mecze i sport na żywo” na samej górze Startu
-Animacje|treść wskakiwała od razu|płynne wejście zakładek, list i ekranów filmów
+Mecze na Starcie – wygląd|zwykła karta z tytułem|kolorowa plakietka rozgrywek (Ekstraklasa, Premier League, Liga Mistrzów, LaLiga, Bundesliga, F1, KSW, siatkówka, skoki, żużel, tenis…), drużyny w dwóch linijkach jak w aplikacjach sportowych, logo kanału, godziny i pasek
+Mecze na Starcie – gdy nie ma meczu|rząd znikał|zawsze na samej górze: najpierw mecze, potem inne transmisje z kanałów sportowych
+Radio w dolnym menu|radio wymieszane z TV|osobna ikona radia (za Serialami) z grupami i stacjami

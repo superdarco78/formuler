@@ -335,6 +335,27 @@ class StartActivity : AppCompatActivity() {
         k.addView(rv, LinearLayout.LayoutParams(-1, -2))
     }
 
+    /** Rozgrywki rozpoznawane w programie: wzor, nazwa na plakietce, kolor plakietki. */
+    private val ligi = listOf(
+        Triple(Regex("(?i)ekstraklas"), "EKSTRAKLASA", 0xFF0B7A3B.toInt()),
+        Triple(Regex("(?i)premier league|angielska"), "PREMIER LEAGUE", 0xFF3D195B.toInt()),
+        Triple(Regex("(?i)la ?liga|hiszpańsk"), "LALIGA", 0xFFE0322B.toInt()),
+        Triple(Regex("(?i)bundesliga|niemieck"), "BUNDESLIGA", 0xFFD20515.toInt()),
+        Triple(Regex("(?i)serie a|włosk"), "SERIE A", 0xFF024494.toInt()),
+        Triple(Regex("(?i)ligue 1|francusk"), "LIGUE 1", 0xFF1D3263.toInt()),
+        Triple(Regex("(?i)liga mistrz|champions"), "LIGA MISTRZÓW", 0xFF0A1F5C.toInt()),
+        Triple(Regex("(?i)liga europy|europa league"), "LIGA EUROPY", 0xFFF68E00.toInt()),
+        Triple(Regex("(?i)liga konferenc|conference"), "LIGA KONFERENCJI", 0xFF00BE5A.toInt()),
+        Triple(Regex("(?i)\\bf1\\b|formuła|grand prix"), "FORMUŁA 1", 0xFFE10600.toInt()),
+        Triple(Regex("(?i)ksw|ufc|mma|boks"), "SPORTY WALKI", 0xFF8B0000.toInt()),
+        Triple(Regex("(?i)siatk|plusliga|volley"), "SIATKÓWKA", 0xFFF5A300.toInt()),
+        Triple(Regex("(?i)skoki|skocz"), "SKOKI", 0xFF1E88E5.toInt()),
+        Triple(Regex("(?i)żużel|zuzel|speedway"), "ŻUŻEL", 0xFF5D4037.toInt()),
+        Triple(Regex("(?i)tenis|atp|wta"), "TENIS", 0xFF2E7D32.toInt()),
+        Triple(Regex("(?i)nba|koszyk"), "KOSZYKÓWKA", 0xFFC9082A.toInt()),
+        Triple(Regex("(?i)hokej|nhl"), "HOKEJ", 0xFF000080.toInt())
+    )
+
     /** Rzad "Mecze i sport na zywo": sprawdza program kanalow sportowych i pokazuje te, ktore nadaja teraz mecz lub transmisje. */
     private fun rzadSportu(k: LinearLayout) {
         val katSport = kategorie.filter { it.nazwa.lowercase().let { n -> n.contains("sport") || n.contains("piłk") || n.contains("mecz") } }.map { it.id }.toSet()
@@ -344,12 +365,14 @@ class StartActivity : AppCompatActivity() {
         k.addView(miejsce)
         val mecz = Regex("(?i)( - | – | vs\\.? | v |mecz|liga|ekstraklasa|puchar|cup|grand prix|gp |f1|mma|ufc|ksw|boks|tenis|siatk|skoki|żużel|zuzel|na żywo|live)")
         lifecycleScope.launch {
-            val trwa = ArrayList<Pair<Kanal, String>>()
+            val trwa = ArrayList<Pair<Kanal, String>>(); val inne = ArrayList<Pair<Kanal, String>>()
             kotlinx.coroutines.coroutineScope {
                 sportowe.map { ch -> async { ch to limitEpg.withPermit { withContext(Dispatchers.IO) { Serwer.terazLeci(this@StartActivity, ch.id) } } } }.forEach { d ->
-                    val (ch, t) = d.await(); if (t.isNotEmpty() && mecz.containsMatchIn(t)) trwa.add(ch to t)
+                    val (ch, t) = d.await(); if (t.isNotEmpty()) { if (mecz.containsMatchIn(t)) trwa.add(ch to t) else inne.add(ch to t) }
                 }
             }
+            // Najpierw mecze, potem pozostale transmisje sportowe - rzad zawsze widoczny na gorze.
+            trwa.addAll(inne)
             if (trwa.isEmpty() || !miejsce.isAttachedToWindow) return@launch
             miejsce.addView(naglowek("⚽ Mecze i sport na żywo"))
             val rv = poziomy()
@@ -360,7 +383,7 @@ class StartActivity : AppCompatActivity() {
                     layoutParams = RecyclerView.LayoutParams(dp(230), -2).apply { marginEnd = dp(10) }
                     addView(LinearLayout(p.context).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
                         addView(ImageView(p.context).apply { scaleType = ImageView.ScaleType.FIT_CENTER }, LinearLayout.LayoutParams(dp(54), dp(34)))
-                        addView(tekst("● NA ŻYWO", 12f, AKCENT, gruby = true).apply { setPadding(dp(10), 0, 0, 0) }) })
+                        addView(tekst("● NA ŻYWO", 11f, Color.WHITE, gruby = true)) })
                     addView(tekst("", 15f, gruby = true).apply { maxLines = 2; ellipsize = android.text.TextUtils.TruncateAt.END; setPadding(0, dp(8), 0, 0) })
                     addView(tekst("", 12f, SZARY).apply { maxLines = 1 })
                     addView(android.widget.ProgressBar(p.context, null, android.R.attr.progressBarStyleHorizontal).apply { max = 100
@@ -370,7 +393,15 @@ class StartActivity : AppCompatActivity() {
                 override fun onBindViewHolder(h: RecyclerView.ViewHolder, i: Int) {
                     val w = h.itemView as LinearLayout; val (ch, t) = trwa[i]
                     ((w.getChildAt(0) as LinearLayout).getChildAt(0) as ImageView).apply { setImageDrawable(null); ch.logo?.let { load(it) } }
-                    (w.getChildAt(1) as TextView).text = t
+                    val liga = ligi.firstOrNull { (wz, _, _) -> wz.containsMatchIn(t) || wz.containsMatchIn(ch.nazwa) }
+                    ((w.getChildAt(0) as LinearLayout).getChildAt(1) as TextView).apply {
+                        text = liga?.second ?: "● NA ŻYWO"; setTextColor(Color.WHITE)
+                        background = tlo(liga?.third ?: AKCENT, 8); setPadding(dp(8), dp(3), dp(8), dp(3))
+                        (layoutParams as? LinearLayout.LayoutParams)?.marginStart = dp(10)
+                    }
+                    // Druzyny "A - B" w dwoch linijkach, jak w aplikacjach sportowych
+                    val dr = Regex("^(.{2,40}?)\\s+(?:-|–|vs\\.?|v)\\s+(.{2,40})$").find(t.substringAfter(": ").trim())
+                    (w.getChildAt(1) as TextView).text = if (dr != null) dr.groupValues[1].trim() + "\n" + dr.groupValues[2].trim() else t
                     (w.getChildAt(2) as TextView).text = ch.nazwa + "   " + Serwer.godziny(ch.id).substringBefore("  •")
                     (w.getChildAt(3) as android.widget.ProgressBar).progress = Serwer.postep(ch.id).coerceAtLeast(0)
                     w.setOnClickListener { graj(ch) }
