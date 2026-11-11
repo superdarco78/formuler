@@ -107,12 +107,7 @@ class MainActivity : AppCompatActivity() {
             override fun handleOnBackPressed() {
                 if (b.bottomNav.selectedItemId != R.id.tab_start) { b.bottomNav.selectedItemId = R.id.tab_start; return }
                 if (!Session.optBool(this@MainActivity, "pytaj_wyjscie", true)) { finishAffinity(); return }
-                androidx.appcompat.app.AlertDialog.Builder(this@MainActivity)
-                    .setTitle("Zamknąć OK Player?")
-                    .setMessage("Czy na pewno chcesz wyjść z aplikacji?")
-                    .setPositiveButton("Wyjdź") { _, _ -> finishAffinity() }
-                    .setNegativeButton("Anuluj", null)
-                    .show()
+                oknoWyjscia()
             }
         })
 
@@ -508,6 +503,28 @@ class MainActivity : AppCompatActivity() {
         b.header.setBackgroundColor(0xFF000000.toInt())
         b.bottomNav.setBackgroundColor(0xFF000000.toInt())
         b.tvTitle.setTextColor(Color.WHITE)
+    }
+
+    /** Okno wyjscia w stylu aplikacji (czarne tlo, jasny przycisk jak "Ogladaj"). */
+    private fun oknoWyjscia() {
+        val d = android.app.Dialog(this)
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL; setPadding(dp(24), dp(24), dp(24), dp(20))
+            background = android.graphics.drawable.GradientDrawable().apply { setColor(0xFF1E1E1E.toInt()); cornerRadius = dp(16).toFloat() }
+        }
+        box.addView(TextView(this).apply { text = "Zamknąć OK Player?"; setTextColor(Color.WHITE); textSize = 21f; setTypeface(typeface, android.graphics.Typeface.BOLD) })
+        box.addView(TextView(this).apply { text = "Czy na pewno chcesz wyjść z aplikacji?"; setTextColor(0xFFA6A6A6.toInt()); textSize = 16f; setPadding(0, dp(10), 0, dp(22)) })
+        fun przycisk(t: String, tlo: Int, kol: Int, akcja: () -> Unit) = TextView(this).apply {
+            text = t; setTextColor(kol); textSize = 17f; gravity = android.view.Gravity.CENTER; setPadding(0, dp(14), 0, dp(14))
+            background = android.graphics.drawable.GradientDrawable().apply { setColor(tlo); cornerRadius = dp(28).toFloat() }
+            isFocusable = true; setOnClickListener { akcja() }
+        }
+        box.addView(przycisk("Wyjdź", 0xFFE6E6E6.toInt(), 0xFF111111.toInt()) { d.dismiss(); finishAffinity() }, LinearLayout.LayoutParams(-1, -2))
+        box.addView(przycisk("Anuluj", 0xFF2A2A2A.toInt(), Color.WHITE) { d.dismiss() }, LinearLayout.LayoutParams(-1, -2).also { it.topMargin = dp(10) })
+        d.setContentView(box)
+        d.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(Color.TRANSPARENT))
+        d.window?.setLayout((resources.displayMetrics.widthPixels * 0.86).toInt(), -2)
+        d.show()
     }
 
     private fun tak(v: Boolean) = getString(if (v) R.string.yes else R.string.no)
