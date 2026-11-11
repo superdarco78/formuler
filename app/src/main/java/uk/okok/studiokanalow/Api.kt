@@ -263,8 +263,10 @@ object Api {
                         val o = arr.getJSONObject(i)
                         val id = o.optString("id")
                         val ext = o.optString("container_extension").ifEmpty { "mp4" }
-                        l.add(Channel(id, "Odcinek ${o.optString("episode_num")} — ${o.optString("title")}", null, null, i + 1,
-                            "${baseUrl(server)}/series/$user/$pass/$id.$ext"))
+                        val oi = o.optJSONObject("info")
+                        fun ti(k: String) = oi?.optString(k)?.takeIf { x -> x.isNotEmpty() && x != "null" } ?: ""
+                        l.add(Channel(id, "Odcinek ${o.optString("episode_num")} — ${o.optString("title")}", ti("movie_image").ifEmpty { null }, null, i + 1,
+                            "${baseUrl(server)}/series/$user/$pass/$id.$ext", 0.0, ti("plot"), ti("duration")))
                     }
                     out.add("Sezon $sez" to l)
                 }

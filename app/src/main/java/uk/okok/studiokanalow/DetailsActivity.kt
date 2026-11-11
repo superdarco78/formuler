@@ -80,17 +80,49 @@ class DetailsActivity : AppCompatActivity() {
         if (sezony.isEmpty()) {
             androidx.appcompat.app.AlertDialog.Builder(this).setTitle(tytul).setMessage("Brak odcinków.").setPositiveButton("OK", null).show(); return
         }
-        fun odcinki(i: Int) {
-            val eps = sezony[i].second
-            androidx.appcompat.app.AlertDialog.Builder(this).setTitle("$tytul — ${sezony[i].first}")
-                .setItems(eps.map { it.name }.toTypedArray()) { _, k ->
-                    startActivity(Intent(this, PlayerActivity::class.java)
-                        .putExtra("url", eps[k].directUrl ?: "").putExtra("name", "$tytul — ${eps[k].name}").putExtra("demo", demo))
-                }.show()
+        fun dpx(v: Int) = (v * resources.displayMetrics.density).toInt()
+        val bs = com.google.android.material.bottomsheet.BottomSheetDialog(this)
+        val root = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.VERTICAL; setBackgroundColor(0xFF0B0F1A.toInt()); setPadding(dpx(14), dpx(16), dpx(14), dpx(10)) }
+        root.addView(TextView(this).apply { text = tytul; setTextColor(0xFFFFFFFF.toInt()); textSize = 19f; setTypeface(typeface, android.graphics.Typeface.BOLD); setPadding(0, 0, 0, dpx(10)) })
+        val chips = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.HORIZONTAL }
+        val hs = android.widget.HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; addView(chips) }
+        val lista = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.VERTICAL }
+        val sv = android.widget.ScrollView(this).apply { addView(lista) }
+        if (sezony.size > 1) root.addView(hs)
+        root.addView(sv, android.widget.LinearLayout.LayoutParams(-1, (resources.displayMetrics.heightPixels * 0.6).toInt()))
+        fun rysuj(i: Int) {
+            chips.removeAllViews()
+            sezony.forEachIndexed { k, s ->
+                chips.addView(TextView(this).apply {
+                    text = s.first; textSize = 14f; setPadding(dpx(16), dpx(8), dpx(16), dpx(8))
+                    setTextColor(if (k == i) 0xFFFFFFFF.toInt() else 0xFFA0A8C0.toInt())
+                    setBackgroundColor(if (k == i) 0xFF4F7BFF.toInt() else 0xFF1B2236.toInt())
+                    val lp = android.widget.LinearLayout.LayoutParams(-2, -2); lp.setMargins(0, 0, dpx(8), dpx(10)); layoutParams = lp
+                    setOnClickListener { rysuj(k) }
+                })
+            }
+            lista.removeAllViews()
+            for (e in sezony[i].second) {
+                val karta = android.widget.LinearLayout(this).apply {
+                    orientation = android.widget.LinearLayout.HORIZONTAL; setPadding(0, dpx(8), 0, dpx(8))
+                    setOnClickListener {
+                        bs.dismiss()
+                        startActivity(Intent(this@DetailsActivity, PlayerActivity::class.java)
+                            .putExtra("url", e.directUrl ?: "").putExtra("name", "$tytul — ${e.name}").putExtra("demo", demo))
+                    }
+                }
+                val img = android.widget.ImageView(this).apply { scaleType = android.widget.ImageView.ScaleType.CENTER_CROP; setBackgroundColor(0xFF1B2236.toInt()); if (!e.logo.isNullOrEmpty()) load(e.logo) else setImageResource(R.drawable.ic_movie) }
+                karta.addView(img, android.widget.LinearLayout.LayoutParams(dpx(128), dpx(72)))
+                val txt = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.VERTICAL; setPadding(dpx(12), 0, 0, 0) }
+                txt.addView(TextView(this).apply { text = e.name.removePrefix("Odcinek ").let { x -> "E$x" }; setTextColor(0xFFFFFFFF.toInt()); textSize = 15f; maxLines = 2; ellipsize = android.text.TextUtils.TruncateAt.END })
+                if (e.czas.isNotEmpty()) txt.addView(TextView(this).apply { text = e.czas; setTextColor(0xFFF5B945.toInt()); textSize = 12f })
+                if (e.opis.isNotEmpty()) txt.addView(TextView(this).apply { text = e.opis; setTextColor(0xFFA0A8C0.toInt()); textSize = 12f; maxLines = 3; ellipsize = android.text.TextUtils.TruncateAt.END })
+                karta.addView(txt, android.widget.LinearLayout.LayoutParams(0, -2, 1f))
+                lista.addView(karta)
+            }
         }
-        if (sezony.size == 1) odcinki(0)
-        else androidx.appcompat.app.AlertDialog.Builder(this).setTitle(tytul)
-            .setItems(sezony.map { "${it.first} (${it.second.size})" }.toTypedArray()) { _, i -> odcinki(i) }.show()
+        rysuj(0)
+        bs.setContentView(root); bs.show()
     }
 
     private fun fill(v: VodInfo, logo: String?) {

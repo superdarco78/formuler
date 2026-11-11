@@ -12,5 +12,7 @@ data class Channel(
     val categoryId: String?,
     val num: Int,
     val directUrl: String? = null,
-    val rating: Double = 0.0
+    val rating: Double = 0.0,
+    val opis: String = "",
+    val czas: String = ""
 )
