@@ -733,7 +733,9 @@ class StartActivity : AppCompatActivity() {
 
     private var banerObrazy: List<ImageView>? = null
     private var stopBaner: (() -> Unit)? = null
-    private fun ef(k: String) = Ust.prefs(this).getBoolean(k, true)
+    // 2.15: efekt dziala, gdy wlaczony w panelu edytora (globalnie) i na urzadzeniu
+    private fun efPanel(k: String) = Ust.prefs(this).getBoolean("glob_$k", true)
+    private fun ef(k: String) = efPanel(k) && Ust.prefs(this).getBoolean(k, true)
     override fun onPause() { stopBaner?.invoke(); stopPodglad(); super.onPause() }
     private fun start() {
         val sv = ScrollView(this)
@@ -1007,7 +1009,8 @@ class StartActivity : AppCompatActivity() {
         if (::mini.isInitialized) mini.visibility = View.GONE
     }
 
-    override fun onResume() { super.onResume(); pokazMini(); lifecycleScope.launch { Aktualizacja.sprawdz(this@StartActivity) } }
+    override fun onResume() { super.onResume(); pokazMini(); lifecycleScope.launch { Aktualizacja.sprawdz(this@StartActivity) }
+        lifecycleScope.launch(Dispatchers.IO) { Serwer.ustawieniaGlobalne(this@StartActivity) } }
     override fun onStop() {
         super.onStop()
         if (isInPictureInPictureMode) return
@@ -1224,7 +1227,10 @@ class StartActivity : AppCompatActivity() {
             "ef_paralaksa" to "Paralaksa banera przy przewijaniu", "ef_powiekszenie" to "Powiększenie plakatu przy wejściu w film", "ef_kolor" to "Kolor z plakatu w ekranie filmu")
         wiersz("Efekty", "Włączone: " + efekty.count { ef(it.first) } + " z " + efekty.size + " – dotknij, żeby włączać i wyłączać") {
             val zazn = efekty.map { ef(it.first) }.toBooleanArray()
-            androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Efekty").setMultiChoiceItems(efekty.map { it.second }.toTypedArray(), zazn) { _, i, b -> Ust.prefs(this).edit().putBoolean(efekty[i].first, b).apply() }
+            val nazwy = efekty.map { if (efPanel(it.first)) it.second else it.second + " (wyłączone w panelu)" }.toTypedArray()
+            androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Efekty").setMultiChoiceItems(nazwy, zazn) { d, i, b ->
+                if (!efPanel(efekty[i].first)) { (d as androidx.appcompat.app.AlertDialog).listView.setItemChecked(i, false); return@setMultiChoiceItems }
+                Ust.prefs(this).edit().putBoolean(efekty[i].first, b).apply() }
                 .setPositiveButton("Gotowe") { _, _ -> stopPodglad(); pokaz(4) }.show().also { Jezyk.okno(it) }
         }
         wiersz("Blokada zrzutów ekranu", if (Ust.prefs(this).getBoolean("blokada_zrzutow", true)) "Włączona – nie da się zrobić zrzutu ani nagrać ekranu aplikacji (jak w Netflixie)" else "Wyłączona – zrzuty ekranu działają") {
