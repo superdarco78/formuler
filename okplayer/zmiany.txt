@@ -1,1 +1,2 @@
-Filmy aktora|„Brak danych o filmach” przy aktorach z bardzo długą filmografią (np. Anthony Hopkins)|filmy pobierane z dwóch źródeł naraz: iTunes (polskie tytuły i lata) oraz Wikidata (lekkie zapytanie, nazwy pobierane paczkami) – działa także przy setkach filmów, lepiej dopasowuje filmy z Twojej listy
+Wszystkie filmy aktora|zwykła lista: rok i tytuł|siatka plakatów jak na Twojej liście: okładka (z iTunes), tytuł i rok
+Filmy aktora – dane|„Brak danych o filmach” przy długiej filmografii|dwa źródła naraz (iTunes + Wikidata) – działa przy setkach filmów

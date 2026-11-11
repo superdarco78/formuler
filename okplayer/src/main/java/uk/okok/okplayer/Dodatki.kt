@@ -58,6 +58,10 @@ object Dodatki {
         Regex("\"videoId\":\"([A-Za-z0-9_-]{11})\"").find(html)?.groupValues?.get(1) ?: ""
     } catch (e: Exception) { "" }
     /** Filmografia aktora z Wikidata: (tytul pl, tytul en, rok), najnowsze pierwsze. */
+    /** Okladki filmow z iTunes (po kluczu tytulu) - do siatki filmow aktora. */
+    val okladki = java.util.concurrent.ConcurrentHashMap<String, String>()
+    fun okladka(t: String): String? = okladki[klucz(t)]
+
     /** Filmografia z dwoch zrodel naraz (dziala tez przy aktorach z setkami filmow):
      *  1) iTunes - polskie tytuly i lata, 2) Wikidata - lekkie zapytanie o same filmy + nazwy pobierane paczkami po 50. */
     fun filmografia(nazwa: String): List<Triple<String, String, Int>> {
@@ -70,6 +74,7 @@ object Dodatki {
                 val arr = JSONObject(tekst("https://itunes.apple.com/search?term=" + java.net.URLEncoder.encode(n, "UTF-8") + "&media=movie&attribute=actorTerm&limit=200&country=$kraj")).optJSONArray("results")
                 if (arr != null) for (i in 0 until arr.length()) { val o = arr.getJSONObject(i)
                     val t = o.optString("trackName"); if (t.isEmpty()) continue
+                    o.optString("artworkUrl100").takeIf { it.isNotEmpty() }?.let { okladki.putIfAbsent(klucz(t), it.replace("100x100bb", "300x450bb")) }
                     out.add(if (kraj == "PL") Triple(t, "", o.optString("releaseDate").take(4).toIntOrNull() ?: 0) else Triple("", t, o.optString("releaseDate").take(4).toIntOrNull() ?: 0)) }
             }
         } catch (_: Exception) { }

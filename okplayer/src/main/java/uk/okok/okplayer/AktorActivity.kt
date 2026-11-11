@@ -120,11 +120,23 @@ class AktorActivity : AppCompatActivity() {
             }
             if (reszta.isNotEmpty()) {
                 inne.addView(tekst("Wszystkie filmy, w których grał (brak na Twojej liście)", 19f, g = true).apply { setPadding(0, dp(14), 0, dp(8)) })
-                reszta.take(300).forEach { f ->
-                    val t = f.first.ifEmpty { f.second }
-                    val rz = LinearLayout(this@AktorActivity).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(9), 0, dp(9)) }
-                    rz.addView(tekst(if (f.third > 0) f.third.toString() else "—", 14f, SZARY), LinearLayout.LayoutParams(dp(56), -2))
-                    rz.addView(tekst(t, 15f, 0xFFCCCCCC.toInt()), LinearLayout.LayoutParams(0, -2, 1f))
+                // Siatka plakatow jak na Twojej liscie: okladka (gdy jest), tytul i rok
+                reszta.take(300).chunked(3).forEach { rzad ->
+                    val rz = LinearLayout(this@AktorActivity).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, 0, 0, dp(12)) }
+                    rzad.forEach { f ->
+                        val t = f.first.ifEmpty { f.second }
+                        val k = LinearLayout(this@AktorActivity).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(4), 0, dp(4), 0) }
+                        val fr = FrameLayout(this@AktorActivity).apply { background = tlo(KARTA, 8); clipToOutline = true }
+                        fr.addView(tekst(t, 12f, SZARY).apply { gravity = Gravity.CENTER; setPadding(dp(6), 0, dp(6), 0) }, FrameLayout.LayoutParams(-1, -1))
+                        val im = ImageView(this@AktorActivity).apply { scaleType = ImageView.ScaleType.CENTER_CROP }
+                        fr.addView(im, FrameLayout.LayoutParams(-1, -1))
+                        (Dodatki.okladka(f.first) ?: Dodatki.okladka(f.second))?.let { im.load(it) }
+                        k.addView(fr, LinearLayout.LayoutParams(-1, dp(165)))
+                        k.addView(tekst(t, 13f, 0xFFCCCCCC.toInt()).apply { maxLines = 2; ellipsize = android.text.TextUtils.TruncateAt.END; setPadding(0, dp(5), 0, 0) })
+                        if (f.third > 0) k.addView(tekst(f.third.toString(), 12f, SZARY))
+                        rz.addView(k, LinearLayout.LayoutParams(0, -2, 1f))
+                    }
+                    repeat(3 - rzad.size) { rz.addView(android.view.View(this@AktorActivity), LinearLayout.LayoutParams(0, 1, 1f)) }
                     inne.addView(rz)
                 }
             }
