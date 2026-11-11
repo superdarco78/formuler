@@ -1,3 +1,4 @@
+Rytm banera|zajawka na banerze grała ok. minuty|plakat 3 s → zajawka 30 s → następny plakat 3 s → zajawka 30 s… (czasy zmienisz w panelu)
 Baner czeka na zajawkę|baner przeskakiwał na następny film po 7–9 s, zanim zajawka zdążyła ruszyć|baner czeka, aż zajawka się załaduje i dogra; gdy nie ruszy w 25 s – napis z powodem
 Diagnostyka zajawek|zajawka znikała bez śladu|gdy zajawka nie ruszy, na dole pokazuje się powód (np. HTTP 403) i raport idzie na serwer
 Zajawka w ekranie filmu|po wejściu w film stał sam plakat|po 2,5 s plakat na górze zamienia się w fragment filmu (serial: 1. odcinek), bez dźwięku

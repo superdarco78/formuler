@@ -677,7 +677,7 @@ class StartActivity : AppCompatActivity() {
                                 val d = duration
                                 if (d > 120_000) seekTo((d * (0.15 + Math.random() * 0.55)).toLong())
                                 playWhenReady = true
-                                karta.postDelayed({ if (i == n && zwiastun != null) zwiastunWidok.animate().alpha(0f).setDuration(900).withEndAction { stopZwiastun() }.start() }, czasZajawki("czas_baner", 55) * 1000L)
+                                karta.postDelayed({ if (i == n && zwiastun != null) zwiastunWidok.animate().alpha(0f).setDuration(900).withEndAction { stopZwiastun() }.start() }, czasZajawki("czas_baner", 30) * 1000L)
                             }
                         }
                         override fun onIsPlayingChanged(gra: Boolean) { if (gra && przewiniete && zwiastunWidok.alpha == 0f) zwiastunWidok.animate().alpha(1f).setStartDelay(300).setDuration(900).start() }
