@@ -123,7 +123,11 @@ class StartActivity : AppCompatActivity() {
         miniTeraz = tekst("", 13f, SZARY).apply { maxLines = 1 }
         mOpis.addView(miniNazwa); mOpis.addView(miniTeraz)
         mini.addView(mOpis, LinearLayout.LayoutParams(0, -2, 1f))
-        mini.addView(tekst("✕", 22f).apply { gravity = Gravity.CENTER; isFocusable = true; setOnClickListener { zamknijMini() } }, LinearLayout.LayoutParams(dp(56), dp(84)))
+        mini.addView(tekst("⏸", 22f).apply { gravity = Gravity.CENTER; isFocusable = true
+            setOnClickListener { miniGracz?.let { g -> g.playWhenReady = !g.playWhenReady; text = if (g.playWhenReady) "⏸" else "▶" } } }, LinearLayout.LayoutParams(dp(44), dp(84)))
+        mini.addView(tekst("⛶", 22f).apply { gravity = Gravity.CENTER; isFocusable = true
+            setOnClickListener { miniKanal?.let { val ch = it; zamknijMini(); graj(ch, pelny = true) } } }, LinearLayout.LayoutParams(dp(44), dp(84)))
+        mini.addView(tekst("✕", 22f).apply { gravity = Gravity.CENTER; isFocusable = true; setOnClickListener { zamknijMini() } }, LinearLayout.LayoutParams(dp(48), dp(84)))
         mini.setOnClickListener { miniKanal?.let { val ch = it; zamknijMini(); graj(ch) } }
         root.addView(mini, LinearLayout.LayoutParams(-1, -2))
         dol = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setBackgroundColor(0xFF0D0D0D.toInt()) }
@@ -520,17 +524,17 @@ class StartActivity : AppCompatActivity() {
             glowny?.let { (it.parent as? ViewGroup)?.removeView(it); setContentView(it) }
             // Powiekszenie okienka -> TV na caly ekran; zamkniecie (X) -> koniec grania.
             window.decorView.postDelayed({
-                if (lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) miniKanal?.let { val ch = it; zamknijMini(); graj(ch) }
+                if (lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) miniKanal?.let { val ch = it; zamknijMini(); graj(ch, pelny = true) }
                 else zamknijMini()
             }, 400)
         }
     }
 
-    private fun graj(ch: Kanal) {
+    private fun graj(ch: Kanal, pelny: Boolean = false) {
         if (miniGracz != null || Ust.prefs(this).contains("mini")) zamknijMini()
         Ust.zapiszOstatni(this, ch)
         startActivity(Intent(this, OdtwarzaczActivity::class.java)
-            .putExtra("url", Serwer.adresKanalu(this, ch.id)).putExtra("nazwa", ch.nazwa).putExtra("logo", ch.logo).putExtra("id", ch.id).putExtra("kat", ch.kat))
+            .putExtra("url", Serwer.adresKanalu(this, ch.id)).putExtra("nazwa", ch.nazwa).putExtra("logo", ch.logo).putExtra("id", ch.id).putExtra("kat", ch.kat).putExtra("pelny", pelny))
     }
 
     // ---------------- Ustawienia ----------------

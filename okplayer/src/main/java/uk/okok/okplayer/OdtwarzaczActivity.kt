@@ -93,6 +93,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         }
         biezacy = Kanal(intent.getStringExtra("id") ?: "", intent.getStringExtra("nazwa") ?: "", intent.getStringExtra("logo"), intent.getStringExtra("kat") ?: "", 0)
         trybNaZywo(true)
+        if (intent.getBooleanExtra("pelny", false)) requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         ustawPanel()
         uloz(resources.configuration.orientation)
         lifecycleScope.launch {
