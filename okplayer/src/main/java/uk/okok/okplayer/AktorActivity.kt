@@ -53,6 +53,25 @@ class AktorActivity : AppCompatActivity() {
         gora.addView(opis, LinearLayout.LayoutParams(0, -2, 1f))
         kol.addView(gora)
 
+        // Dane aktora: kim jest, urodzony, miejsce, biografia (rozwijana dotknieciem)
+        val dane = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(0, 0, 0, dp(8)) }
+        kol.addView(dane)
+        lifecycleScope.launch {
+            val b = withContext(Dispatchers.IO) { Dodatki.bio(nazwa) }
+            b["Kim jest"]?.let { opis.addView(tekst(it, 14f, 0xFFBDBDBD.toInt()).apply { setPadding(0, dp(6), 0, 0) }, 1) }
+            for (k in listOf("Urodzony", "Miejsce urodzenia", "Zmarł")) b[k]?.let { v ->
+                dane.addView(LinearLayout(this@AktorActivity).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(4), 0, dp(4))
+                    addView(tekst(k, 14f, SZARY), LinearLayout.LayoutParams(dp(150), -2)); addView(tekst(v, 14f), LinearLayout.LayoutParams(0, -2, 1f)) })
+            }
+            b["bio"]?.let { bio ->
+                val t = tekst(bio, 15f, 0xFFDDDDDD.toInt()).apply { setPadding(0, dp(10), 0, dp(4)); maxLines = 5; ellipsize = android.text.TextUtils.TruncateAt.END; setLineSpacing(0f, 1.15f) }
+                var rozw = false
+                t.setOnClickListener { rozw = !rozw; t.maxLines = if (rozw) Int.MAX_VALUE else 5 }
+                dane.addView(tekst("Biografia", 18f, g = true).apply { setPadding(0, dp(12), 0, 0) })
+                dane.addView(t)
+                dane.addView(tekst("Więcej / Mniej", 13f, SZARY).apply { setOnClickListener { t.performClick() } })
+            }
+        }
         val naLiscie = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         val inne = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         kol.addView(naLiscie); kol.addView(inne)
@@ -92,8 +111,8 @@ class AktorActivity : AppCompatActivity() {
                 }
             }
             if (reszta.isNotEmpty()) {
-                inne.addView(tekst("Pozostałe filmy (brak na liście)", 19f, g = true).apply { setPadding(0, dp(14), 0, dp(8)) })
-                reszta.take(150).forEach { f ->
+                inne.addView(tekst("Wszystkie filmy, w których grał (brak na Twojej liście)", 19f, g = true).apply { setPadding(0, dp(14), 0, dp(8)) })
+                reszta.take(300).forEach { f ->
                     val t = f.first.ifEmpty { f.second }
                     val rz = LinearLayout(this@AktorActivity).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(9), 0, dp(9)) }
                     rz.addView(tekst(if (f.third > 0) f.third.toString() else "—", 14f, SZARY), LinearLayout.LayoutParams(dp(56), -2))

@@ -106,4 +106,31 @@ object Dodatki {
         }
         wynik
     } catch (e: Exception) { null }
+
+    /** Dane aktora: data i miejsce urodzenia, zawod, krotka biografia z Wikipedii (po polsku, a gdy brak - po angielsku). */
+    fun bio(nazwa: String): Map<String, String> {
+        val out = HashMap<String, String>()
+        try {
+            if (!imdbId.containsKey(nazwa)) zdjecieAktora(nazwa)
+            val nm = imdbId[nazwa] ?: ""
+            val ktos = if (nm.isNotEmpty()) "?a wdt:P345 \"$nm\"." else "?a rdfs:label \"${nazwa.replace("\"", "")}\"@en; wdt:P31 wd:Q5."
+            val a = sparql("SELECT ?ur ?mL ?smL ?plw ?enw WHERE { $ktos OPTIONAL { ?a wdt:P569 ?ur. } OPTIONAL { ?a wdt:P19 ?m. ?m rdfs:label ?mL. FILTER(lang(?mL)=\"pl\") } " +
+                "OPTIONAL { ?a wdt:P570 ?sm. BIND(STR(?sm) AS ?smL) } OPTIONAL { ?plw schema:about ?a; schema:isPartOf <https://pl.wikipedia.org/>. } OPTIONAL { ?enw schema:about ?a; schema:isPartOf <https://en.wikipedia.org/>. } } LIMIT 1")
+            if (a.length() > 0) {
+                val o = a.getJSONObject(0)
+                fun v(k: String) = o.optJSONObject(k)?.optString("value") ?: ""
+                v("ur").take(10).takeIf { it.isNotEmpty() }?.let { out["Urodzony"] = it.split("-").reversed().joinToString(".") }
+                v("mL").takeIf { it.isNotEmpty() }?.let { out["Miejsce urodzenia"] = it }
+                v("smL").take(10).takeIf { it.isNotEmpty() }?.let { out["Zmarł"] = it.split("-").reversed().joinToString(".") }
+                val wiki = v("plw").ifEmpty { v("enw") }
+                if (wiki.isNotEmpty()) {
+                    val host = wiki.substringBefore("/wiki/"); val tytul = wiki.substringAfter("/wiki/")
+                    val j = JSONObject(tekst("$host/api/rest_v1/page/summary/$tytul"))
+                    j.optString("extract").takeIf { it.isNotEmpty() }?.let { out["bio"] = it }
+                    j.optString("description").takeIf { it.isNotEmpty() }?.let { out["Kim jest"] = it }
+                }
+            }
+        } catch (_: Exception) { }
+        return out
+    }
 }

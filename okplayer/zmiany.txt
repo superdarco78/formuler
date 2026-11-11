@@ -1,3 +1,3 @@
-Opis filmu – czekanie|„Ładuję…” trwało nawet ponad minutę|po 3 s pokazuje się opis z zapasowej bazy (jak w starej aplikacji), a gdy serwer odpowie – podmienia się na pełny opis z serwera
-Pierwsze próby serwera|po 25 s każda|10 s, 10 s, ostatnia 25 s
-Opis, gdy serwer go nie ma|pusta strona|opis, gatunek i rok z iTunes, ocena z listy, zwiastun po tytule
+Ekran aktora – dane|tylko zdjęcie i nazwisko|pod nazwiskiem „kim jest” (np. aktor i producent), data i miejsce urodzenia, a niżej biografia z Wikipedii – dotknij, żeby rozwinąć całą
+Ekran aktora – filmy|do 150 pozostałych filmów|najpierw jego filmy z Twojej listy (z okładkami, do kliknięcia), niżej wszystkie filmy, w których grał – do 300, z rokiem
+Opis filmu|„Ładuję…” ponad minutę|po 3 s opis z zapasowej bazy, potem pełny z serwera
