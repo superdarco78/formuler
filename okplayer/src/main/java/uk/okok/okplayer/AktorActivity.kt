@@ -34,7 +34,7 @@ class AktorActivity : AppCompatActivity() {
         val nazwa = intent.getStringExtra("aktor") ?: ""
         val rola = intent.getStringExtra("rola") ?: ""
         val kol = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), dp(12), dp(16), dp(24)) }
-        val sv = ScrollView(this).apply { setBackgroundColor(Color.BLACK); addView(kol) }
+        val sv = ScrollView(this).apply { setBackgroundResource(R.drawable.ok_gr_tlo_aplikacji); addView(kol) }
         setContentView(sv)
 
         val wstecz = tekst("‹", 30f).apply { gravity = Gravity.CENTER; background = tlo(0xAA222222.toInt(), 26); isFocusable = true; setOnClickListener { finish() } }

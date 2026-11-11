@@ -56,6 +56,11 @@ class StartActivity : AppCompatActivity() {
         text = t; textSize = rozm; setTextColor(kol); if (gruby) setTypeface(typeface, Typeface.BOLD)
     }
     private fun tlo(kol: Int, r: Int) = GradientDrawable().apply { setColor(kol); cornerRadius = dp(r).toFloat() }
+    /** 2.01: swiecaca ramka z Canvy na zaznaczonym plakacie (pilot / dotyk). */
+    private fun ramkaCanvy() = android.graphics.drawable.StateListDrawable().apply {
+        addState(intArrayOf(android.R.attr.state_focused), getDrawable(R.drawable.ok_gr_ramka))
+        addState(intArrayOf(android.R.attr.state_pressed), getDrawable(R.drawable.ok_gr_ramka))
+    }
     private val wersja by lazy { try { packageManager.getPackageInfo(packageName, 0).versionName } catch (e: Exception) { "?" } }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -107,13 +112,13 @@ class StartActivity : AppCompatActivity() {
     // ---------------- ekran glowny ----------------
     private fun ekranGlowny() {
         parowanie?.cancel()
-        val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(CZARNY) }
+        val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundResource(R.drawable.ok_gr_tlo_aplikacji) }
         glowny = root
         val gora = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(18), dp(14), dp(18), dp(10)) }
-        gora.addView(ImageView(this).apply { setImageResource(R.mipmap.ic_launcher) }, LinearLayout.LayoutParams(dp(36), dp(36)))
-        gora.addView(tekst("OK Player", 22f, gruby = true).apply { setPadding(dp(10), 0, 0, 0) }, LinearLayout.LayoutParams(0, -2, 1f))
-        gora.addView(ImageView(this).apply { setImageResource(R.drawable.ik_szukaj); scaleType = ImageView.ScaleType.FIT_CENTER; isFocusable = true; setPadding(dp(8), dp(8), dp(8), dp(8)); setOnClickListener { pokaz(5) } }, LinearLayout.LayoutParams(dp(46), dp(46)))
-        gora.addView(ImageView(this).apply { setImageResource(R.drawable.ik_ustawienia); scaleType = ImageView.ScaleType.FIT_CENTER; isFocusable = true; setPadding(dp(9), dp(9), dp(9), dp(9)); setOnClickListener { pokaz(4) } }, LinearLayout.LayoutParams(dp(46), dp(46)).apply { marginEnd = dp(8) })
+        gora.addView(ImageView(this).apply { setImageResource(R.drawable.ok_gr_logo); scaleType = ImageView.ScaleType.FIT_START; adjustViewBounds = true }, LinearLayout.LayoutParams(dp(110), dp(40)))
+        gora.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
+        gora.addView(ImageView(this).apply { setImageResource(R.drawable.ok_gr_ik_szukaj); scaleType = ImageView.ScaleType.FIT_CENTER; isFocusable = true; setPadding(dp(2), dp(2), dp(2), dp(2)); setOnClickListener { pokaz(5) } }, LinearLayout.LayoutParams(dp(46), dp(46)))
+        gora.addView(ImageView(this).apply { setImageResource(R.drawable.ok_gr_ik_ustawienia); scaleType = ImageView.ScaleType.FIT_CENTER; isFocusable = true; setPadding(dp(2), dp(2), dp(2), dp(2)); setOnClickListener { pokaz(4) } }, LinearLayout.LayoutParams(dp(46), dp(46)).apply { marginStart = dp(6); marginEnd = dp(8) })
         gora.addView(tekst("v$wersja", 12f, SZARY))
         root.addView(gora)
         // Tresc zakladek + mini-okno TV plywajace nad nia (kwadrat z obrazem, bez opisu; dotknij = pelny ekran, X = zamknij).
@@ -131,6 +136,7 @@ class StartActivity : AppCompatActivity() {
             background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(0xCC000000.toInt()) }
             setOnClickListener { zamknijMini() }
         }, FrameLayout.LayoutParams(dp(30), dp(30)).apply { gravity = Gravity.TOP or Gravity.END; setMargins(0, dp(6), dp(6), 0) })
+        mini.addView(ImageView(this).apply { setImageResource(R.drawable.ok_gr_ramka); scaleType = ImageView.ScaleType.FIT_XY; isClickable = false; isFocusable = false }, 1, FrameLayout.LayoutParams(-1, -1))
         miniNazwa = tekst("", 1f); miniTeraz = tekst("", 1f)
         // Dotkniecie = pelny ekran; przeciagniecie palcem = przesuwanie okienka.
         var x0 = 0f; var y0 = 0f; var ruch = false
@@ -153,13 +159,13 @@ class StartActivity : AppCompatActivity() {
         banerCanvy = ImageView(this).apply { adjustViewBounds = true; scaleType = ImageView.ScaleType.FIT_XY; visibility = View.GONE }
         root.addView(banerCanvy, LinearLayout.LayoutParams(-1, -2))
         root.addView(obszar, LinearLayout.LayoutParams(-1, 0, 1f))
-        dol = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setBackgroundColor(0xFF0D0D0D.toInt()) }
+        dol = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setBackgroundResource(R.drawable.ok_gr_pasek); setPadding(dp(6), dp(2), dp(6), dp(2)) }
         // Dolne menu jak w MyTvOnline: same ikonki (Start, TV, Filmy, Seriale, Ulubione)
-        listOf(R.drawable.ik_start to 0, R.drawable.ik_tv to 1, R.drawable.ik_filmy to 2, R.drawable.ik_seriale to 3, R.drawable.ik_radio to 7, R.drawable.ik_ulubione to 6).forEach { (ik, z) ->
+        listOf(R.drawable.ok_gr_menu_start to 0, R.drawable.ok_gr_menu_tv to 1, R.drawable.ok_gr_menu_filmy to 2, R.drawable.ok_gr_menu_seriale to 3, R.drawable.ok_gr_menu_radio to 7, R.drawable.ok_gr_menu_ulubione to 6).forEach { (ik, z) ->
             dol.addView(ImageView(this).apply {
-                setImageResource(ik); scaleType = ImageView.ScaleType.FIT_CENTER; setPadding(0, dp(17), 0, dp(17)); isFocusable = true; tag = z
-                setColorFilter(SZARY); setOnClickListener { pokaz(z) }
-            }, LinearLayout.LayoutParams(0, dp(62), 1f))
+                setImageResource(ik); scaleType = ImageView.ScaleType.FIT_CENTER; setPadding(0, dp(9), 0, dp(9)); isFocusable = true; tag = z
+                setOnClickListener { pokaz(z) }
+            }, LinearLayout.LayoutParams(0, dp(66), 1f))
         }
         root.addView(dol)
         setContentView(root)
@@ -172,8 +178,8 @@ class StartActivity : AppCompatActivity() {
         zakladka = i
         for (k in 0 until dol.childCount) (dol.getChildAt(k) as ImageView).apply {
             val wyb = tag == i
-            setColorFilter(if (wyb) Color.WHITE else 0xFF7A7A7A.toInt())
-            background = if (wyb) android.graphics.drawable.LayerDrawable(arrayOf(GradientDrawable().apply { setColor(AKCENT) })).apply { setLayerHeight(0, dp(3)); setLayerGravity(0, Gravity.TOP); setLayerInsetLeft(0, dp(22)); setLayerInsetRight(0, dp(22)) } else null
+            // 2.01: ikony 3D z Canvy - wybrana pelna i powiekszona, pozostale przygaszone.
+            animate().alpha(if (wyb) 1f else 0.45f).scaleX(if (wyb) 1.15f else 0.95f).scaleY(if (wyb) 1.15f else 0.95f).setDuration(200).start()
         }
         tresc.removeAllViews()
         // Wejscie w TV: obraz od razu na gorze (kanal z malego kwadratu albo ostatnio ogladany), pod nim lista - jak na zdjeciu.
@@ -259,7 +265,8 @@ class StartActivity : AppCompatActivity() {
             override fun onCreateViewHolder(p: ViewGroup, t: Int) = object : RecyclerView.ViewHolder(FrameLayout(p.context).apply {
                 isFocusable = true; layoutParams = RecyclerView.LayoutParams(sz + dp(40), -2).apply { marginEnd = dp(6) }
                 val kol = LinearLayout(p.context).apply { orientation = LinearLayout.VERTICAL }
-                kol.addView(ImageView(p.context).apply { scaleType = ImageView.ScaleType.CENTER_CROP; background = tlo(KARTA, 8); clipToOutline = true }, LinearLayout.LayoutParams(sz, wy))
+                kol.addView(ImageView(p.context).apply { scaleType = ImageView.ScaleType.CENTER_CROP; background = tlo(KARTA, 8); clipToOutline = true; foreground = ramkaCanvy(); isDuplicateParentStateEnabled = true }, LinearLayout.LayoutParams(sz, wy))
+                kol.isDuplicateParentStateEnabled = true
                 kol.addView(tekst("", 14f, gruby = true).apply { maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END; setPadding(0, dp(8), 0, 0) }, LinearLayout.LayoutParams(sz, -2))
                 kol.addView(tekst("", 13f, SZARY).apply { maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END }, LinearLayout.LayoutParams(sz, -2))
                 addView(kol, FrameLayout.LayoutParams(-2, -2).apply { leftMargin = dp(40) })
@@ -267,6 +274,7 @@ class StartActivity : AppCompatActivity() {
                     textSize = 58f; setTextColor(Color.BLACK); setTypeface(Typeface.DEFAULT_BOLD, Typeface.BOLD_ITALIC)
                     setShadowLayer(3f, 0f, 0f, Color.WHITE); paint.style = android.graphics.Paint.Style.FILL_AND_STROKE; paint.strokeWidth = 1f
                 }, FrameLayout.LayoutParams(-2, -2).apply { topMargin = dp(2) })
+                addView(ImageView(p.context).apply { scaleType = ImageView.ScaleType.FIT_CENTER; elevation = dp(4).toFloat() }, FrameLayout.LayoutParams(dp(58), dp(86)).apply { gravity = Gravity.TOP or Gravity.START; topMargin = (wy - dp(78)).coerceAtLeast(0) })
             }) {}
             override fun onBindViewHolder(h: RecyclerView.ViewHolder, i: Int) {
                 val f = h.itemView as FrameLayout; val v = l[i]
@@ -274,7 +282,10 @@ class StartActivity : AppCompatActivity() {
                 (kol.getChildAt(0) as ImageView).apply { setImageDrawable(null); v.okladka?.let { load(it) } }
                 (kol.getChildAt(1) as TextView).text = v.nazwa.replace(Regex("\\s*\\(\\d{4}\\)\\s*$"), "")
                 (kol.getChildAt(2) as TextView).text = nazwaKat(v.kat, kat)
+                val cyfra = if (i < 10) canva("ok_gr_cyfra_" + (i + 1)) else 0
+                (f.getChildAt(2) as ImageView).apply { if (cyfra != 0) { setImageResource(cyfra); visibility = View.VISIBLE } else visibility = View.GONE }
                 (f.getChildAt(1) as TextView).apply {
+                    visibility = if (cyfra != 0) View.GONE else View.VISIBLE
                     text = "${i + 1}"
                     // obrys cyfry jak w MyTvOnline: biala kreska, czarny srodek
                     paint.style = android.graphics.Paint.Style.STROKE; paint.strokeWidth = dp(2).toFloat(); setTextColor(Color.WHITE)
@@ -294,7 +305,7 @@ class StartActivity : AppCompatActivity() {
             override fun getItemCount() = l.size
             override fun onCreateViewHolder(p: ViewGroup, t: Int) = object : RecyclerView.ViewHolder(LinearLayout(p.context).apply {
                 orientation = LinearLayout.VERTICAL; isFocusable = true; layoutParams = RecyclerView.LayoutParams(dp(128), -2).apply { marginEnd = dp(10) }
-                val fr = FrameLayout(p.context).apply { background = tlo(KARTA, 8); clipToOutline = true }
+                val fr = FrameLayout(p.context).apply { background = tlo(KARTA, 8); clipToOutline = true; foreground = ramkaCanvy(); isDuplicateParentStateEnabled = true }
                 fr.addView(ImageView(p.context).apply { scaleType = ImageView.ScaleType.CENTER_CROP }, FrameLayout.LayoutParams(-1, -1))
                 fr.addView(android.widget.ProgressBar(p.context, null, android.R.attr.progressBarStyleHorizontal).apply {
                     max = 100; progressTintList = android.content.res.ColorStateList.valueOf(0xFFE53935.toInt()); progressBackgroundTintList = android.content.res.ColorStateList.valueOf(0xFF333333.toInt())
@@ -325,12 +336,12 @@ class StartActivity : AppCompatActivity() {
             override fun getItemCount() = l.size
             override fun onCreateViewHolder(p: ViewGroup, t: Int) = object : RecyclerView.ViewHolder(LinearLayout(p.context).apply {
                 orientation = LinearLayout.VERTICAL; isFocusable = true; layoutParams = RecyclerView.LayoutParams(dp(118), -2).apply { marginEnd = dp(10) }
-                addView(ImageView(p.context).apply { scaleType = ImageView.ScaleType.FIT_CENTER; background = tlo(0xFF222222.toInt(), 10); setPadding(dp(14), dp(10), dp(14), dp(10)) }, LinearLayout.LayoutParams(-1, dp(76)))
+                addView(ImageView(p.context).apply { scaleType = ImageView.ScaleType.FIT_CENTER; setBackgroundResource(R.drawable.ok_gr_okno); setPadding(dp(14), dp(10), dp(14), dp(10)); foreground = ramkaCanvy(); isDuplicateParentStateEnabled = true }, LinearLayout.LayoutParams(-1, dp(76)))
                 addView(tekst("", 14f).apply { gravity = Gravity.CENTER; maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END; setPadding(0, dp(6), 0, 0) })
             }) {}
             override fun onBindViewHolder(h: RecyclerView.ViewHolder, i: Int) {
                 val w = h.itemView as LinearLayout; val ch = l[i]
-                (w.getChildAt(0) as ImageView).apply { setImageDrawable(null); if (ch.logo != null) load(ch.logo) { canva("brak_logo").takeIf { it != 0 }?.let { error(it) } } else canva("brak_logo").takeIf { it != 0 }?.let { setImageResource(it) } }
+                (w.getChildAt(0) as ImageView).apply { setImageDrawable(null); if (ch.logo != null) load(ch.logo) { canva("ok_gr_brak_logo").takeIf { it != 0 }?.let { error(it) } } else canva("ok_gr_brak_logo").takeIf { it != 0 }?.let { setImageResource(it) } }
                 (w.getChildAt(1) as TextView).text = ch.nazwa
                 w.setOnClickListener { graj(ch) }
             }
@@ -382,7 +393,7 @@ class StartActivity : AppCompatActivity() {
             rv.adapter = object : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
                 override fun getItemCount() = trwa.size
                 override fun onCreateViewHolder(p: ViewGroup, t: Int) = object : RecyclerView.ViewHolder(LinearLayout(p.context).apply {
-                    orientation = LinearLayout.VERTICAL; isFocusable = true; setPadding(dp(12), dp(10), dp(12), dp(10)); background = tlo(0xFF1C1C1C.toInt(), 12)
+                    orientation = LinearLayout.VERTICAL; isFocusable = true; setPadding(dp(14), dp(12), dp(14), dp(12)); setBackgroundResource(R.drawable.ok_gr_okno); foreground = ramkaCanvy()
                     layoutParams = RecyclerView.LayoutParams(dp(230), -2).apply { marginEnd = dp(10) }
                     addView(LinearLayout(p.context).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
                         addView(ImageView(p.context).apply { scaleType = ImageView.ScaleType.FIT_CENTER }, LinearLayout.LayoutParams(dp(54), dp(34)))
@@ -398,8 +409,10 @@ class StartActivity : AppCompatActivity() {
                     ((w.getChildAt(0) as LinearLayout).getChildAt(0) as ImageView).apply { setImageDrawable(null); ch.logo?.let { load(it) } }
                     val liga = ligi.firstOrNull { (wz, _, _) -> wz.containsMatchIn(t) || wz.containsMatchIn(ch.nazwa) }
                     ((w.getChildAt(0) as LinearLayout).getChildAt(1) as TextView).apply {
-                        text = liga?.second ?: "● NA ŻYWO"; setTextColor(Color.WHITE)
-                        background = tlo(liga?.third ?: AKCENT, 8); setPadding(dp(8), dp(3), dp(8), dp(3))
+                        text = liga?.second ?: ""; setTextColor(Color.WHITE)
+                        // bez rozpoznanej ligi: plakietka NA ZYWO z Canvy
+                        if (liga == null) { setBackgroundResource(R.drawable.ok_gr_plakietka_zywo); minWidth = dp(84); minHeight = dp(24); setPadding(0, 0, 0, 0) }
+                        else { background = tlo(liga.third, 8); minWidth = 0; minHeight = 0; setPadding(dp(8), dp(3), dp(8), dp(3)) }
                         (layoutParams as? LinearLayout.LayoutParams)?.marginStart = dp(10)
                     }
                     // Druzyny "A - B" w dwoch linijkach, jak w aplikacjach sportowych
@@ -435,7 +448,7 @@ class StartActivity : AppCompatActivity() {
     private var waznoscPamiec: String? = null
     private fun kartaZegara(): View {
         val karta = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(16), dp(12), dp(16), dp(12))
-            background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(0xFF2A1030.toInt(), 0xFF1A1A2A.toInt())).apply { cornerRadius = dp(16).toFloat() } }
+            setBackgroundResource(R.drawable.ok_gr_okno) }
         val lewa = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         lewa.addView(android.widget.TextClock(this).apply { format24Hour = "HH:mm"; format12Hour = "HH:mm"; textSize = 34f; setTextColor(Color.WHITE); setTypeface(typeface, android.graphics.Typeface.BOLD) })
         lewa.addView(android.widget.TextClock(this).apply { format24Hour = "EEEE, d MMMM yyyy"; format12Hour = "EEEE, d MMMM yyyy"; textSize = 14f; setTextColor(0xFFBDBDBD.toInt()) })
@@ -464,12 +477,11 @@ class StartActivity : AppCompatActivity() {
             Triple("📻", "Radio") { pokaz(7) }, Triple("🕘", "Historia") { pokaz(8) }, Triple("👤", "Konto") { ekranKonta() }, Triple("⚙️", "Ustawienia") { pokaz(4) })
         poz.forEachIndexed { i, (ik, nazwa, akcja) ->
             val el = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL; setPadding(0, dp(6), 0, dp(6)); isFocusable = true; isClickable = true }
-            val ikC = mapOf("Telewizja" to "ik_c_tv", "Filmy" to "ik_c_filmy", "Seriale" to "ik_c_seriale", "Ulubione" to "ik_c_ulubione", "Szukaj" to "ik_c_szukaj", "Ustawienia" to "ik_c_ustawienia", "Radio" to "ik_c_kanaly")[nazwa]?.let { canva(it) } ?: 0
+            val ikC = mapOf("Telewizja" to "ok_gr_ik_tv", "Filmy" to "ok_gr_ik_filmy", "Seriale" to "ok_gr_ik_seriale", "Ulubione" to "ok_gr_ik_ulubione", "Radio" to "ok_gr_ik_radio", "Historia" to "ok_gr_ik_historia", "Konto" to "ok_gr_ik_konto", "Ustawienia" to "ok_gr_ik_ustawienia")[nazwa]?.let { canva(it) } ?: 0
             val kolo: View = if (ikC != 0) ImageView(this).apply { setImageResource(ikC) } else tekst(ik, 24f).apply { gravity = Gravity.CENTER
                 background = if (i == 0) GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(0xFFFF3D5A.toInt(), 0xFFB52AD6.toInt())).apply { shape = GradientDrawable.OVAL }
                     else GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(0xFF2A2A35.toInt()); setStroke(dp(1), 0xFF3A3A48.toInt()) } }
-            if (ikC != 0 && i == 0) kolo.background = GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(0xFFFF3D5A.toInt(), 0xFFB52AD6.toInt())).apply { cornerRadius = dp(16).toFloat() }
-            el.addView(kolo, LinearLayout.LayoutParams(dp(58), dp(58)))
+            el.addView(kolo, LinearLayout.LayoutParams(dp(64), dp(64)))
             el.addView(tekst(nazwa, 12f, if (i == 0) 0xFFFF6B85.toInt() else 0xFFDDDDDD.toInt()).apply { setPadding(0, dp(4), 0, 0); gravity = Gravity.CENTER })
             el.setOnClickListener { kolo.animate().scaleX(0.85f).scaleY(0.85f).setDuration(90).withEndAction { kolo.animate().scaleX(1f).scaleY(1f).setDuration(120).start(); akcja() }.start() }
             siatka.addView(el, android.widget.GridLayout.LayoutParams(android.widget.GridLayout.spec(i / 4, 1f), android.widget.GridLayout.spec(i % 4, 1f)).apply { width = 0 })
@@ -580,7 +592,7 @@ class StartActivity : AppCompatActivity() {
         fun kiedy(c: Long): String { val m = (teraz - c) / 60000; return when { m < 1 -> "przed chwilą"; m < 60 -> "$m min temu"; m < 1440 -> "${m / 60} godz. temu"; else -> java.text.SimpleDateFormat("d.MM, HH:mm", Jezyk.loc).format(java.util.Date(c)) } }
         for (o in l) {
             val tv = o.optString("t") == "tv"; val u = o.optString("u")
-            val w = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; background = tlo(KARTA, 12); setPadding(dp(10), dp(10), dp(12), dp(10)); isFocusable = true }
+            val w = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setBackgroundResource(R.drawable.ok_gr_okno); foreground = ramkaCanvy(); setPadding(dp(10), dp(10), dp(12), dp(10)); isFocusable = true }
             w.addView(ImageView(this).apply { scaleType = if (tv) ImageView.ScaleType.FIT_CENTER else ImageView.ScaleType.CENTER_CROP; background = tlo(0xFF2A2A30.toInt(), 8); clipToOutline = true
                 o.optString("o").takeIf { it.startsWith("http") }?.let { load(it) } }, LinearLayout.LayoutParams(if (tv) dp(84) else dp(56), if (tv) dp(52) else dp(80)))
             val p = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), 0, 0, 0) }
@@ -771,14 +783,14 @@ class StartActivity : AppCompatActivity() {
                 orientation = LinearLayout.VERTICAL; isFocusable = true
                 layoutParams = if (szer > 0) RecyclerView.LayoutParams(szer, -2).apply { marginEnd = dp(10) } else RecyclerView.LayoutParams(-1, -2).apply { setMargins(dp(4), dp(4), dp(4), dp(8)) }
                 val wys = if (szer > 0) szer * 3 / 2 else (resources.displayMetrics.widthPixels / 3 - dp(14)) * 3 / 2
-                addView(ImageView(p.context).apply { scaleType = ImageView.ScaleType.CENTER_CROP; background = tlo(KARTA, 8); clipToOutline = true }, LinearLayout.LayoutParams(-1, wys))
+                addView(ImageView(p.context).apply { scaleType = ImageView.ScaleType.CENTER_CROP; background = tlo(KARTA, 8); clipToOutline = true; foreground = ramkaCanvy(); isDuplicateParentStateEnabled = true }, LinearLayout.LayoutParams(-1, wys))
                 addView(tekst("", 13f).apply { maxLines = 2; setPadding(0, dp(6), 0, 0) })
             }
             return object : RecyclerView.ViewHolder(w) {}
         }
         override fun onBindViewHolder(h: RecyclerView.ViewHolder, i: Int) {
             val w = h.itemView as LinearLayout; val v = l[i]
-            (w.getChildAt(0) as ImageView).apply { setImageDrawable(null); if (v.okladka != null) load(v.okladka) { canva("brak_plakatu").takeIf { it != 0 }?.let { error(it) } } else canva("brak_plakatu").takeIf { it != 0 }?.let { setImageResource(it) } }
+            (w.getChildAt(0) as ImageView).apply { setImageDrawable(null); if (v.okladka != null) load(v.okladka) { canva("ok_gr_brak_plakatu").takeIf { it != 0 }?.let { error(it) } } else canva("ok_gr_brak_plakatu").takeIf { it != 0 }?.let { setImageResource(it) } }
             (w.getChildAt(1) as TextView).text = v.nazwa
             w.setOnClickListener { otworz(v) }
         }
@@ -808,10 +820,10 @@ class StartActivity : AppCompatActivity() {
     }
 
     private fun kafelKanalu(ch: Kanal) = LinearLayout(this).apply {
-        orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; background = tlo(KARTA, 10); setPadding(dp(12), dp(8), dp(12), dp(8)); isFocusable = true
-        addView(ImageView(this@StartActivity).apply { scaleType = ImageView.ScaleType.FIT_CENTER; if (ch.logo != null) load(ch.logo) { canva("brak_logo").takeIf { it != 0 }?.let { error(it) } } else canva("brak_logo").takeIf { it != 0 }?.let { setImageResource(it) } }, LinearLayout.LayoutParams(dp(80), dp(52)))
+        orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setBackgroundResource(R.drawable.ok_gr_okno); foreground = ramkaCanvy(); setPadding(dp(12), dp(8), dp(12), dp(8)); isFocusable = true
+        addView(ImageView(this@StartActivity).apply { scaleType = ImageView.ScaleType.FIT_CENTER; if (ch.logo != null) load(ch.logo) { canva("ok_gr_brak_logo").takeIf { it != 0 }?.let { error(it) } } else canva("ok_gr_brak_logo").takeIf { it != 0 }?.let { setImageResource(it) } }, LinearLayout.LayoutParams(dp(80), dp(52)))
         addView(tekst(ch.nazwa, 17f).apply { setPadding(dp(14), 0, 0, 0) }, LinearLayout.LayoutParams(0, -2, 1f))
-        addView(tekst("▶", 20f, AKCENT))
+        addView(ImageView(this@StartActivity).apply { setImageResource(R.drawable.ok_gr_play) }, LinearLayout.LayoutParams(dp(40), dp(40)))
         setOnClickListener { graj(ch) }
     }
 
@@ -1075,7 +1087,7 @@ class StartActivity : AppCompatActivity() {
         val k = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), dp(8), dp(16), dp(16)) }
         tresc.addView(ScrollView(this).apply { addView(k) })
         fun wiersz(t: String, opis: String, akcja: () -> Unit) = k.addView(LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL; background = tlo(KARTA, 10); setPadding(dp(16), dp(16), dp(16), dp(16)); isFocusable = true
+            orientation = LinearLayout.VERTICAL; setBackgroundResource(R.drawable.ok_gr_okno); foreground = ramkaCanvy(); setPadding(dp(16), dp(16), dp(16), dp(16)); isFocusable = true
             addView(tekst(t, 17f)); addView(tekst(opis, 14f, SZARY))
             setOnClickListener { akcja() }
         }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
@@ -1095,79 +1107,61 @@ class StartActivity : AppCompatActivity() {
         wiersz("Wyloguj", "Aplikacja pokaże nowy kod do edytora") { Ust.wyloguj(this); ekranLogowania() }
     }
 
-    /** Animacja otwarcia: ikona wkreca sie i rosnie, napis wjezdza, potem ekran plynnie sie odslania (ok. 1,3 s, nie blokuje). */
-    /** Animacja startu (ok. 2,6 s): fale rozchodza sie od srodka, logo wpada z odbiciem, napis sie sklada, pasek laduje sie do konca, potem plynne wejscie. */
     private fun animacjaStartu() {
+        // 2.01: animacja startu w calosci z grafik Canvy (ok. 4 s): kino z plakatami wjezdza z bokow, logo OK PLAYER wylania sie i swieci,
+        // neonowy pasek z Canvy laduje sie do konca, napis "Ladowanie kanalow...", na koniec plynne wejscie do aplikacji. Nie blokuje ladowania.
         val dekor = window.decorView as ViewGroup
-        val n = FrameLayout(this).apply { background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(0xFF2A0A1E.toInt(), 0xFF0B0B12.toInt(), Color.BLACK)) }
-        canva("tlo_splash").takeIf { it != 0 }?.let { id -> n.addView(ImageView(this).apply { setImageResource(id); scaleType = ImageView.ScaleType.CENTER_CROP; alpha = 0.55f
-            animate().scaleX(1.12f).scaleY(1.12f).setDuration(2600).start() }, FrameLayout.LayoutParams(-1, -1)) }
-        // Fale: trzy kregi w kolorach logo rozchodzace sie od srodka
-        val fale = listOf(0xFFFF3D5A.toInt(), 0xFFB52AD6.toInt(), 0xFF7A1FFF.toInt()).mapIndexed { i, k ->
-            View(this).apply {
-                background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setStroke(dp(3), k); setColor(Color.TRANSPARENT) }
-                alpha = 0f; scaleX = 0.3f; scaleY = 0.3f
-            }.also { v ->
-                n.addView(v, FrameLayout.LayoutParams(dp(220), dp(220)).apply { gravity = Gravity.CENTER; bottomMargin = dp(70) })
-                v.animate().alpha(0.9f).setStartDelay(150L + i * 220).setDuration(150).withEndAction {
-                    v.animate().scaleX(2.6f).scaleY(2.6f).alpha(0f).setDuration(1100).setInterpolator(android.view.animation.DecelerateInterpolator()).start()
-                }.start()
-            }
-        }
+        val n = FrameLayout(this).apply { setBackgroundColor(Color.BLACK); isClickable = true }
+        val tloS = ImageView(this).apply { setImageResource(R.drawable.ok_gr_start_tlo); scaleType = ImageView.ScaleType.CENTER_CROP; alpha = 0f; scaleX = 1.25f; scaleY = 1.25f }
+        n.addView(tloS, FrameLayout.LayoutParams(-1, -1))
+        val szer = resources.displayMetrics.widthPixels; val wys = resources.displayMetrics.heightPixels
+        val bok = (minOf(szer, wys * 16 / 9) * 0.30f).toInt()
+        val lewa = ImageView(this).apply { setImageResource(R.drawable.ok_gr_start_lewa); scaleType = ImageView.ScaleType.CENTER_CROP; alpha = 0f; translationX = -bok.toFloat() }
+        val prawa = ImageView(this).apply { setImageResource(R.drawable.ok_gr_start_prawa); scaleType = ImageView.ScaleType.CENTER_CROP; alpha = 0f; translationX = bok.toFloat() }
+        n.addView(lewa, FrameLayout.LayoutParams(bok, -1).apply { gravity = Gravity.START })
+        n.addView(prawa, FrameLayout.LayoutParams(bok, -1).apply { gravity = Gravity.END })
+        // przyciemnienie srodka, zeby logo swiecilo
+        n.addView(View(this).apply { background = GradientDrawable().apply { gradientType = GradientDrawable.RADIAL_GRADIENT; gradientRadius = minOf(szer, wys) * 0.7f; colors = intArrayOf(0xEE000000.toInt(), 0x66000000, 0x00000000) } }, FrameLayout.LayoutParams(-1, -1))
         val sr = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER }
-        val ik = ImageView(this).apply { setImageResource(R.mipmap.ic_launcher); elevation = dp(12).toFloat() }
-        sr.addView(ik, LinearLayout.LayoutParams(dp(130), dp(130)))
-        val na = tekst("OK Player", 34f, gruby = true).apply { setPadding(0, dp(18), 0, 0); letterSpacing = 0.6f; alpha = 0f }
-        sr.addView(na)
-        val pod = tekst("Telewizja  •  Filmy  •  Seriale", 15f, 0xFFBDBDBD.toInt()).apply { setPadding(0, dp(8), 0, 0); alpha = 0f }
-        sr.addView(pod)
-        val tor = FrameLayout(this).apply { background = tlo(0xFF2A2A2A.toInt(), 2) }
-        val pas = View(this).apply { background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(0xFFFF3D5A.toInt(), 0xFF7A1FFF.toInt())).apply { cornerRadius = dp(2).toFloat() }; pivotX = 0f; scaleX = 0f }
-        tor.addView(pas, FrameLayout.LayoutParams(dp(160), dp(4)))
-        sr.addView(tor, LinearLayout.LayoutParams(dp(160), dp(4)).apply { topMargin = dp(28) })
+        val poswiata = View(this).apply { background = GradientDrawable().apply { gradientType = GradientDrawable.RADIAL_GRADIENT; gradientRadius = dp(150).toFloat(); colors = intArrayOf(0x88FF2D9A.toInt(), 0x33B52AD6, 0x00000000) }; alpha = 0f }
+        val logoF = FrameLayout(this)
+        logoF.addView(poswiata, FrameLayout.LayoutParams(dp(320), dp(260)).apply { gravity = Gravity.CENTER })
+        val logo = ImageView(this).apply { setImageResource(R.drawable.ok_gr_logo); scaleType = ImageView.ScaleType.FIT_CENTER; alpha = 0f; scaleX = 0.4f; scaleY = 0.4f }
+        logoF.addView(logo, FrameLayout.LayoutParams(dp(230), dp(170)).apply { gravity = Gravity.CENTER })
+        sr.addView(logoF, LinearLayout.LayoutParams(dp(320), dp(230)))
+        val tor = FrameLayout(this).apply { setBackgroundResource(R.drawable.ok_gr_pasek_tor); alpha = 0f }
+        val pelny = android.graphics.drawable.ClipDrawable(getDrawable(R.drawable.ok_gr_pasek_pelny), Gravity.START, android.graphics.drawable.ClipDrawable.HORIZONTAL).apply { level = 0 }
+        tor.addView(View(this).apply { background = pelny }, FrameLayout.LayoutParams(-1, -1))
+        sr.addView(tor, LinearLayout.LayoutParams(dp(260), dp(14)).apply { topMargin = dp(18) })
+        val napis = tekst("Ładowanie kanałów…", 15f, 0xFFE6E6F0.toInt()).apply { gravity = Gravity.CENTER; setPadding(0, dp(14), 0, 0); alpha = 0f; letterSpacing = 0.05f }
+        sr.addView(napis)
         n.addView(sr, FrameLayout.LayoutParams(-1, -1))
         dekor.addView(n, ViewGroup.LayoutParams(-1, -1))
-        // Logo: wpada z gory, obraca sie i odbija
-        ik.translationY = -dp(260).toFloat(); ik.alpha = 0f; ik.rotation = -200f; ik.scaleX = 0.6f; ik.scaleY = 0.6f
-        ik.animate().translationY(0f).alpha(1f).rotation(0f).scaleX(1f).scaleY(1f).setStartDelay(100).setDuration(900)
-            .setInterpolator(android.view.animation.OvershootInterpolator(1.4f)).withEndAction {
-                // Puls po wyladowaniu
-                ik.animate().scaleX(1.12f).scaleY(1.12f).setDuration(180).withEndAction { ik.animate().scaleX(1f).scaleY(1f).setDuration(220).start() }.start()
-                // Fajerwerk: iskry w kolorach logo wylatuja z logo na wszystkie strony
-                val kol = intArrayOf(0xFFFF3D5A.toInt(), 0xFFB52AD6.toInt(), 0xFF7A1FFF.toInt(), 0xFFFFC94D.toInt(), Color.WHITE)
-                val los = java.util.Random()
-                for (i in 0 until 28) {
-                    val iskra = View(this).apply { background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(kol[i % kol.size]) } }
-                    val r = dp(4 + los.nextInt(6))
-                    n.addView(iskra, FrameLayout.LayoutParams(r, r).apply { gravity = Gravity.CENTER; bottomMargin = dp(70) })
-                    val kat = Math.toRadians(i * (360.0 / 28) + los.nextInt(10))
-                    val dl = dp(140 + los.nextInt(120)).toFloat()
-                    iskra.animate().translationX((Math.cos(kat) * dl).toFloat()).translationY((Math.sin(kat) * dl).toFloat())
-                        .alpha(0f).scaleX(0.3f).scaleY(0.3f).setDuration(900L + los.nextInt(400))
-                        .setInterpolator(android.view.animation.DecelerateInterpolator(1.6f)).start()
-                }
-                // Blysk: jasny pas przejezdza po logo
-                val blysk = View(this).apply { background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(0x00FFFFFF, 0x88FFFFFF.toInt(), 0x00FFFFFF)); rotation = 20f }
-                n.addView(blysk, FrameLayout.LayoutParams(dp(50), dp(200)).apply { gravity = Gravity.CENTER; bottomMargin = dp(70) })
-                blysk.translationX = -dp(140).toFloat()
-                blysk.animate().translationX(dp(140).toFloat()).setDuration(600).withEndAction { n.removeView(blysk) }.start()
-            }.start()
-        // Napis: litery "zjezdzaja sie" do siebie
-        na.postDelayed({
-            android.animation.ValueAnimator.ofFloat(0.6f, 0.06f).apply { duration = 700; interpolator = android.view.animation.DecelerateInterpolator()
-                addUpdateListener { na.letterSpacing = it.animatedValue as Float } }.start()
-            na.animate().alpha(1f).setDuration(500).start()
-        }, 700)
-        pod.animate().alpha(1f).setStartDelay(1200).setDuration(500).start()
-        pas.animate().scaleX(1f).setStartDelay(900).setDuration(1300).setInterpolator(android.view.animation.AccelerateDecelerateInterpolator()).start()
-        // Wyjscie: lekkie powiekszenie i rozmycie w aplikacje
-        n.animate().alpha(0f).scaleX(1.12f).scaleY(1.12f).setStartDelay(2350).setDuration(450).withEndAction { dekor.removeView(n) }.start()
+        val wolno = android.view.animation.DecelerateInterpolator(1.8f)
+        // 1. kino: tlo sie rozjasnia i powoli przybliza, sciany z plakatami wjezdzaja z bokow
+        tloS.animate().alpha(1f).setDuration(700).start()
+        tloS.animate().scaleX(1f).scaleY(1f).setDuration(4200).setInterpolator(wolno).start()
+        lewa.animate().alpha(1f).translationX(0f).setStartDelay(200).setDuration(1100).setInterpolator(wolno).start()
+        prawa.animate().alpha(1f).translationX(0f).setStartDelay(200).setDuration(1100).setInterpolator(wolno).start()
+        // 2. logo wylania sie z poswiaty z lekkim odbiciem, potem pulsuje
+        poswiata.animate().alpha(1f).setStartDelay(600).setDuration(800).start()
+        logo.animate().alpha(1f).scaleX(1f).scaleY(1f).setStartDelay(700).setDuration(900).setInterpolator(android.view.animation.OvershootInterpolator(1.3f)).withEndAction {
+            android.animation.ObjectAnimator.ofFloat(poswiata, "alpha", 1f, 0.45f, 1f).apply { duration = 1400; repeatCount = 1 }.start()
+            logo.animate().scaleX(1.06f).scaleY(1.06f).setDuration(700).withEndAction { logo.animate().scaleX(1f).scaleY(1f).setDuration(700).start() }.start()
+        }.start()
+        // 3. neonowy pasek z Canvy laduje sie do konca + napis
+        tor.animate().alpha(1f).setStartDelay(1300).setDuration(400).start()
+        napis.animate().alpha(1f).setStartDelay(1500).setDuration(500).start()
+        android.animation.ValueAnimator.ofInt(0, 10000).apply { startDelay = 1500; duration = 2100; interpolator = android.view.animation.AccelerateDecelerateInterpolator()
+            addUpdateListener { pelny.level = it.animatedValue as Int } }.start()
+        napis.postDelayed({ napis.text = "Gotowe ✓" }, 3600)
+        // 4. wyjscie: kamera wlatuje w logo, wszystko gasnie
+        n.animate().alpha(0f).scaleX(1.15f).scaleY(1.15f).setStartDelay(3800).setDuration(500).withEndAction { dekor.removeView(n) }.start()
     }
 
-    /** Okno wyjscia w stylu aplikacji; Wyjdz = animacja zamkniecia i calkowite zamkniecie (znika z ostatnich aplikacji). */
     private fun oknoWyjscia() {
         val d = android.app.Dialog(this)
-        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL; setPadding(dp(24), dp(24), dp(24), dp(20)); background = tlo(KARTA, 18) }
+        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL; setPadding(dp(24), dp(24), dp(24), dp(20)); setBackgroundResource(R.drawable.ok_gr_okno) }
         val ik = ImageView(this).apply { setImageResource(R.mipmap.ic_launcher) }
         box.addView(ik, LinearLayout.LayoutParams(dp(72), dp(72)).apply { bottomMargin = dp(14) })
         box.addView(tekst("Zamknąć OK Player?", 21f, gruby = true).apply { gravity = Gravity.CENTER })
@@ -1209,7 +1203,7 @@ class StartActivity : AppCompatActivity() {
         override fun onCreateViewHolder(p: ViewGroup, t: Int): RecyclerView.ViewHolder {
             val w = LinearLayout(p.context).apply {
                 orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(16), dp(10), dp(16), dp(10)); isFocusable = true
-                layoutParams = RecyclerView.LayoutParams(-1, -2)
+                layoutParams = RecyclerView.LayoutParams(-1, -2).apply { setMargins(dp(8), dp(3), dp(8), dp(3)) }
                 addView(tekst("", 14f, SZARY).apply { minWidth = dp(36) })
                 addView(ImageView(p.context).apply { scaleType = ImageView.ScaleType.FIT_CENTER }, LinearLayout.LayoutParams(dp(64), dp(40)))
                 addView(LinearLayout(p.context).apply {
@@ -1226,10 +1220,11 @@ class StartActivity : AppCompatActivity() {
         override fun onBindViewHolder(h: RecyclerView.ViewHolder, i: Int) {
             val ch = l[i]; val w = h.itemView as LinearLayout
             (w.getChildAt(0) as TextView).text = "${i + 1}"
-            (w.getChildAt(1) as ImageView).apply { setImageDrawable(null); if (ch.logo != null) load(ch.logo) { canva("brak_logo").takeIf { it != 0 }?.let { error(it) } } else canva("brak_logo").takeIf { it != 0 }?.let { setImageResource(it) } }
+            (w.getChildAt(1) as ImageView).apply { setImageDrawable(null); if (ch.logo != null) load(ch.logo) { canva("ok_gr_brak_logo").takeIf { it != 0 }?.let { error(it) } } else canva("ok_gr_brak_logo").takeIf { it != 0 }?.let { setImageResource(it) } }
             val opis = w.getChildAt(2) as LinearLayout
             (opis.getChildAt(0) as TextView).text = ch.nazwa
-            w.setBackgroundColor(if (gornyKanal?.id == ch.id) 0xFF2A2A2A.toInt() else Color.TRANSPARENT)
+            // 2.01: wiersz kanalu na szklanym panelu z Canvy, grajacy kanal na rozowej pigulce z Canvy
+            w.setBackgroundResource(if (gornyKanal?.id == ch.id) R.drawable.ok_gr_przycisk_roz else R.drawable.ok_gr_okno); w.foreground = ramkaCanvy()
             val epg = opis.getChildAt(1) as TextView
             val pas = opis.getChildAt(2) as android.widget.ProgressBar
             epg.text = ""; epg.tag = ch.id; pas.visibility = android.view.View.INVISIBLE
@@ -1258,7 +1253,7 @@ class StartActivity : AppCompatActivity() {
             val t = h.itemView as TextView; val k = g[i]
             t.text = k.nazwa
             val wyb = k.id == wybrana
-            t.background = tlo(if (wyb) Color.WHITE else KARTA, 20); t.setTextColor(if (wyb) Color.BLACK else Color.WHITE)
+            t.setBackgroundResource(if (wyb) R.drawable.ok_gr_przycisk_roz else R.drawable.ok_gr_przycisk); t.setTextColor(Color.WHITE); t.setPadding(dp(20), dp(12), dp(20), dp(12))
             t.setOnClickListener { klik(k.id) }
         }
     }

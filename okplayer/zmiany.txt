@@ -1,6 +1,11 @@
-Przyciski odtwarzacza z Canvy|zwykłe płaskie ikony (zabarwione na różowo)|okrągłe neonowe przyciski z Canvy: odtwórz, pauza, −10 s, +10 s, poprzedni, następny, opcje, pełny ekran
-Pasek odtwarzacza|szary pasek|ciemne neonowe tło z Canvy pod przyciskami i paskiem czasu
-Plakietka NA ŻYWO|brak|na kanale na żywo (gdy widać przyciski) plakietka NA ŻYWO z Canvy
-Przyciski na obrazie|szare prostokąty (Od początku, Poprzedni, Opcje, Program)|szklane pigułki z Canvy, zaznaczony przycisk świeci na różowo (pilot)
-Panel pod obrazem (pionowo)|czarny pasek|tło z neonową falą z Canvy, przycisk ☰ Program to różowa pigułka z Canvy
-Z 1.98 i 1.99|–|bez zmian: aktualizacja po powrocie do aplikacji, komunikat błędu z powodem
+Animacja startu|fale i iskry z ikoną (2,6 s)|ok. 4 s z grafik Canvy: neonowe kino z plakatami wjeżdża z boków, logo OK PLAYER wyłania się i świeci, neonowy pasek ładuje się do końca, „Ładowanie kanałów…”, płynne wejście
+Tło całej aplikacji|czarne|neonowa fala z Canvy (Start, Filmy, Seriale, Szczegóły, Aktorzy)
+Górny pasek|mała ikona + napis, płaskie ikony|logo OK PLAYER z Canvy, okrągłe neonowe przyciski Szukaj i Ustawienia
+Dolne menu|płaskie szare ikonki|ikony 3D z Canvy (dom, TV, klaps, film, radio, gwiazdka) – wybrana świeci i rośnie
+Top 10|cyfry pisane|neonowe cyfry 1–10 z Canvy przy plakatach
+Plakaty i kafle|bez ramki|zaznaczony plakat/kanał w świecącej ramce z Canvy (pilot i dotyk)
+Lista kanałów i grupy|szare wiersze i białe pigułki|szklane panele i neonowe pigułki z Canvy, grający kanał na różowej pigułce
+Mecze, zegar, okna, kafle|szare karty|szklany panel z Canvy, plakietka NA ŻYWO z Canvy
+Brak plakatu / logo|stare grafiki|nowe grafiki „Brak plakatu”, „Brak logo kanału” z Canvy
+Małe okienko|bez ramki|neonowa ramka z Canvy
+Odtwarzacz|z 2.00|przyciski z Canvy bez zmian

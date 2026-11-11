@@ -50,7 +50,7 @@ class DetaleActivity : AppCompatActivity() {
         val id = intent.getStringExtra("id") ?: ""
         val nazwa = intent.getStringExtra("nazwa") ?: ""
         val serial = intent.getStringExtra("rodzaj") == "s"
-        val sv = ScrollView(this).apply { setBackgroundColor(Color.BLACK) }
+        val sv = ScrollView(this).apply { setBackgroundResource(R.drawable.ok_gr_tlo_aplikacji) }
         kol = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         sv.addView(kol)
         val plakat = ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_CROP; intent.getStringExtra("okladka")?.let { load(it) } }
