@@ -1,3 +1,3 @@
-Program na podglądzie TV|w 1.75–1.76 program pokazywał się w zakładce TV zamiast listy kanałów|jak wcześniej (1.74): „☰ Program” otwiera obraz na górze, a pod nim tylko program i archiwum tego kanału
-Program na pełnym ekranie|prześwitywał obraz i przyciski|czysta lista tylko tego kanału (zostaje z 1.76)
-Małe okno|działa (1.74)|bez zmian
+Kanał w pionie|pod obrazem tylko program, nie dało się przełączać kanałów z listy|jak wcześniej: pod obrazem lista kanałów – dotknięcie kanału przełącza; „☰ Program” pokazuje archiwum tylko tego kanału
+„☰ Program” z podglądu w zakładce TV|–|od razu archiwum tylko tego kanału, bez listy innych kanałów
+Małe okno|działa (1.74)|bez zmian – jedno Wstecz = małe okno na wierzchu

@@ -80,7 +80,8 @@ class OdtwarzaczActivity : AppCompatActivity() {
             background = android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(0xFFFF3D5A.toInt(), 0xFFB52AD6.toInt())).apply { cornerRadius = 40f }
             setOnClickListener { if (przewodnikOtwarty) zamknijPrzewodnik() else otworzPrzewodnik() }
         }
-        przyciskProgram.visibility = android.view.View.GONE
+        // Z przycisku Program na podgladzie: tylko archiwum tego kanalu (bez listy i bez przelacznika). Zwykle: lista kanalow + Program.
+        if (intent.getBooleanExtra("przewodnik", false)) przyciskProgram.visibility = android.view.View.GONE
         pn.addView(przyciskProgram)
         korzen.addView(pn); panel = pn
         przewodnik = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.VERTICAL; visibility = android.view.View.GONE }
@@ -95,7 +96,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         trybNaZywo(true)
         if (intent.getBooleanExtra("pelny", false)) requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         // Pod obrazem zawsze program z archiwum TYLKO tego kanalu (w pionie). Na pelnym ekranie sam obraz.
-        window.decorView.post { if (resources.configuration.orientation != android.content.res.Configuration.ORIENTATION_LANDSCAPE) otworzPrzewodnik() }
+        if (intent.getBooleanExtra("przewodnik", false)) window.decorView.post { otworzPrzewodnik() }
         ustawPanel()
         uloz(resources.configuration.orientation)
         lifecycleScope.launch {
@@ -218,7 +219,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
     private fun zamknijPrzewodnik() {
         przewodnikOtwarty = false; przyciskProgram.text = "☰ Program"
         przewodnik?.visibility = android.view.View.GONE
-        listaTv?.visibility = android.view.View.GONE
+        listaTv?.visibility = if (intent.getBooleanExtra("przewodnik", false) || resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) android.view.View.GONE else android.view.View.VISIBLE
     }
 
     private fun rysujPrzewodnik() {
@@ -315,7 +316,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         f.layoutParams = android.widget.LinearLayout.LayoutParams(-1, if (poziomo) -1 else resources.displayMetrics.widthPixels * 9 / 16)
         panel?.visibility = if (poziomo) android.view.View.GONE else android.view.View.VISIBLE
         progNaObrazie?.visibility = if (poziomo) android.view.View.VISIBLE else android.view.View.GONE
-        listaTv?.visibility = android.view.View.GONE
+        listaTv?.visibility = if (poziomo || przewodnikOtwarty || intent.getBooleanExtra("przewodnik", false)) android.view.View.GONE else android.view.View.VISIBLE
         przewodnik?.let { pr ->
             val rodzic = pr.parent as? android.view.ViewGroup
             if (poziomo && rodzic !== f) {
@@ -335,14 +336,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         if (poziomo) c.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars()) else c.show(androidx.core.view.WindowInsetsCompat.Type.systemBars())
     }
 
-    override fun onConfigurationChanged(c: android.content.res.Configuration) {
-        super.onConfigurationChanged(c)
-        if (panel != null && !isInPictureInPictureMode) {
-            if (c.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) { if (przewodnikOtwarty) zamknijPrzewodnik() }
-            else if (!przewodnikOtwarty) { otworzPrzewodnik(); return }
-        }
-        uloz(c.orientation)
-    }
+    override fun onConfigurationChanged(c: android.content.res.Configuration) { super.onConfigurationChanged(c); uloz(c.orientation) }
 
     /** Logo, nazwa i program (teraz / potem) biezacego kanalu. */
     private fun ustawPanel() {
