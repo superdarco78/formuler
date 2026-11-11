@@ -167,8 +167,10 @@ class PlayerActivity : AppCompatActivity() {
             requestedOrientation = if (pelny) android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
         }
         // Odtwarzacz otwiera sie w pionie (obraz u gory, lista kanalow pod spodem); pelny ekran dopiero po przycisku.
-        requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-        uloz(resources.configuration.orientation)
+        val fp = (intent.getStringExtra("url") ?: "")
+        // Filmy i seriale od razu na pelnym ekranie (poziomo); kanaly na zywo w pionie z lista kanalow.
+        requestedOrientation = if (fp.contains("/movie/") || fp.contains("/series/")) android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
+        uloz(if (fp.contains("/movie/") || fp.contains("/series/")) android.content.res.Configuration.ORIENTATION_LANDSCAPE else resources.configuration.orientation)
     }
 
     private fun ustawListeKanalow() {
