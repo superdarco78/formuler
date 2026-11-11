@@ -33,13 +33,18 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          pip install --quiet pillow
           D=okplayer/src/main/res/drawable-nodpi; mkdir -p "$D" grafiki
           if [ -f okplayer/grafiki.txt ]; then while IFS='|' read -r n u; do
             [ -z "$n" ] && continue
             if curl -fsSL -o "grafiki/$n.jpg" "$u"; then echo "Canva: $n pobrane"
             else gh release download okplayer-latest -p "$n.jpg" -D grafiki --clobber -R "$GITHUB_REPOSITORY" && echo "Canva: $n z zapasu" || { echo "Canva: brak $n"; continue; }; fi
-            if [ "$n" = "tlo_start" ]; then convert "grafiki/$n.jpg" -resize 1280x -quality 85 "$D/$n.jpg"
-            else convert "grafiki/$n.jpg" -resize 1920x -gravity North -crop 1920x430+0+70 +repage -resize 1280x -quality 85 "$D/$n.jpg"; fi
+            python3 -c "
+          import sys; from PIL import Image
+          n, src, dst = sys.argv[1:4]; im = Image.open(src).convert('RGB'); w, h = im.size
+          if n != 'tlo_start': im = im.crop((0, int(h*0.065), w, int(h*0.46)))
+          im = im.resize((1280, int(im.size[1]*1280/im.size[0]))); im.save(dst, quality=85)
+          " "$n" "grafiki/$n.jpg" "$D/$n.jpg"
           done < okplayer/grafiki.txt; fi
           ls -la "$D" || true
       - name: Zbuduj OK Player
