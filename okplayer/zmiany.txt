@@ -1,5 +1,2 @@
-Film / odcinek → Wstecz|film się zamykał|film płynnie zmniejsza się do małego kwadratu w rogu i gra dalej, a Ty wracasz do aplikacji
-Dotknięcie kwadratu z filmem|–|film wraca na pełny ekran w tym samym miejscu, bez ładowania od nowa
-✕ na kwadracie z filmem|–|zamyka film i zapamiętuje, gdzie skończyłeś (Wznów)
-Koniec filmu|–|gdy zostało mniej niż 1,5 min, Wstecz zamyka film normalnie
-Aktor|tylko zdjęcie|dane, biografia z Wikipedii i wszystkie filmy, w których grał
+Włączanie kanału / filmu / archiwum|czarny ekran ze zwykłym kółkiem ładowania|animacja: logo OK Player pulsuje, wokół kręci się kolorowy pierścień (różowy → fioletowy), pod spodem nazwa kanału lub filmu; gdy obraz ruszy, animacja płynnie znika
+Film → Wstecz|film się zamykał|film gra dalej w małym kwadracie, dotknięcie = pełny ekran w tym samym miejscu

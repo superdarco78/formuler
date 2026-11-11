@@ -26,6 +26,28 @@ import kotlinx.coroutines.withContext
 /** Odtwarzacz kanalow na zywo: pelny ekran, strumien przez serwer tv.ok-ok.uk, gora/dol = nastepny/poprzedni kanal. */
 class OdtwarzaczActivity : AppCompatActivity() {
     private var gracz: ExoPlayer? = null
+    private lateinit var ladowanie: FrameLayout
+    private lateinit var pierscien: android.view.View
+    private lateinit var logoLad: android.widget.ImageView
+    private lateinit var napisLad: TextView
+    private fun pokazLadowanie(t: String) {
+        if (!::ladowanie.isInitialized) return
+        napisLad.text = t; ladowanie.animate().cancel(); ladowanie.alpha = 0f; ladowanie.visibility = android.view.View.VISIBLE
+        ladowanie.animate().alpha(1f).setDuration(200).start()
+        pierscien.rotation = 0f
+        pierscien.animate().rotationBy(36000f).setDuration(100_000).setInterpolator(android.view.animation.LinearInterpolator()).start()
+        logoLad.scaleX = 0.7f; logoLad.scaleY = 0.7f
+        android.animation.ObjectAnimator.ofPropertyValuesHolder(logoLad,
+            android.animation.PropertyValuesHolder.ofFloat("scaleX", 0.85f, 1.08f), android.animation.PropertyValuesHolder.ofFloat("scaleY", 0.85f, 1.08f)).apply {
+            duration = 650; repeatCount = android.animation.ValueAnimator.INFINITE; repeatMode = android.animation.ValueAnimator.REVERSE; start(); logoLad.tag = this }
+    }
+    private fun ukryjLadowanie() {
+        if (!::ladowanie.isInitialized || ladowanie.visibility != android.view.View.VISIBLE) return
+        ladowanie.animate().alpha(0f).scaleX(1.06f).scaleY(1.06f).setDuration(300).withEndAction {
+            ladowanie.visibility = android.view.View.GONE; ladowanie.scaleX = 1f; ladowanie.scaleY = 1f
+            pierscien.animate().cancel(); (logoLad.tag as? android.animation.Animator)?.cancel()
+        }.start()
+    }
     private var sluchacz: Player.Listener? = null
     private lateinit var widok: PlayerView
     private lateinit var napis: TextView
@@ -39,8 +61,24 @@ class OdtwarzaczActivity : AppCompatActivity() {
         Pilot.wlacz(this)
         Jezyk.wlacz(this)
         val f = FrameLayout(this).apply { setBackgroundColor(Color.BLACK) }
-        widok = PlayerView(this).apply { useController = true; setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS); controllerShowTimeoutMs = 3000 }
+        widok = PlayerView(this).apply { useController = true; setShowBuffering(PlayerView.SHOW_BUFFERING_NEVER); controllerShowTimeoutMs = 3000 }
         f.addView(widok, FrameLayout.LayoutParams(-1, -1))
+        // Animacja przy wlaczaniu kanalu / filmu: logo pulsuje, wokol kreci sie kolorowy pierscien, pod spodem nazwa.
+        ladowanie = FrameLayout(this).apply { setBackgroundColor(0xCC000000.toInt()); isClickable = false }
+        val srodek = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.VERTICAL; gravity = Gravity.CENTER }
+        val obreczIkona = FrameLayout(this)
+        pierscien = android.view.View(this).apply {
+            background = android.graphics.drawable.GradientDrawable().apply { shape = android.graphics.drawable.GradientDrawable.OVAL; gradientType = android.graphics.drawable.GradientDrawable.SWEEP_GRADIENT
+                colors = intArrayOf(0x00FF3D5A, 0xFFFF3D5A.toInt(), 0xFFB52AD6.toInt(), 0xFF7A1FFF.toInt()); innerRadiusRatio = 2.6f; thicknessRatio = 14f; useLevel = false }
+        }
+        obreczIkona.addView(pierscien, FrameLayout.LayoutParams(220, 220).apply { gravity = Gravity.CENTER })
+        logoLad = android.widget.ImageView(this).apply { setImageResource(R.mipmap.ic_launcher) }
+        obreczIkona.addView(logoLad, FrameLayout.LayoutParams(130, 130).apply { gravity = Gravity.CENTER })
+        srodek.addView(obreczIkona, android.widget.LinearLayout.LayoutParams(240, 240))
+        napisLad = TextView(this).apply { setTextColor(Color.WHITE); textSize = 17f; gravity = Gravity.CENTER; setPadding(24, 18, 24, 0); setTypeface(typeface, android.graphics.Typeface.BOLD) }
+        srodek.addView(napisLad)
+        ladowanie.addView(srodek, FrameLayout.LayoutParams(-2, -2).apply { gravity = Gravity.CENTER })
+        f.addView(ladowanie, FrameLayout.LayoutParams(-1, -1))
         napis = TextView(this).apply {
             setTextColor(Color.WHITE); textSize = 18f; setPadding(36, 24, 36, 24); setBackgroundColor(0x99000000.toInt()); visibility = android.view.View.GONE
         }
@@ -415,6 +453,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
     private val ukryj = Runnable { napis.visibility = android.view.View.GONE }
 
     private fun graj(url: String) {
+        pokazLadowanie(biezacy?.nazwa ?: intent.getStringExtra("nazwa") ?: "")
         WspolnyGracz.graj(this, url, odNowa = true)
     }
 
@@ -437,11 +476,12 @@ class OdtwarzaczActivity : AppCompatActivity() {
                     lifecycleScope.launch { delay(1500); graj(intent.getStringExtra("url") ?: return@launch) }
                 } else pokazNapis("Kanał nie działa (" + error.errorCodeName + ")")
             }
-            override fun onPlaybackStateChanged(s: Int) { if (s == Player.STATE_READY) proby = 0 }
+            override fun onPlaybackStateChanged(s: Int) { if (s == Player.STATE_READY) { proby = 0; ukryjLadowanie() } }
         }
         p.addListener(sluchacz!!)
         val url = intent.getStringExtra("url") ?: return
         val nowy = WspolnyGracz.graj(this, url)
+        if (nowy || p.playbackState != Player.STATE_READY) pokazLadowanie(biezacy?.nazwa ?: intent.getStringExtra("nazwa") ?: "") else ukryjLadowanie()
         // Filmy i odcinki: wznawianie od miejsca przerwania (gdy film zaczyna sie od nowa).
         if (nowy && intent.getBooleanExtra("vod", false)) {
             val poz = Ust.pozycja(this, url)
