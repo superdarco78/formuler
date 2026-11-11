@@ -341,7 +341,7 @@ class StartActivity : AppCompatActivity() {
             kont.addView(pv, lp)
             podgladWidok = pv
             var gotowe = false
-            podgladGracz = androidx.media3.exoplayer.ExoPlayer.Builder(this@StartActivity).build().apply {
+            podgladGracz = graczZajawki().apply {
                 volume = 0f; setMediaItem(androidx.media3.common.MediaItem.fromUri(adr)); prepare()
                 addListener(object : androidx.media3.common.Player.Listener {
                     override fun onPlaybackStateChanged(st: Int) {
@@ -355,6 +355,11 @@ class StartActivity : AppCompatActivity() {
             pv.player = podgladGracz
         } }, 1500)
     }
+    /** 2.22: odtwarzacz zajawek jak glowny (VLC user-agent, przekierowania http<->https) - bez tego serwer nie oddawal filmu. */
+    private fun graczZajawki() = androidx.media3.exoplayer.ExoPlayer.Builder(this)
+        .setMediaSourceFactory(androidx.media3.exoplayer.source.DefaultMediaSourceFactory(
+            androidx.media3.datasource.DefaultHttpDataSource.Factory().setUserAgent("VLC/3.0.20 LibVLC/3.0.20").setAllowCrossProtocolRedirects(true)
+                .setConnectTimeoutMs(8000).setReadTimeoutMs(12000))).build()
     /** 2.21: adres zajawki - film wprost, serial: pierwszy odcinek pierwszego sezonu (z opisu serialu). */
     private val adresyZajawek = HashMap<String, String>()
     private suspend fun adresZajawki(v: Vod): String? {
@@ -618,6 +623,7 @@ class StartActivity : AppCompatActivity() {
         // tlo calej aplikacji bierze kolor z plakatu.
         // 2.11: na banerze nr 1 zawsze pierwszy, reszta losowo przy kazdym wejsciu
         val l = l0.filter { it.okladka?.startsWith("http") == true }.take(12).let { if (it.size > 1) listOf(it[0]) + it.drop(1).shuffled() else it }
+            .let { x -> val f = x.indexOfFirst { it.rodzaj == "f" }; if (f > 0) listOf(x[f]) + x.filterIndexed { j, _ -> j != f } else x } // film zawsze pierwszy - od razu widac zajawke
         if (l.isEmpty()) return
         val w = resources.displayMetrics.widthPixels - dp(32)
         val karta = FrameLayout(this).apply { clipToOutline = true; isFocusable = true
@@ -660,7 +666,7 @@ class StartActivity : AppCompatActivity() {
                 val adr = adresZajawki(v) ?: return@launch
                 if (i != n || !karta.isAttachedToWindow || podgladGracz != null) return@launch
                 var przewiniete = false
-                zwiastun = androidx.media3.exoplayer.ExoPlayer.Builder(this@StartActivity).build().apply {
+                zwiastun = graczZajawki().apply {
                     volume = 0f
                     setMediaItem(androidx.media3.common.MediaItem.fromUri(adr)); prepare(); playWhenReady = false
                     addListener(object : androidx.media3.common.Player.Listener {
