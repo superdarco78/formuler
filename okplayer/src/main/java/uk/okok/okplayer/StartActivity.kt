@@ -177,17 +177,28 @@ class StartActivity : AppCompatActivity() {
             }, LinearLayout.LayoutParams(0, dp(66), 1f))
         }
         root.addView(dol)
+        if (Skorka.wybrana(this) == "k") root.background = Skorka.tloZAkcentem(Skorka.akcent(this))
         setContentView(root)
         pokaz(0)
         laduj()
     }
 
+    private fun pokazMenu(i: Int = zakladka) {
+        for (k in 0 until dol.childCount) (dol.getChildAt(k) as ImageView).apply {
+            val wyb = tag == i
+            if (Skorka.wybrana(this@StartActivity) == "k") setColorFilter(if (wyb) Skorka.akcent(this@StartActivity) else 0xFFBFC3C9.toInt()) else clearColorFilter()
+            animate().alpha(if (wyb) 1f else 0.62f).scaleX(if (wyb) 1.15f else 0.95f).scaleY(if (wyb) 1.15f else 0.95f).setDuration(200).start()
+        }
+    }
+
     private fun pokaz(i: Int) {
         if (i != 1 && i != 7 && ::gora2.isInitialized && gora2.visibility == View.VISIBLE) zwinGorny(true)
         zakladka = i
-        for (k in 0 until dol.childCount) (dol.getChildAt(k) as ImageView).apply {
+        pokazMenu(i)
+        if (false) for (k in 0 until dol.childCount) (dol.getChildAt(k) as ImageView).apply {
             val wyb = tag == i
             // 2.01: ikony 3D z Canvy - wybrana pelna i powiekszona, pozostale przygaszone.
+            if (Skorka.wybrana(this@StartActivity) == "k") setColorFilter(if (wyb) Skorka.akcent(this@StartActivity) else 0xFFBFC3C9.toInt()) else clearColorFilter()
             animate().alpha(if (wyb) 1f else 0.62f).scaleX(if (wyb) 1.15f else 0.95f).scaleY(if (wyb) 1.15f else 0.95f).setDuration(200).start()
         }
         tresc.removeAllViews()
@@ -535,7 +546,7 @@ class StartActivity : AppCompatActivity() {
         f.addView(gora, FrameLayout.LayoutParams(-1, -2).apply { gravity = Gravity.TOP })
         if (pogodaPamiec == null) lifecycleScope.launch { withContext(Dispatchers.IO) { Dodatki.pogoda() }?.let { p -> pogodaPamiec = p; pog.text = "  ·  " + p.third + " " + p.second + "  " + p.first } }
         val dol = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(18), 0, dp(18), dp(16)) }
-        val znacznik = tekst("", 12f, 0xFFFF8AA0.toInt(), gruby = true).apply { letterSpacing = 0.15f }
+        val znacznik = tekst("", 12f, Skorka.akcent(this@StartActivity), gruby = true).apply { letterSpacing = 0.15f }
         val tytul = tekst("", 28f, gruby = true).apply { maxLines = 2; ellipsize = android.text.TextUtils.TruncateAt.END; setShadowLayer(12f, 0f, 2f, Color.BLACK) }
         val meta = tekst("", 13f, 0xFFDDDDDD.toInt()).apply { setPadding(0, dp(2), 0, dp(12)) }
         dol.addView(znacznik); dol.addView(tytul); dol.addView(meta)
@@ -554,7 +565,14 @@ class StartActivity : AppCompatActivity() {
         fun pokazNr(n: Int, anim: Boolean) {
             val v = l[n]; val nowy = obrazy[1 - widoczny]; val stary = obrazy[widoczny]
             // Plynne przejscie: nowy plakat wychodzi z lekkiego powiekszenia, stary gasnie (oba pod napisami).
-            nowy.alpha = 0f; nowy.load(v.okladka); nowy.scaleX = 1.08f; nowy.scaleY = 1.08f
+            nowy.alpha = 0f; nowy.scaleX = 1.08f; nowy.scaleY = 1.08f
+            nowy.load(v.okladka) { allowHardware(false); listener(onSuccess = { _, r ->
+                // "Kolor z plakatu": akcent i poswiata tla biora kolor z plakatu
+                if (Skorka.wybrana(this@StartActivity) == "k") (r.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap?.let { bm ->
+                    val k = Skorka.zPlakatu(this@StartActivity, bm); znacznik.setTextColor(k)
+                    glowny?.background = Skorka.tloZAkcentem(k)
+                    if (::dol.isInitialized) pokazMenu()
+                } }) }
             nowy.animate().alpha(1f).setDuration(if (anim) 700 else 0).start()
             nowy.animate().scaleX(1f).scaleY(1f).setDuration(5200).start()
             stary.animate().alpha(0f).setDuration(if (anim) 700 else 0).start()
