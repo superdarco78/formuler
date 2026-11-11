@@ -97,8 +97,8 @@ class OdtwarzaczActivity : AppCompatActivity() {
         obreczIkona.addView(logoLad, FrameLayout.LayoutParams(130, 130).apply { gravity = Gravity.CENTER })
         srodek.addView(obreczIkona, android.widget.LinearLayout.LayoutParams(240, 240))
         napisLad = TextView(this).apply { setTextColor(Color.WHITE); textSize = 17f; gravity = Gravity.CENTER; maxLines = 2; maxWidth = (resources.displayMetrics.widthPixels * 0.8).toInt(); setPadding(24, 18, 24, 0); setTypeface(typeface, android.graphics.Typeface.BOLD) }
-        srodek.addView(napisLad)
-        ladowanie.addView(srodek, FrameLayout.LayoutParams(-2, -2).apply { gravity = Gravity.CENTER })
+        srodek.addView(napisLad, android.widget.LinearLayout.LayoutParams((resources.displayMetrics.widthPixels * 0.8).toInt(), -2))
+        ladowanie.addView(srodek, FrameLayout.LayoutParams(-1, -2).apply { gravity = Gravity.CENTER })
         f.addView(ladowanie, FrameLayout.LayoutParams(-1, -1))
         napis = TextView(this).apply {
             setTextColor(Color.WHITE); textSize = 18f; setPadding(36, 24, 36, 24); setBackgroundColor(0x99000000.toInt()); visibility = android.view.View.GONE
