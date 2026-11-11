@@ -1,3 +1,4 @@
+Ustawienia → Efekty|efektów nie dało się wyłączyć|nowy wiersz Efekty: każdy efekt osobno włączasz i wyłączasz
 Zajawki w rzędach|w Top filmach i polecanych same plakaty|na zaznaczonym plakacie (TV) lub pierwszym widocznym po przewinięciu (telefon) leci fragment filmu bez dźwięku
 Zajawka na banerze|po 3 s zwiastun z internetu|po 3 s leci wycięty losowy fragment z samego filmu (bez dźwięku, ok. 20 s), za każdym razem inny
 Wejście w film|ekran filmu wjeżdżał ze środka ekranu|plakat płynnie powiększa się z miejsca kliknięcia na cały ekran (jak Apple TV)

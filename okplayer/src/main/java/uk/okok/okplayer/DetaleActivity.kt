@@ -110,7 +110,7 @@ class DetaleActivity : AppCompatActivity() {
         sv.background = null
         intent.getStringExtra("okladka")?.let { u ->
             plakat.load(u) { allowHardware(false); listener(onSuccess = { _, r ->
-                (r.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap?.let { bm ->
+                (r.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap?.takeIf { Ust.prefs(this@DetaleActivity).getBoolean("ef_kolor", true) }?.let { bm ->
                     rozmyte.setImageBitmap(bm)
                     val kol = Skorka.kolor(bm)
                     nakladka.background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(Skorka.przyciemnij(kol, 0.45f, 0x66), 0xDD000000.toInt(), Color.BLACK))

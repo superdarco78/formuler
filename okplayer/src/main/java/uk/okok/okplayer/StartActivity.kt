@@ -322,7 +322,7 @@ class StartActivity : AppCompatActivity() {
         podgladGracz?.release(); podgladGracz = null
     }
     private fun podglad(kont: FrameLayout, lp: FrameLayout.LayoutParams, v: Vod) {
-        if (v.rodzaj != "f") return
+        if (v.rodzaj != "f" || !ef("ef_rzad_zajawka")) return
         stopPodglad()
         podgladH.postDelayed({
             if (!kont.isAttachedToWindow) return@postDelayed
@@ -624,7 +624,7 @@ class StartActivity : AppCompatActivity() {
             val v = l[n]; val nowy = obrazy[1 - widoczny]; val stary = obrazy[widoczny]
             // 2.12: zajawka - po 3 s na banerze leci wyciety losowy fragment z samego filmu (bez dzwieku, ok. 20 s)
             if (v.rodzaj == "f") karta.postDelayed({
-                if (i != n || !karta.isAttachedToWindow || podgladGracz != null) return@postDelayed
+                if (i != n || !karta.isAttachedToWindow || podgladGracz != null || !ef("ef_baner_zajawka")) return@postDelayed
                 var przewiniete = false
                 zwiastun = androidx.media3.exoplayer.ExoPlayer.Builder(this@StartActivity).build().apply {
                     volume = 0f
@@ -653,7 +653,7 @@ class StartActivity : AppCompatActivity() {
                 } }) }
             nowy.animate().alpha(1f).setDuration(if (anim) 700 else 0).start()
             // 2.11: plakat banera powoli sie przybliza i przesuwa (efekt filmowy)
-            android.animation.AnimatorSet().apply {
+            if (ef("ef_przyblizanie")) android.animation.AnimatorSet().apply {
                 playTogether(android.animation.ObjectAnimator.ofFloat(nowy, "scaleX", 1.0f, 1.18f), android.animation.ObjectAnimator.ofFloat(nowy, "scaleY", 1.0f, 1.18f),
                     android.animation.ObjectAnimator.ofFloat(nowy, View.TRANSLATION_X, 0f, (if (n % 2 == 0) -1 else 1) * dp(18).toFloat()))
                 duration = 12000; interpolator = android.view.animation.LinearInterpolator(); start() }
@@ -733,6 +733,7 @@ class StartActivity : AppCompatActivity() {
 
     private var banerObrazy: List<ImageView>? = null
     private var stopBaner: (() -> Unit)? = null
+    private fun ef(k: String) = Ust.prefs(this).getBoolean(k, true)
     override fun onPause() { stopBaner?.invoke(); stopPodglad(); super.onPause() }
     private fun start() {
         val sv = ScrollView(this)
@@ -740,7 +741,7 @@ class StartActivity : AppCompatActivity() {
         sv.addView(k); tresc.addView(sv)
         // 2.11: paralaksa - plakat w banerze przesuwa sie wolniej niz reszta przy przewijaniu
         banerObrazy = null
-        sv.setOnScrollChangeListener { _, _, y, _, _ -> banerObrazy?.forEach { it.translationY = y * 0.35f } }
+        sv.setOnScrollChangeListener { _, _, y, _, _ -> if (ef("ef_paralaksa")) banerObrazy?.forEach { it.translationY = y * 0.35f } }
         if (filmy.isEmpty() && kanaly.isEmpty()) { k.addView(tekst("Ładuję listę…", 15f, SZARY).apply { setPadding(dp(16), dp(16), 0, 0) }); return }
         val pop = { l: List<Vod> -> l.filter { it.ocena > 0 }.sortedByDescending { it.ocena }.take(20).ifEmpty { l.takeLast(20).reversed() } }
         // Uklad Startu (Ustawienia -> Uklad Startu): kinowy (domyslny), ikony (jak IBO) albo klasyczny.
@@ -886,7 +887,7 @@ class StartActivity : AppCompatActivity() {
         val i = Intent(this, DetaleActivity::class.java).putExtra("id", v.id).putExtra("nazwa", v.nazwa)
             .putExtra("okladka", v.okladka).putExtra("ext", v.ext).putExtra("rodzaj", v.rodzaj).putExtra("ocena", v.ocena)
         // 2.11: plakat plynnie powieksza sie z miejsca, w ktorym go kliknieto, na caly ekran (jak w Apple TV)
-        if (zrodlo != null && zrodlo.width > 0) {
+        if (zrodlo != null && zrodlo.width > 0 && ef("ef_powiekszenie")) {
             if (Pilot.czyTv(this).not()) zrodlo.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY)
             startActivity(i, android.app.ActivityOptions.makeScaleUpAnimation(zrodlo, 0, 0, zrodlo.width, zrodlo.height).toBundle())
         } else { startActivity(i); overridePendingTransition(R.anim.wejscie_zoom, android.R.anim.fade_out) }
@@ -1218,6 +1219,13 @@ class StartActivity : AppCompatActivity() {
             val ter = o.indexOfFirst { it.first == Ust.prefs(this).getString("uklad", "kinowy") }
             androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Układ Startu").setSingleChoiceItems(o.map { it.second }.toTypedArray(), ter) { d, i -> Ust.prefs(this).edit().putString("uklad", o[i].first).apply(); d.dismiss(); pokaz(4) }
                 .setNegativeButton("Zamknij", null).show().also { Jezyk.okno(it) }
+        }
+        val efekty = listOf("ef_baner_zajawka" to "Zajawka z filmu na banerze", "ef_rzad_zajawka" to "Zajawki na plakatach w rzędach", "ef_przyblizanie" to "Powolne przybliżanie plakatu banera",
+            "ef_paralaksa" to "Paralaksa banera przy przewijaniu", "ef_powiekszenie" to "Powiększenie plakatu przy wejściu w film", "ef_kolor" to "Kolor z plakatu w ekranie filmu")
+        wiersz("Efekty", "Włączone: " + efekty.count { ef(it.first) } + " z " + efekty.size + " – dotknij, żeby włączać i wyłączać") {
+            val zazn = efekty.map { ef(it.first) }.toBooleanArray()
+            androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Efekty").setMultiChoiceItems(efekty.map { it.second }.toTypedArray(), zazn) { _, i, b -> Ust.prefs(this).edit().putBoolean(efekty[i].first, b).apply() }
+                .setPositiveButton("Gotowe") { _, _ -> stopPodglad(); pokaz(4) }.show().also { Jezyk.okno(it) }
         }
         wiersz("Blokada zrzutów ekranu", if (Ust.prefs(this).getBoolean("blokada_zrzutow", true)) "Włączona – nie da się zrobić zrzutu ani nagrać ekranu aplikacji (jak w Netflixie)" else "Wyłączona – zrzuty ekranu działają") {
             Ust.prefs(this).edit().putBoolean("blokada_zrzutow", !Ust.prefs(this).getBoolean("blokada_zrzutow", true)).apply(); Pilot.wlacz(this); pokaz(4)
