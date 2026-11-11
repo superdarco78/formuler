@@ -1,2 +1,3 @@
-„Teraz” przy kanałach|przy części kanałów (np. TVN 24, TV Republika) brakowało „Teraz” i paska, pod obrazem było tylko „Na żywo”|gdy serwer nie odpowie za pierwszym razem, aplikacja pyta drugi raz, a pusty wynik pamięta tylko 30 s zamiast 10 min – „Teraz” i pasek pojawiają się przy wszystkich kanałach
-Ikona TV na dole|pokazywała samą listę|od razu obraz na górze (ostatni kanał albo ten z małego kwadratu), pod nim program i jedna lista kanałów
+Okno aktualizacji|nie mówiło, co zrobić z oknem Google Play Protect|niebieska ramka „Jak zainstalować”: krok po kroku, co dotknąć w oknach Play Protect („Skanuj aplikację” → poczekaj → „Zainstaluj”)
+„Teraz” przy kanałach|przy części kanałów brakowało „Teraz” i paska|druga próba pobrania i krótka pamięć pustego wyniku – „Teraz” przy wszystkich kanałach
+Ikona TV na dole|sama lista|od razu obraz na górze i jedna lista kanałów pod spodem

@@ -74,6 +74,16 @@ object Aktualizacja {
             lista.addView(box, android.widget.LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
         }
         kol.addView(android.widget.ScrollView(a).apply { addView(lista) }, android.widget.LinearLayout.LayoutParams(-1, if (o.optString("zmiany").lines().size > 4) dp(380) else -2))
+        // Instrukcja dla uzytkownika: co kliknac, gdy Android pokaze okno Google Play Protect.
+        val instr = android.widget.LinearLayout(a).apply { orientation = android.widget.LinearLayout.VERTICAL; setPadding(dp(14), dp(10), dp(14), dp(10))
+            background = android.graphics.drawable.GradientDrawable().apply { setColor(0xFF14233A.toInt()); cornerRadius = dp(12).toFloat(); setStroke(dp(1), 0xFF2F5A94.toInt()) } }
+        instr.addView(t("🛡  Jak zainstalować", 15f, 0xFF8FB8FF.toInt(), true))
+        instr.addView(t("Po dotknięciu „Zainstaluj” Android może pokazać okno Google Play Protect:\n" +
+            "1.  „Zalecane skanowanie” → dotknij „Skanuj aplikację”.\n" +
+            "2.  „Skanuję…” → poczekaj kilka sekund, nic nie dotykaj.\n" +
+            "3.  Na końcu dotknij „Zainstaluj” albo „Zainstaluj mimo to”.\n" +
+            "Nie dotykaj „Nie instaluj” ani „Anuluj”.", 13f, 0xFFD6E4FF.toInt()).apply { setPadding(0, dp(6), 0, 0); setLineSpacing(0f, 1.15f) })
+        kol.addView(instr, android.widget.LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
         val przyciski = android.widget.LinearLayout(a).apply { orientation = android.widget.LinearLayout.HORIZONTAL; gravity = android.view.Gravity.END; setPadding(0, dp(12), 0, 0) }
         przyciski.addView(t("Później", 15f, 0xFFBDBDBD.toInt()).apply { setPadding(dp(18), dp(12), dp(18), dp(12)); setOnClickListener { d.dismiss() } })
         przyciski.addView(t("Zainstaluj", 15f, android.graphics.Color.WHITE, true).apply { setPadding(dp(22), dp(12), dp(22), dp(12))
