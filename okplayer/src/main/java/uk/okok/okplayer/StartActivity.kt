@@ -347,7 +347,7 @@ class StartActivity : AppCompatActivity() {
                     override fun onPlaybackStateChanged(st: Int) {
                         if (st == androidx.media3.common.Player.STATE_READY && !gotowe) { gotowe = true
                             if (duration > 120_000) seekTo((duration * (0.15 + Math.random() * 0.55)).toLong()); playWhenReady = true
-                            podgladH.postDelayed({ pv.animate().alpha(0f).setDuration(700).withEndAction { stopPodglad() }.start() }, 30_000) }
+                            podgladH.postDelayed({ pv.animate().alpha(0f).setDuration(700).withEndAction { stopPodglad() }.start() }, czasZajawki("czas_plakat", 30) * 1000L) }
                     }
                     override fun onIsPlayingChanged(gra: Boolean) { if (gra && pv.alpha == 0f) pv.animate().alpha(1f).setStartDelay(250).setDuration(700).start() }
                     override fun onPlayerError(e: androidx.media3.common.PlaybackException) { stopPodglad() } })
@@ -676,7 +676,7 @@ class StartActivity : AppCompatActivity() {
                                 val d = duration
                                 if (d > 120_000) seekTo((d * (0.15 + Math.random() * 0.55)).toLong())
                                 playWhenReady = true
-                                karta.postDelayed({ if (i == n) zwiastunWidok.animate().alpha(0f).setDuration(900).start() }, 55_000)
+                                karta.postDelayed({ if (i == n) zwiastunWidok.animate().alpha(0f).setDuration(900).start() }, czasZajawki("czas_baner", 55) * 1000L)
                             }
                         }
                         override fun onIsPlayingChanged(gra: Boolean) { if (gra && przewiniete && zwiastunWidok.alpha == 0f) zwiastunWidok.animate().alpha(1f).setStartDelay(300).setDuration(900).start() }
@@ -714,7 +714,7 @@ class StartActivity : AppCompatActivity() {
             lista.setOnClickListener { Ust.przelaczUlubiony(this, v.rodzaj, v.id, v.nazwa, v.okladka, v.ext, ""); android.widget.Toast.makeText(this, Jezyk.t("Dodano do Mojej listy"), android.widget.Toast.LENGTH_SHORT).show() }
         }
         pokazNr(0, false)
-        val zmiana = object : Runnable { override fun run() { if (!karta.isAttachedToWindow) return; i = (i + 1) % l.size; pokazNr(i, true); karta.postDelayed(this, if (zwiastun != null) 60000 else 9000) } }
+        val zmiana = object : Runnable { override fun run() { if (!karta.isAttachedToWindow) return; i = (i + 1) % l.size; pokazNr(i, true); karta.postDelayed(this, if (zwiastun != null) czasZajawki("czas_baner", 55) * 1000L + 5000L else czasZajawki("czas_plakatu_banera", 9) * 1000L) } }
         karta.postDelayed(zmiana, 7000)
         karta.setOnClickListener { otworz(l[i], karta) }
     }
@@ -784,6 +784,8 @@ class StartActivity : AppCompatActivity() {
     private fun efPanel(k: String) = Ust.prefs(this).getBoolean("glob_$k", true)
     // 2.16: efektami rzadzi tylko panel edytora (globalnie lub dla danego klienta)
     private fun ef(k: String) = efPanel(k)
+    /** 2.24: czasy zajawek z panelu (sekundy). */
+    private fun czasZajawki(k: String, dom: Int) = (Ust.panelS(this, k)?.toIntOrNull() ?: dom).coerceIn(5, 600)
     override fun onPause() { stopBaner?.invoke(); stopPodglad(); super.onPause() }
     private fun start() {
         val sv = ScrollView(this)
