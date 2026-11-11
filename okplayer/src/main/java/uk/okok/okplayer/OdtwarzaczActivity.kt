@@ -26,28 +26,6 @@ import kotlinx.coroutines.withContext
 /** Odtwarzacz kanalow na zywo: pelny ekran, strumien przez serwer tv.ok-ok.uk, gora/dol = nastepny/poprzedni kanal. */
 class OdtwarzaczActivity : AppCompatActivity() {
     private var gracz: ExoPlayer? = null
-    private lateinit var ladowanie: FrameLayout
-    private lateinit var pierscien: android.view.View
-    private lateinit var logoLad: android.widget.ImageView
-    private lateinit var napisLad: TextView
-    private fun pokazLadowanie(t: String) {
-        if (!::ladowanie.isInitialized) return
-        napisLad.text = t; ladowanie.animate().cancel(); ladowanie.alpha = 0f; ladowanie.visibility = android.view.View.VISIBLE
-        ladowanie.animate().alpha(1f).setDuration(200).start()
-        pierscien.rotation = 0f
-        pierscien.animate().rotationBy(36000f).setDuration(100_000).setInterpolator(android.view.animation.LinearInterpolator()).start()
-        logoLad.scaleX = 0.7f; logoLad.scaleY = 0.7f
-        android.animation.ObjectAnimator.ofPropertyValuesHolder(logoLad,
-            android.animation.PropertyValuesHolder.ofFloat("scaleX", 0.85f, 1.08f), android.animation.PropertyValuesHolder.ofFloat("scaleY", 0.85f, 1.08f)).apply {
-            duration = 650; repeatCount = android.animation.ValueAnimator.INFINITE; repeatMode = android.animation.ValueAnimator.REVERSE; start(); logoLad.tag = this }
-    }
-    private fun ukryjLadowanie() {
-        if (!::ladowanie.isInitialized || ladowanie.visibility != android.view.View.VISIBLE) return
-        ladowanie.animate().alpha(0f).scaleX(1.06f).scaleY(1.06f).setDuration(300).withEndAction {
-            ladowanie.visibility = android.view.View.GONE; ladowanie.scaleX = 1f; ladowanie.scaleY = 1f
-            pierscien.animate().cancel(); (logoLad.tag as? android.animation.Animator)?.cancel()
-        }.start()
-    }
     private var sluchacz: Player.Listener? = null
     private lateinit var widok: PlayerView
     private lateinit var napis: TextView
@@ -61,24 +39,8 @@ class OdtwarzaczActivity : AppCompatActivity() {
         Pilot.wlacz(this)
         Jezyk.wlacz(this)
         val f = FrameLayout(this).apply { setBackgroundColor(Color.BLACK) }
-        widok = PlayerView(this).apply { useController = true; setShowBuffering(PlayerView.SHOW_BUFFERING_NEVER); controllerShowTimeoutMs = 3000 }
+        widok = PlayerView(this).apply { useController = true; setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS); controllerShowTimeoutMs = 3000 }
         f.addView(widok, FrameLayout.LayoutParams(-1, -1))
-        // Animacja przy wlaczaniu kanalu / filmu: logo pulsuje, wokol kreci sie kolorowy pierscien, pod spodem nazwa.
-        ladowanie = FrameLayout(this).apply { setBackgroundColor(0xCC000000.toInt()); isClickable = false }
-        val srodek = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.VERTICAL; gravity = Gravity.CENTER }
-        val obreczIkona = FrameLayout(this)
-        pierscien = android.view.View(this).apply {
-            background = android.graphics.drawable.GradientDrawable().apply { shape = android.graphics.drawable.GradientDrawable.OVAL; gradientType = android.graphics.drawable.GradientDrawable.SWEEP_GRADIENT
-                colors = intArrayOf(0x00FF3D5A, 0xFFFF3D5A.toInt(), 0xFFB52AD6.toInt(), 0xFF7A1FFF.toInt()); innerRadiusRatio = 2.6f; thicknessRatio = 14f; useLevel = false }
-        }
-        obreczIkona.addView(pierscien, FrameLayout.LayoutParams(220, 220).apply { gravity = Gravity.CENTER })
-        logoLad = android.widget.ImageView(this).apply { setImageResource(R.mipmap.ic_launcher) }
-        obreczIkona.addView(logoLad, FrameLayout.LayoutParams(130, 130).apply { gravity = Gravity.CENTER })
-        srodek.addView(obreczIkona, android.widget.LinearLayout.LayoutParams(240, 240))
-        napisLad = TextView(this).apply { setTextColor(Color.WHITE); textSize = 17f; gravity = Gravity.CENTER; setPadding(24, 18, 24, 0); setTypeface(typeface, android.graphics.Typeface.BOLD) }
-        srodek.addView(napisLad)
-        ladowanie.addView(srodek, FrameLayout.LayoutParams(-2, -2).apply { gravity = Gravity.CENTER })
-        f.addView(ladowanie, FrameLayout.LayoutParams(-1, -1))
         napis = TextView(this).apply {
             setTextColor(Color.WHITE); textSize = 18f; setPadding(36, 24, 36, 24); setBackgroundColor(0x99000000.toInt()); visibility = android.view.View.GONE
         }
@@ -131,7 +93,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         biezacy = Kanal(intent.getStringExtra("id") ?: "", intent.getStringExtra("nazwa") ?: "", intent.getStringExtra("logo"), intent.getStringExtra("kat") ?: "", 0)
         trybNaZywo(true)
         if (intent.getBooleanExtra("pelny", false)) requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-        if (intent.getBooleanExtra("przewodnik", false)) { listaTv?.visibility = android.view.View.GONE; przyciskProgram.visibility = android.view.View.GONE; window.decorView.post { otworzPrzewodnik() } }
+        if (intent.getBooleanExtra("przewodnik", false)) window.decorView.post { otworzPrzewodnik() }
         ustawPanel()
         uloz(resources.configuration.orientation)
         lifecycleScope.launch {
@@ -253,7 +215,6 @@ class OdtwarzaczActivity : AppCompatActivity() {
 
     private fun zamknijPrzewodnik() {
         przewodnikOtwarty = false; przyciskProgram.text = "☰ Program"
-        if (intent.getBooleanExtra("przewodnik", false)) { przewodnik?.visibility = android.view.View.GONE; listaTv?.visibility = android.view.View.GONE; return }
         przewodnik?.visibility = android.view.View.GONE
         listaTv?.visibility = if (resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) android.view.View.GONE else android.view.View.VISIBLE
     }
@@ -352,7 +313,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         f.layoutParams = android.widget.LinearLayout.LayoutParams(-1, if (poziomo) -1 else resources.displayMetrics.widthPixels * 9 / 16)
         panel?.visibility = if (poziomo) android.view.View.GONE else android.view.View.VISIBLE
         progNaObrazie?.visibility = if (poziomo) android.view.View.VISIBLE else android.view.View.GONE
-        listaTv?.visibility = if (poziomo || przewodnikOtwarty || intent.getBooleanExtra("przewodnik", false)) android.view.View.GONE else android.view.View.VISIBLE
+        listaTv?.visibility = if (poziomo || przewodnikOtwarty) android.view.View.GONE else android.view.View.VISIBLE
         przewodnik?.let { pr ->
             val rodzic = pr.parent as? android.view.ViewGroup
             if (poziomo && rodzic !== f) {
@@ -454,7 +415,6 @@ class OdtwarzaczActivity : AppCompatActivity() {
     private val ukryj = Runnable { napis.visibility = android.view.View.GONE }
 
     private fun graj(url: String) {
-        pokazLadowanie(biezacy?.nazwa ?: intent.getStringExtra("nazwa") ?: "")
         WspolnyGracz.graj(this, url, odNowa = true)
     }
 
@@ -477,12 +437,11 @@ class OdtwarzaczActivity : AppCompatActivity() {
                     lifecycleScope.launch { delay(1500); graj(intent.getStringExtra("url") ?: return@launch) }
                 } else pokazNapis("Kanał nie działa (" + error.errorCodeName + ")")
             }
-            override fun onPlaybackStateChanged(s: Int) { if (s == Player.STATE_READY) { proby = 0; ukryjLadowanie() } }
+            override fun onPlaybackStateChanged(s: Int) { if (s == Player.STATE_READY) proby = 0 }
         }
         p.addListener(sluchacz!!)
         val url = intent.getStringExtra("url") ?: return
         val nowy = WspolnyGracz.graj(this, url)
-        if (nowy || p.playbackState != Player.STATE_READY) pokazLadowanie(biezacy?.nazwa ?: intent.getStringExtra("nazwa") ?: "") else ukryjLadowanie()
         // Filmy i odcinki: wznawianie od miejsca przerwania (gdy film zaczyna sie od nowa).
         if (nowy && intent.getBooleanExtra("vod", false)) {
             val poz = Ust.pozycja(this, url)
@@ -584,13 +543,10 @@ class OdtwarzaczActivity : AppCompatActivity() {
         if (!reczne && !Ust.prefs(this).getBoolean("okienko", true)) return false
         try {
             val b = android.app.PictureInPictureParams.Builder().setAspectRatio(android.util.Rational(16, 9))
-            if (android.os.Build.VERSION.SDK_INT >= 31) b.setAutoEnterEnabled(false).setSeamlessResizeEnabled(true)
+            if (android.os.Build.VERSION.SDK_INT >= 31) b.setAutoEnterEnabled(true).setSeamlessResizeEnabled(true)
             return enterPictureInPictureMode(b.build())
         } catch (e: Exception) { return false }
     }
-
-    /** Przejscia wewnatrz aplikacji (do mini, do opisu itd.) to nie wyjscie z aplikacji - bez systemowego okienka PiP. */
-    override fun startActivityForResult(i: Intent, kod: Int, o: android.os.Bundle?) { i.addFlags(Intent.FLAG_ACTIVITY_NO_USER_ACTION); super.startActivityForResult(i, kod, o) }
 
     override fun onUserLeaveHint() { super.onUserLeaveHint(); wejdzWOkienko() }
 
@@ -602,7 +558,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
             gracz?.let { g -> if (g.duration > 0) { Ust.zapiszPozycje(this, u, g.currentPosition); Ust.zapiszDlugosc(this, u, g.duration) } }
             Ust.prefs(this).edit().putString("mini", listOf("vod", intent.getStringExtra("nazwa") ?: "", "", "", u).joinToString("\u0001")).apply()
         } else
-        biezacy?.let { Ust.prefs(this).edit().putString("mini", listOf(it.id, it.nazwa, it.logo ?: "", it.kat, "", intent.getStringExtra("url") ?: "").joinToString("\u0001")).apply() }
+        biezacy?.let { Ust.prefs(this).edit().putString("mini", listOf(it.id, it.nazwa, it.logo ?: "", it.kat).joinToString("\u0001")).apply() }
         WspolnyGracz.wlasciciel = "mini"
         // Mini-okno zyje na ekranie glownym aplikacji - film z opisu tez tam trafia.
         if (intent.getBooleanExtra("vod", false)) startActivity(Intent(this, StartActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
@@ -613,15 +569,16 @@ class OdtwarzaczActivity : AppCompatActivity() {
     override fun onNewIntent(i: Intent) { super.onNewIntent(i); setIntent(i); recreate() }
 
     /** Wstecz przy TV: obraz zmniejsza sie do okienka, a pod nim wraca aplikacja (lista kanalow), jak mini-odtwarzacz. */
-    /** Jedna zasada dla TV, archiwum, filmow i odcinkow: Wstecz = male okno (obraz gra dalej). Gdy otwarty program - najpierw go chowa. */
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
-        // Pelny ekran z programem z boku: pierwsze Wstecz chowa tylko program. W pozostalych przypadkach od razu male okno.
-        if (przewodnikOtwarty && panel != null && resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) { zamknijPrzewodnik(); uloz(resources.configuration.orientation); return }
-        val koniecFilmu = intent.getBooleanExtra("vod", false) && gracz?.let { it.duration > 0 && it.currentPosition >= it.duration - 90_000 } == true
-        if (Ust.prefs(this).getBoolean("okienko", true) && !koniecFilmu) {
-            doMini(); return
+        if (przewodnikOtwarty && panel != null) { zamknijPrzewodnik(); uloz(resources.configuration.orientation); return }
+        // Pelny ekran -> Wstecz: od razu do mini-okna w aplikacji (bez posredniego widoku w pionie).
+        if (resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE && panel != null) {
+            if (!archiwumGra && Ust.prefs(this).getBoolean("okienko", true)) { requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT; doMini(); return }
+            requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT; return
         }
+        if (!intent.getBooleanExtra("vod", false) && !archiwumGra && Ust.prefs(this).getBoolean("okienko", true)) { doMini(); return }
+        if (intent.getBooleanExtra("vod", false) && Ust.prefs(this).getBoolean("okienko", true) && gracz?.let { it.duration <= 0 || it.currentPosition < it.duration - 90_000 } == true) { doMini(); return }
         @Suppress("DEPRECATION") super.onBackPressed()
     }
 

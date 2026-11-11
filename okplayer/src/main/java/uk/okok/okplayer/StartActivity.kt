@@ -646,8 +646,7 @@ class StartActivity : AppCompatActivity() {
             if (WspolnyGracz.graj(this, miniFilm!!)) Ust.pozycja(this, miniFilm!!).takeIf { it > 0 }?.let { miniGracz?.seekTo(it) }
             return
         }
-        // TV: gra dalej dokladnie to, co bylo na duzym ekranie (kanal albo archiwum)
-        WspolnyGracz.graj(this, z.getOrNull(5)?.takeIf { it.isNotEmpty() } ?: Serwer.adresKanalu(this, ch.id))
+        WspolnyGracz.graj(this, Serwer.adresKanalu(this, ch.id))
         lifecycleScope.launch {
             val t = withContext(Dispatchers.IO) { Serwer.terazLeci(this@StartActivity, ch.id) }
             if (miniKanal?.id == ch.id) miniTeraz.text = if (t.isEmpty()) "Na żywo" else "Teraz: $t"
@@ -694,9 +693,6 @@ class StartActivity : AppCompatActivity() {
     /** Mini-okno gra, a Ty wychodzisz do ekranu telefonu: TV zostaje w plywajacym okienku (jak wczesniej). */
     private var glowny: LinearLayout? = null
     private var miniRodzic: ViewGroup? = null
-    /** Przejscia wewnatrz aplikacji (do mini, do opisu itd.) to nie wyjscie z aplikacji - bez systemowego okienka PiP. */
-    override fun startActivityForResult(i: Intent, kod: Int, o: android.os.Bundle?) { i.addFlags(Intent.FLAG_ACTIVITY_NO_USER_ACTION); super.startActivityForResult(i, kod, o) }
-
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
         if (::gora2.isInitialized && gora2.visibility == View.VISIBLE) zwinGorny(true)
@@ -818,7 +814,7 @@ class StartActivity : AppCompatActivity() {
         val ch = gornyKanal
         gornyWidok.player = null; gora2.visibility = View.GONE; gornyKanal = null
         if (doMini && ch != null) {
-            Ust.prefs(this).edit().putString("mini", listOf(ch.id, ch.nazwa, ch.logo ?: "", ch.kat, "", WspolnyGracz.url ?: "").joinToString("\u0001")).apply()
+            Ust.prefs(this).edit().putString("mini", listOf(ch.id, ch.nazwa, ch.logo ?: "", ch.kat).joinToString("\u0001")).apply()
             WspolnyGracz.wlasciciel = "mini"; pokazMini()
         }
     }

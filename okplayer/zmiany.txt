@@ -1,2 +1,2 @@
-Małe okno (mini) i okno w oknie (PiP)|przy przejściu do pełnego ekranu, opisu filmu albo programu aplikacja sama wskakiwała w systemowe okienko i mini się psuło|okienko systemowe tylko po wyjściu z aplikacji (przycisk Home); w aplikacji: Wstecz = mini w rogu, dotknięcie = pełny ekran, ✕ = zamknij
-Wstecz z pełnego ekranu|ekran się obracał i mini nie wracało|jedno Wstecz = od razu mini w rogu (TV, archiwum, film, odcinek), jak w działającej wersji 1.56
+Małe okno i okno w oknie|po zmianach z wersji 1.70–1.71 mini i PiP nie działały|przywrócony 1:1 kod odtwarzacza i małego okna z wersji 1.56, która działała
+Program na podglądzie TV|lista wszystkich kanałów|archiwum tylko tego kanału, jak w 1.52–1.56
