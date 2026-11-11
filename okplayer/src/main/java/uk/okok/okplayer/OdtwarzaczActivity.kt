@@ -172,7 +172,10 @@ class OdtwarzaczActivity : AppCompatActivity() {
     }
     override fun dispatchTouchEvent(ev: android.view.MotionEvent): Boolean {
         val r = android.graphics.Rect(); widok.getGlobalVisibleRect(r)
-        if (r.contains(ev.rawX.toInt(), ev.rawY.toInt()) && gest.onTouchEvent(ev) && ev.actionMasked != android.view.MotionEvent.ACTION_DOWN) return true
+        // Przewijanie programu (lista na obrazie) to nie zmiana kanalu - gest liczy sie tylko na samym obrazie.
+        val pr = android.graphics.Rect()
+        val naLiscie = przewodnik?.let { it.visibility == android.view.View.VISIBLE && it.getGlobalVisibleRect(pr) && pr.contains(ev.rawX.toInt(), ev.rawY.toInt()) } == true
+        if (!naLiscie && r.contains(ev.rawX.toInt(), ev.rawY.toInt()) && gest.onTouchEvent(ev) && ev.actionMasked != android.view.MotionEvent.ACTION_DOWN) return true
         return super.dispatchTouchEvent(ev)
     }
 

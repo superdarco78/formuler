@@ -1,2 +1,3 @@
-Zmiana kanału po archiwum|po przesunięciu na inny kanał obraz był czarny, a po powrocie grało dalej stare archiwum|nowy kanał od razu gra na żywo, program po boku tylko tego kanału; przesuwanie działa też w trakcie archiwum
+Przewijanie programu na pełnym ekranie|przesunięcie palcem po liście programu przełączało na inny kanał|lista programu przewija się normalnie; kanał zmienia tylko przesunięcie po samym obrazie
+Zmiana kanału po archiwum|czarny obraz / stare archiwum|nowy kanał gra na żywo (z 1.79)
 Małe okno|działa (1.74)|bez zmian
