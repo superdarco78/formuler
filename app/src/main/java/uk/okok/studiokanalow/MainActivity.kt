@@ -102,6 +102,18 @@ class MainActivity : AppCompatActivity() {
         b.bottomNav.setOnItemReselectedListener { item -> pokaz(item.itemId) }
         b.bottomNav.selectedItemId = R.id.tab_start
 
+        // Wstecz jak w innych aplikacjach: z zakladki wraca na Start, na Starcie 2x Wstecz = wyjscie.
+        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
+            private var ostatnio = 0L
+            override fun handleOnBackPressed() {
+                if (b.bottomNav.selectedItemId != R.id.tab_start) { b.bottomNav.selectedItemId = R.id.tab_start; return }
+                val teraz = System.currentTimeMillis()
+                if (teraz - ostatnio < 2000) { finishAffinity(); return }
+                ostatnio = teraz
+                android.widget.Toast.makeText(this@MainActivity, "Naciśnij ponownie Wstecz, aby wyjść", android.widget.Toast.LENGTH_SHORT).show()
+            }
+        })
+
         // Automatyczna aktualizacja (sprawdza raz na uruchomienie).
         zastosujKonfig()
         if (!demo) lifecycleScope.launch {
