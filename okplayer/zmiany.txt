@@ -1,4 +1,3 @@
-Pilot (dekoder Formuler, Android TV)|przy sterowaniu pilotem nie było widać, który element jest zaznaczony|zaznaczony kafelek, kanał, przycisk czy ikona ma białą ramkę i lekko się powiększa – strzałki i OK działają wszędzie
-Obraz TV na telewizorze|w poziomie obraz na górze zajmował prawie cały ekran i zasłaniał listę|obraz zajmuje najwyżej ok. połowę ekranu, pod nim widać listę kanałów
-Mały kwadrat|dało się otworzyć tylko palcem|OK na pilocie też otwiera pełny ekran
-Telefon|–|bez zmian – ramka pokazuje się tylko przy pilocie
+Języki|aplikacja była tylko po polsku|język aplikacji ustawia się sam według języka telefonu lub dekodera: polski, angielski, niemiecki, ukraiński, rosyjski, hiszpański, francuski, włoski, czeski, litewski, rumuński; każdy inny język → angielski
+Daty w programie TV|zawsze po polsku (pon., wt.)|dni tygodnia w języku urządzenia
+Pilot (dekoder)|nie było widać zaznaczenia|biała ramka na zaznaczonym elemencie, OK otwiera

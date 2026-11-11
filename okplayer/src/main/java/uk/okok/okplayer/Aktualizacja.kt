@@ -25,15 +25,15 @@ object Aktualizacja {
             if (zdalna > moja && (reczne || !pokazane) && !a.isFinishing) {
                 pokazane = true
                 okno(a, o)
-            } else if (reczne) android.widget.Toast.makeText(a, "Masz najnowszą wersję", android.widget.Toast.LENGTH_SHORT).show()
+            } else if (reczne) android.widget.Toast.makeText(a, Jezyk.t("Masz najnowszą wersję"), android.widget.Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
-            if (reczne) android.widget.Toast.makeText(a, "Nie udało się sprawdzić aktualizacji", android.widget.Toast.LENGTH_SHORT).show()
+            if (reczne) android.widget.Toast.makeText(a, Jezyk.t("Nie udało się sprawdzić aktualizacji"), android.widget.Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun instaluj(a: Activity, url: String) {
         val app = a.applicationContext
-        android.widget.Toast.makeText(a, "Pobieram aktualizację…", android.widget.Toast.LENGTH_SHORT).show()
+        android.widget.Toast.makeText(a, Jezyk.t("Pobieram aktualizację…"), android.widget.Toast.LENGTH_SHORT).show()
         Thread {
             try {
                 val pi = app.packageManager.packageInstaller
@@ -93,7 +93,7 @@ object Aktualizacja {
         d.setContentView(kol)
         d.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
         d.window?.setLayout((a.resources.displayMetrics.widthPixels * 0.9).toInt(), -2)
-        d.show()
+        d.show(); Jezyk.okno(d)
     }
 }
 

@@ -60,6 +60,7 @@ class StartActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Pilot.wlacz(this)
+        Jezyk.wlacz(this)
         if (Ust.zalogowany(this)) ekranGlowny() else ekranLogowania()
         if (savedInstanceState == null) animacjaStartu()
         lifecycleScope.launch { Aktualizacja.sprawdz(this@StartActivity) }
@@ -791,7 +792,7 @@ class StartActivity : AppCompatActivity() {
         d.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(Color.TRANSPARENT))
         d.window?.setLayout((resources.displayMetrics.widthPixels * 0.86).toInt(), -2)
         box.alpha = 0f; box.scaleX = 0.8f; box.scaleY = 0.8f; ik.rotation = -90f
-        d.show()
+        d.show(); Jezyk.okno(d)
         box.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(220).setInterpolator(android.view.animation.OvershootInterpolator(1.2f)).start()
         ik.animate().rotation(0f).setDuration(400).start()
     }
@@ -845,7 +846,7 @@ class StartActivity : AppCompatActivity() {
             w.setOnClickListener { klik(ch) }
             w.setOnLongClickListener {
                 val teraz = Ust.przelaczUlubiony(this@StartActivity, "k", ch.id, ch.nazwa, ch.logo, "", ch.kat)
-                android.widget.Toast.makeText(this@StartActivity, if (teraz) "★ ${ch.nazwa} dodany do ulubionych" else "${ch.nazwa} usunięty z ulubionych", android.widget.Toast.LENGTH_SHORT).show(); true
+                android.widget.Toast.makeText(this@StartActivity, Jezyk.t(if (teraz) "★ ${ch.nazwa} dodany do ulubionych" else "${ch.nazwa} usunięty z ulubionych").toString(), android.widget.Toast.LENGTH_SHORT).show(); true
             }
         }
     }

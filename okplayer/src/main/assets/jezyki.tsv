@@ -1,0 +1,128 @@
+pl	en	de	uk	ru	es	fr	it	cs	lt	ro
+Ładuję program…	Loading guide…	Programm wird geladen…	Завантажую програму…	Загружаю программу…	Cargando guía…	Chargement du guide…	Caricamento guida…	Načítám program…	Įkeliama programa…	Se încarcă ghidul…
+Ładuję listę…	Loading list…	Liste wird geladen…	Завантажую список…	Загружаю список…	Cargando lista…	Chargement de la liste…	Caricamento elenco…	Načítám seznam…	Įkeliamas sąrašas…	Se încarcă lista…
+Ładuję odcinki…	Loading episodes…	Folgen werden geladen…	Завантажую серії…	Загружаю серии…	Cargando episodios…	Chargement des épisodes…	Caricamento episodi…	Načítám díly…	Įkeliamos serijos…	Se încarcă episoadele…
+Ładuję…	Loading…	Wird geladen…	Завантаження…	Загрузка…	Cargando…	Chargement…	Caricamento…	Načítám…	Įkeliama…	Se încarcă…
+Łączę z serwerem…	Connecting to server…	Verbinde mit Server…	Підключення до сервера…	Подключение к серверу…	Conectando al servidor…	Connexion au serveur…	Connessione al server…	Připojuji se k serveru…	Jungiamasi prie serverio…	Conectare la server…
+(pierwszy raz może potrwać do minuty)	(the first time may take up to a minute)	(beim ersten Mal kann es bis zu einer Minute dauern)	(перший раз може тривати до хвилини)	(в первый раз может занять до минуты)	(la primera vez puede tardar hasta un minuto)	(la première fois peut prendre jusqu'à une minute)	(la prima volta può richiedere fino a un minuto)	(poprvé to může trvat až minutu)	(pirmą kartą gali užtrukti iki minutės)	(prima dată poate dura până la un minut)
+Szukam filmów…	Searching for movies…	Suche Filme…	Шукаю фільми…	Ищу фильмы…	Buscando películas…	Recherche de films…	Cerco film…	Hledám filmy…	Ieškoma filmų…	Caut filme…
+Szukam zwiastuna…	Searching for trailer…	Suche Trailer…	Шукаю трейлер…	Ищу трейлер…	Buscando tráiler…	Recherche de la bande-annonce…	Cerco trailer…	Hledám trailer…	Ieškoma anonso…	Caut trailerul…
+Teraz: 	Now: 	Jetzt: 	Зараз: 	Сейчас: 	Ahora: 	Maintenant : 	Ora: 	Teď: 	Dabar: 	Acum: 
+Potem: 	Next: 	Danach: 	Далі: 	Далее: 	Después: 	Ensuite : 	Dopo: 	Potom: 	Toliau: 	Urmează: 
+jeszcze 		noch 	ще 	ещё 	quedan 	encore 	ancora 	ještě 	liko 	încă 
+ min	 min left	 Min.	 хв	 мин	 min	 min	 min	 min	 min	 min
+=Na żywo	Live	Live	Наживо	Прямой эфир	En directo	En direct	In diretta	Živě	Tiesiogiai	În direct
+● NA ŻYWO	● LIVE	● LIVE	● НАЖИВО	● ПРЯМОЙ ЭФИР	● EN DIRECTO	● EN DIRECT	● IN DIRETTA	● ŽIVĚ	● TIESIOGIAI	● ÎN DIRECT
+Wkrótce	Coming up	Demnächst	Незабаром	Скоро	Próximamente	Bientôt	A breve	Brzy	Netrukus	În curând
+Bez archiwum	No catch-up	Kein Archiv	Без архіву	Без архива	Sin archivo	Pas de replay	Nessun archivio	Bez archivu	Be archyvo	Fără arhivă
+⏪ Archiwum – dotknij, aby obejrzeć	⏪ Catch-up – tap to watch	⏪ Archiv – tippen zum Ansehen	⏪ Архів – торкніться, щоб дивитися	⏪ Архив – нажмите, чтобы смотреть	⏪ Archivo – toca para ver	⏪ Replay – touchez pour regarder	⏪ Archivio – tocca per guardare	⏪ Archiv – klepněte pro přehrání	⏪ Archyvas – bakstelėkite žiūrėti	⏪ Arhivă – atinge pentru a viziona
+Archiwum: 	Catch-up: 	Archiv: 	Архів: 	Архив: 	Archivo: 	Replay : 	Archivio: 	Archiv: 	Archyvas: 	Arhivă: 
+Od początku	From the start	Von Anfang an	З початку	С начала	Desde el principio	Depuis le début	Dall'inizio	Od začátku	Nuo pradžios	De la început
+Dotknij tutaj, aby wrócić na żywo	Tap here to go back to live	Hier tippen, um zu Live zurückzukehren	Торкніться тут, щоб повернутися до ефіру	Нажмите здесь, чтобы вернуться в эфир	Toca aquí para volver al directo	Touchez ici pour revenir au direct	Tocca qui per tornare in diretta	Klepněte sem pro návrat do živého vysílání	Bakstelėkite čia, kad grįžtumėte į tiesioginį	Atinge aici pentru a reveni în direct
+Program / archiwum	Guide / catch-up	Programm / Archiv	Програма / архів	Программа / архив	Guía / archivo	Guide / replay	Guida / archivio	Program / archiv	Programa / archyvas	Ghid / arhivă
+☰ Program	☰ Guide	☰ Programm	☰ Програма	☰ Программа	☰ Guía	☰ Guide	☰ Guida	☰ Program	☰ Programa	☰ Ghid
+✕ Kanały	✕ Channels	✕ Sender	✕ Канали	✕ Каналы	✕ Canales	✕ Chaînes	✕ Canali	✕ Kanály	✕ Kanalai	✕ Canale
+⚙ Opcje	⚙ Options	⚙ Optionen	⚙ Опції	⚙ Настройки	⚙ Opciones	⚙ Options	⚙ Opzioni	⚙ Možnosti	⚙ Parinktys	⚙ Opțiuni
+— program (⏪ = archiwum)	— guide (⏪ = catch-up)	— Programm (⏪ = Archiv)	— програма (⏪ = архів)	— программа (⏪ = архив)	— guía (⏪ = archivo)	— guide (⏪ = replay)	— guida (⏪ = archivio)	— program (⏪ = archiv)	— programa (⏪ = archyvas)	— ghid (⏪ = arhivă)
+⏪ Obejrzyj	⏪ Watch	⏪ Ansehen	⏪ Дивитися	⏪ Смотреть	⏪ Ver	⏪ Regarder	⏪ Guarda	⏪ Přehrát	⏪ Žiūrėti	⏪ Vizionează
+Brak programu dla tego kanału	No guide for this channel	Kein Programm für diesen Sender	Немає програми для цього каналу	Нет программы для этого канала	No hay guía para este canal	Pas de guide pour cette chaîne	Nessuna guida per questo canale	Pro tento kanál není program	Šiam kanalui nėra programos	Nu există ghid pentru acest canal
+Ten kanał nie ma archiwum	This channel has no catch-up	Dieser Sender hat kein Archiv	Цей канал не має архіву	У этого канала нет архива	Este canal no tiene archivo	Cette chaîne n'a pas de replay	Questo canale non ha archivio	Tento kanál nemá archiv	Šis kanalas neturi archyvo	Acest canal nu are arhivă
+Ta audycja nie ma archiwum	This show has no catch-up	Diese Sendung hat kein Archiv	Ця передача не має архіву	У этой передачи нет архива	Este programa no tiene archivo	Cette émission n'a pas de replay	Questo programma non ha archivio	Tento pořad nemá archiv	Ši laida neturi archyvo	Această emisiune nu are arhivă
+Audycja jeszcze się nie zaczęła	The show hasn't started yet	Die Sendung hat noch nicht begonnen	Передача ще не почалася	Передача ещё не началась	El programa aún no ha empezado	L'émission n'a pas encore commencé	Il programma non è ancora iniziato	Pořad ještě nezačal	Laida dar neprasidėjo	Emisiunea nu a început încă
+Kanał nie działa	Channel not working	Sender funktioniert nicht	Канал не працює	Канал не работает	El canal no funciona	La chaîne ne fonctionne pas	Il canale non funziona	Kanál nefunguje	Kanalas neveikia	Canalul nu funcționează
+Ponawiam…	Retrying…	Neuer Versuch…	Повторюю…	Повторяю…	Reintentando…	Nouvel essai…	Riprovo…	Zkouším znovu…	Bandoma dar kartą…	Reîncerc…
+Ostatnio oglądane kanały	Recently watched channels	Zuletzt gesehene Sender	Нещодавно переглянуті канали	Недавно просмотренные каналы	Canales vistos recientemente	Chaînes regardées récemment	Canali visti di recente	Naposledy sledované kanály	Neseniai žiūrėti kanalai	Canale vizionate recent
+Popularne filmy	Popular movies	Beliebte Filme	Популярні фільми	Популярные фильмы	Películas populares	Films populaires	Film popolari	Populární filmy	Populiarūs filmai	Filme populare
+Popularne seriale	Popular series	Beliebte Serien	Популярні серіали	Популярные сериалы	Series populares	Séries populaires	Serie popolari	Populární seriály	Populiarūs serialai	Seriale populare
+Najnowsze kanały telewizyjne	Newest TV channels	Neueste TV-Sender	Найновіші телеканали	Новейшие телеканалы	Canales de TV más nuevos	Nouvelles chaînes TV	Canali TV più recenti	Nejnovější TV kanály	Naujausi TV kanalai	Cele mai noi canale TV
+Najnowsze VOD-y	Newest movies	Neueste Filme	Найновіші фільми	Новейшие фильмы	Películas más nuevas	Nouveaux films	Film più recenti	Nejnovější filmy	Naujausi filmai	Cele mai noi filme
+Najnowsze seriale telewizyjne	Newest TV series	Neueste Serien	Найновіші серіали	Новейшие сериалы	Series más nuevas	Nouvelles séries	Serie più recenti	Nejnovější seriály	Naujausi serialai	Cele mai noi seriale
+Ulubione kanały	Favourite channels	Lieblingssender	Улюблені канали	Избранные каналы	Canales favoritos	Chaînes favorites	Canali preferiti	Oblíbené kanály	Mėgstami kanalai	Canale favorite
+Ulubione filmy	Favourite movies	Lieblingsfilme	Улюблені фільми	Избранные фильмы	Películas favoritas	Films favoris	Film preferiti	Oblíbené filmy	Mėgstami filmai	Filme favorite
+Ulubione seriale	Favourite series	Lieblingsserien	Улюблені серіали	Избранные сериалы	Series favoritas	Séries favorites	Serie preferite	Oblíbené seriály	Mėgstami serialai	Seriale favorite
+=Ulubione	Favourites	Favoriten	Улюблене	Избранное	Favoritos	Favoris	Preferiti	Oblíbené	Mėgstami	Favorite
+Nie masz jeszcze ulubionych.	You have no favourites yet.	Du hast noch keine Favoriten.	У вас ще немає улюбленого.	У вас пока нет избранного.	Aún no tienes favoritos.	Vous n'avez pas encore de favoris.	Non hai ancora preferiti.	Zatím nemáte oblíbené.	Dar neturite mėgstamų.	Nu ai încă favorite.
+Kanał: przytrzymaj go palcem na liście TV.	Channel: press and hold it in the TV list.	Sender: in der TV-Liste gedrückt halten.	Канал: утримуйте його пальцем у списку ТБ.	Канал: удерживайте его пальцем в списке ТВ.	Canal: mantenlo pulsado en la lista de TV.	Chaîne : appuyez longuement dessus dans la liste TV.	Canale: tienilo premuto nell'elenco TV.	Kanál: podržte ho prstem v seznamu TV.	Kanalas: palaikykite jį TV sąraše.	Canal: ține apăsat pe el în lista TV.
+Film lub serial: gwiazdka ☆ w opisie.	Movie or series: the ☆ star in its details.	Film oder Serie: Stern ☆ in der Beschreibung.	Фільм або серіал: зірочка ☆ в описі.	Фильм или сериал: звёздочка ☆ в описании.	Película o serie: la estrella ☆ en la ficha.	Film ou série : l'étoile ☆ dans la fiche.	Film o serie: la stella ☆ nella scheda.	Film nebo seriál: hvězdička ☆ v popisu.	Filmas ar serialas: žvaigždutė ☆ aprašyme.	Film sau serial: steaua ☆ din descriere.
+dodany do ulubionych	added to favourites	zu Favoriten hinzugefügt	додано до улюбленого	добавлен в избранное	añadido a favoritos	ajouté aux favoris	aggiunto ai preferiti	přidán do oblíbených	pridėtas prie mėgstamų	adăugat la favorite
+usunięty z ulubionych	removed from favourites	aus Favoriten entfernt	видалено з улюбленого	удалён из избранного	eliminado de favoritos	retiré des favoris	rimosso dai preferiti	odebrán z oblíbených	pašalintas iš mėgstamų	eliminat din favorite
+Dodano do ulubionych	Added to favourites	Zu Favoriten hinzugefügt	Додано до улюбленого	Добавлено в избранное	Añadido a favoritos	Ajouté aux favoris	Aggiunto ai preferiti	Přidáno do oblíbených	Pridėta prie mėgstamų	Adăugat la favorite
+Usunięto z ulubionych	Removed from favourites	Aus Favoriten entfernt	Видалено з улюбленого	Удалено из избранного	Eliminado de favoritos	Retiré des favoris	Rimosso dai preferiti	Odebráno z oblíbených	Pašalinta iš mėgstamų	Eliminat din favorite
+Szukaj kanału, filmu, serialu, aktora…	Search channels, movies, series, actors…	Sender, Filme, Serien, Schauspieler suchen…	Пошук каналу, фільму, серіалу, актора…	Поиск канала, фильма, сериала, актёра…	Buscar canal, película, serie, actor…	Rechercher chaîne, film, série, acteur…	Cerca canale, film, serie, attore…	Hledat kanál, film, seriál, herce…	Ieškoti kanalo, filmo, serialo, aktoriaus…	Caută canal, film, serial, actor…
+Wpisz co najmniej 2 litery.	Type at least 2 letters.	Mindestens 2 Buchstaben eingeben.	Введіть щонайменше 2 літери.	Введите минимум 2 буквы.	Escribe al menos 2 letras.	Tapez au moins 2 lettres.	Digita almeno 2 lettere.	Zadejte alespoň 2 písmena.	Įveskite bent 2 raides.	Scrie cel puțin 2 litere.
+Kanały (	Channels (	Sender (	Канали (	Каналы (	Canales (	Chaînes (	Canali (	Kanály (	Kanalai (	Canale (
+Filmy (	Movies (	Filme (	Фільми (	Фильмы (	Películas (	Films (	Film (	Filmy (	Filmai (	Filme (
+Seriale (	Series (	Serien (	Серіали (	Сериалы (	Series (	Séries (	Serie (	Seriály (	Serialai (	Seriale (
+Szukaj aktora:	Search actor:	Schauspieler suchen:	Шукати актора:	Искать актёра:	Buscar actor:	Rechercher l'acteur :	Cerca attore:	Hledat herce:	Ieškoti aktoriaus:	Caută actorul:
+Nic nie znaleziono w kanałach, filmach i serialach.	Nothing found in channels, movies or series.	Nichts in Sendern, Filmen und Serien gefunden.	Нічого не знайдено в каналах, фільмах і серіалах.	Ничего не найдено в каналах, фильмах и сериалах.	No se encontró nada en canales, películas ni series.	Rien trouvé dans les chaînes, films et séries.	Nessun risultato in canali, film e serie.	V kanálech, filmech a seriálech nic nenalezeno.	Kanaluose, filmuose ir serialuose nieko nerasta.	Nimic găsit în canale, filme și seriale.
+Oglądaj	Watch	Ansehen	Дивитися	Смотреть	Ver	Regarder	Guarda	Přehrát	Žiūrėti	Vizionează
+Wznów	Resume	Fortsetzen	Продовжити	Продолжить	Reanudar	Reprendre	Riprendi	Pokračovat	Tęsti	Reia
+=Odcinki	Episodes	Folgen	Серії	Серии	Episodios	Épisodes	Episodi	Díly	Serijos	Episoade
+=Zwiastun	Trailer	Trailer	Трейлер	Трейлер	Tráiler	Bande-annonce	Trailer	Trailer	Anonsas	Trailer
+=Obsada	Cast	Besetzung	Актори	В ролях	Reparto	Distribution	Cast	Obsazení	Aktoriai	Distribuție
+=Nośnik	Media	Medien	Медіа	Медиа	Imágenes	Médias	Media	Média	Medija	Media
+=Detale	Details	Details	Деталі	Детали	Detalles	Détails	Dettagli	Detaily	Detalės	Detalii
+=Brak danych	No data	Keine Daten	Немає даних	Нет данных	Sin datos	Aucune donnée	Nessun dato	Žádná data	Duomenų nėra	Fără date
+Brak danych o filmach	No movie data	Keine Filmdaten	Немає даних про фільми	Нет данных о фильмах	Sin datos de películas	Aucune donnée de films	Nessun dato sui film	Žádná data o filmech	Nėra duomenų apie filmus	Fără date despre filme
+Brak opisu	No description	Keine Beschreibung	Немає опису	Нет описания	Sin descripción	Pas de description	Nessuna descrizione	Bez popisu	Aprašymo nėra	Fără descriere
+=Gatunek	Genre	Genre	Жанр	Жанр	Género	Genre	Genere	Žánr	Žanras	Gen
+=Premiera	Release	Erscheinung	Прем'єра	Премьера	Estreno	Sortie	Uscita	Premiéra	Premjera	Lansare
+=Reżyseria	Director	Regie	Режисер	Режиссёр	Dirección	Réalisation	Regia	Režie	Režisierius	Regie
+=Czas	Runtime	Laufzeit	Тривалість	Длительность	Duración	Durée	Durata	Délka	Trukmė	Durată
+=Ocena	Rating	Bewertung	Оцінка	Оценка	Puntuación	Note	Voto	Hodnocení	Įvertinimas	Notă
+=Serial	Series	Serie	Серіал	Сериал	Serie	Série	Serie	Seriál	Serialas	Serial
+Sezon 	Season 	Staffel 	Сезон 	Сезон 	Temporada 	Saison 	Stagione 	Řada 	Sezonas 	Sezonul 
+Nie udało się pobrać opisu z serwera.	Couldn't load the description from the server.	Beschreibung konnte nicht geladen werden.	Не вдалося завантажити опис із сервера.	Не удалось загрузить описание с сервера.	No se pudo cargar la descripción.	Impossible de charger la description.	Impossibile caricare la descrizione.	Popis se nepodařilo načíst.	Nepavyko įkelti aprašymo.	Nu s-a putut încărca descrierea.
+Spróbuj ponownie	Try again	Erneut versuchen	Спробувати ще раз	Попробовать снова	Reintentar	Réessayer	Riprova	Zkusit znovu	Bandyti dar kartą	Încearcă din nou
+Na Twojej liście	On your list	In deiner Liste	У вашому списку	В вашем списке	En tu lista	Dans votre liste	Nella tua lista	Na vašem seznamu	Jūsų sąraše	În lista ta
+Wszystkich	Total	Insgesamt	Усього	Всего	Total	Total	Totale	Celkem	Iš viso	Total
+Pozostałe filmy (brak na liście)	Other movies (not on your list)	Weitere Filme (nicht in der Liste)	Інші фільми (немає у списку)	Другие фильмы (нет в списке)	Otras películas (no en tu lista)	Autres films (absents de la liste)	Altri film (non nella lista)	Další filmy (nejsou na seznamu)	Kiti filmai (nėra sąraše)	Alte filme (nu sunt în listă)
+godz. 	h 	Std. 	год 	ч 	h 	h 	h 	h 	val. 	h 
+=Informacje	About	Info	Інформація	Информация	Información	Informations	Informazioni	Informace	Informacija	Informații
+OK Player, nowa wersja	OK Player, new version	OK Player, neue Version	OK Player, нова версія	OK Player, новая версия	OK Player, nueva versión	OK Player, nouvelle version	OK Player, nuova versione	OK Player, nová verze	OK Player, nauja versija	OK Player, versiune nouă
+Sprawdź aktualizację	Check for updates	Nach Updates suchen	Перевірити оновлення	Проверить обновления	Buscar actualización	Rechercher une mise à jour	Cerca aggiornamenti	Zkontrolovat aktualizace	Tikrinti atnaujinimus	Caută actualizări
+Pobiera i instaluje nową wersję w tle	Downloads and installs the new version in the background	Lädt die neue Version im Hintergrund und installiert sie	Завантажує та встановлює нову версію у фоні	Скачивает и устанавливает новую версию в фоне	Descarga e instala la nueva versión en segundo plano	Télécharge et installe la nouvelle version en arrière-plan	Scarica e installa la nuova versione in background	Stáhne a nainstaluje novou verzi na pozadí	Atsisiunčia ir įdiegia naują versiją fone	Descarcă și instalează noua versiune în fundal
+Okienko TV (obraz w obrazie)	TV window (picture-in-picture)	TV-Fenster (Bild-in-Bild)	Вікно ТБ (картинка в картинці)	Окно ТВ (картинка в картинке)	Ventana de TV (imagen en imagen)	Fenêtre TV (image dans l'image)	Finestra TV (picture-in-picture)	Okno TV (obraz v obraze)	TV langelis (vaizdas vaizde)	Fereastră TV (imagine în imagine)
+Włączone – po wyjściu do ekranu telefonu TV gra w okienku	On – TV keeps playing in a window when you leave the app	An – TV läuft im Fenster weiter, wenn du die App verlässt	Увімкнено – після виходу з програми ТБ грає у віконці	Включено – после выхода из приложения ТВ играет в окне	Activado – la TV sigue en una ventana al salir de la app	Activé – la TV continue dans une fenêtre en quittant l'app	Attivo – la TV continua in una finestra quando esci dall'app	Zapnuto – po opuštění aplikace hraje TV v okně	Įjungta – išėjus iš programos TV rodoma langelyje	Activat – TV rulează într-o fereastră când ieși din aplicație
+=Wyłączone	Off	Aus	Вимкнено	Выключено	Desactivado	Désactivé	Disattivato	Vypnuto	Išjungta	Dezactivat
+Odśwież listę	Refresh list	Liste aktualisieren	Оновити список	Обновить список	Actualizar lista	Actualiser la liste	Aggiorna elenco	Obnovit seznam	Atnaujinti sąrašą	Reîmprospătează lista
+Pobiera świeżą listę kanałów, filmów i seriali z serwera	Downloads a fresh list of channels, movies and series	Lädt eine neue Liste von Sendern, Filmen und Serien	Завантажує свіжий список каналів, фільмів і серіалів	Загружает свежий список каналов, фильмов и сериалов	Descarga una lista nueva de canales, películas y series	Télécharge une nouvelle liste de chaînes, films et séries	Scarica un elenco aggiornato di canali, film e serie	Stáhne aktuální seznam kanálů, filmů a seriálů	Atsisiunčia naują kanalų, filmų ir serialų sąrašą	Descarcă o listă nouă de canale, filme și seriale
+=Wyloguj	Log out	Abmelden	Вийти	Выйти	Cerrar sesión	Se déconnecter	Esci	Odhlásit	Atsijungti	Deconectare
+Aplikacja pokaże nowy kod do edytora	The app will show a new pairing code	Die App zeigt einen neuen Kopplungscode	Програма покаже новий код	Приложение покажет новый код	La app mostrará un código nuevo	L'app affichera un nouveau code	L'app mostrerà un nuovo codice	Aplikace zobrazí nový kód	Programa parodys naują kodą	Aplicația va afișa un cod nou
+Zamknąć OK Player?	Close OK Player?	OK Player schließen?	Закрити OK Player?	Закрыть OK Player?	¿Cerrar OK Player?	Fermer OK Player ?	Chiudere OK Player?	Zavřít OK Player?	Uždaryti OK Player?	Închizi OK Player?
+Czy na pewno chcesz wyjść z aplikacji?	Are you sure you want to exit?	Möchtest du die App wirklich beenden?	Ви дійсно хочете вийти?	Вы действительно хотите выйти?	¿Seguro que quieres salir?	Voulez-vous vraiment quitter ?	Vuoi davvero uscire?	Opravdu chcete aplikaci ukončit?	Ar tikrai norite išeiti?	Sigur vrei să ieși?
+=Wyjdź	Exit	Beenden	Вийти	Выйти	Salir	Quitter	Esci	Ukončit	Išeiti	Ieșire
+=Anuluj	Cancel	Abbrechen	Скасувати	Отмена	Cancelar	Annuler	Annulla	Zrušit	Atšaukti	Anulează
+=Zamknij	Close	Schließen	Закрити	Закрыть	Cerrar	Fermer	Chiudi	Zavřít	Uždaryti	Închide
+Telewizja  •  Filmy  •  Seriale	TV  •  Movies  •  Series	TV  •  Filme  •  Serien	ТБ  •  Фільми  •  Серіали	ТВ  •  Фильмы  •  Сериалы	TV  •  Películas  •  Series	TV  •  Films  •  Séries	TV  •  Film  •  Serie	TV  •  Filmy  •  Seriály	TV  •  Filmai  •  Serialai	TV  •  Filme  •  Seriale
+Nowa wersja	New version	Neue Version	Нова версія	Новая версия	Nueva versión	Nouvelle version	Nuova versione	Nová verze	Nauja versija	Versiune nouă
+Co się zmieniło	What's new	Was ist neu	Що нового	Что нового	Novedades	Nouveautés	Novità	Co je nového	Kas naujo	Ce e nou
+Było: 	Before: 	Vorher: 	Було: 	Было: 	Antes: 	Avant : 	Prima: 	Dříve: 	Buvo: 	Înainte: 
+=Później	Later	Später	Пізніше	Позже	Más tarde	Plus tard	Più tardi	Později	Vėliau	Mai târziu
+=Zainstaluj	Install	Installieren	Встановити	Установить	Instalar	Installer	Installa	Instalovat	Įdiegti	Instalează
+Jak zainstalować	How to install	So installierst du	Як встановити	Как установить	Cómo instalar	Comment installer	Come installare	Jak nainstalovat	Kaip įdiegti	Cum se instalează
+Masz najnowszą wersję	You have the latest version	Du hast die neueste Version	У вас найновіша версія	У вас последняя версия	Tienes la última versión	Vous avez la dernière version	Hai l'ultima versione	Máte nejnovější verzi	Turite naujausią versiją	Ai cea mai nouă versiune
+Nie udało się sprawdzić aktualizacji	Couldn't check for updates	Update-Prüfung fehlgeschlagen	Не вдалося перевірити оновлення	Не удалось проверить обновления	No se pudo buscar actualizaciones	Impossible de vérifier les mises à jour	Impossibile cercare aggiornamenti	Aktualizace se nepodařilo zkontrolovat	Nepavyko patikrinti atnaujinimų	Nu s-au putut verifica actualizările
+Pobieram aktualizację…	Downloading update…	Update wird geladen…	Завантажую оновлення…	Загружаю обновление…	Descargando actualización…	Téléchargement de la mise à jour…	Download aggiornamento…	Stahuji aktualizaci…	Atsisiunčiamas atnaujinimas…	Se descarcă actualizarea…
+=Opcje	Options	Optionen	Опції	Настройки	Opciones	Options	Opzioni	Možnosti	Parinktys	Opțiuni
+Ścieżka dźwiękowa	Audio track	Tonspur	Аудіодоріжка	Аудиодорожка	Pista de audio	Piste audio	Traccia audio	Zvuková stopa	Garso takelis	Pistă audio
+=Napisy	Subtitles	Untertitel	Субтитри	Субтитры	Subtítulos	Sous-titres	Sottotitoli	Titulky	Subtitrai	Subtitrări
+Format obrazu	Aspect ratio	Bildformat	Формат зображення	Формат изображения	Formato de imagen	Format d'image	Formato immagine	Formát obrazu	Vaizdo formatas	Format imagine
+Prędkość odtwarzania	Playback speed	Wiedergabegeschwindigkeit	Швидкість відтворення	Скорость воспроизведения	Velocidad de reproducción	Vitesse de lecture	Velocità di riproduzione	Rychlost přehrávání	Atkūrimo greitis	Viteză de redare
+Wyłącznik czasowy	Sleep timer	Sleep-Timer	Таймер сну	Таймер сна	Temporizador	Minuterie	Timer spegnimento	Časovač vypnutí	Išjungimo laikmatis	Temporizator
+=Dopasuj	Fit	Anpassen	Підігнати	Вписать	Ajustar	Ajuster	Adatta	Přizpůsobit	Pritaikyti	Potrivire
+Powiększ (bez pasów)	Zoom (no bars)	Zoomen (ohne Balken)	Збільшити (без смуг)	Увеличить (без полос)	Zoom (sin bandas)	Zoom (sans bandes)	Zoom (senza bande)	Přiblížit (bez pruhů)	Priartinti (be juostų)	Mărește (fără benzi)
+=Rozciągnij	Stretch	Strecken	Розтягнути	Растянуть	Estirar	Étirer	Allunga	Roztáhnout	Ištempti	Întinde
+=Normalna	Normal	Normal	Звичайна	Обычная	Normal	Normale	Normale	Normální	Įprastas	Normală
+=Wyłączony	Off	Aus	Вимкнено	Выключен	Desactivado	Désactivé	Disattivato	Vypnuto	Išjungtas	Dezactivat
+Brak innych ścieżek	No other tracks	Keine weiteren Spuren	Немає інших доріжок	Нет других дорожек	No hay otras pistas	Aucune autre piste	Nessun'altra traccia	Žádné další stopy	Kitų takelių nėra	Nu există alte piste
+Wznawiam od 	Resuming from 	Fortsetzen ab 	Продовжую з 	Продолжаю с 	Reanudando desde 	Reprise à 	Riprendo da 	Pokračuji od 	Tęsiama nuo 	Reiau de la 
+Wpisz ten kod w edytorze:	Enter this code in the editor:	Gib diesen Code im Editor ein:	Введіть цей код у редакторі:	Введите этот код в редакторе:	Introduce este código en el editor:	Saisissez ce code dans l'éditeur :	Inserisci questo codice nell'editor:	Zadejte tento kód v editoru:	Įveskite šį kodą redaktoriuje:	Introdu acest cod în editor:
+Czekam, aż dodasz kod w edytorze…	Waiting for the code to be added in the editor…	Warte, bis der Code im Editor hinzugefügt wird…	Чекаю, поки ви додасте код у редакторі…	Жду, пока вы добавите код в редакторе…	Esperando a que añadas el código…	En attente de l'ajout du code…	In attesa che aggiungi il codice…	Čekám na přidání kódu v editoru…	Laukiama, kol pridėsite kodą…	Aștept să adaugi codul în editor…
+Kod przyjęty, loguję…	Code accepted, signing in…	Code akzeptiert, Anmeldung…	Код прийнято, входжу…	Код принят, вход…	Código aceptado, iniciando sesión…	Code accepté, connexion…	Codice accettato, accesso…	Kód přijat, přihlašuji…	Kodas priimtas, jungiamasi…	Cod acceptat, conectare…
+Brak połączenia z serwerem, ponawiam…	No connection to the server, retrying…	Keine Verbindung zum Server, neuer Versuch…	Немає з'єднання з сервером, повторюю…	Нет связи с сервером, повторяю…	Sin conexión con el servidor, reintentando…	Pas de connexion au serveur, nouvel essai…	Nessuna connessione al server, riprovo…	Bez spojení se serverem, zkouším znovu…	Nėra ryšio su serveriu, bandoma dar kartą…	Fără conexiune la server, reîncerc…
+Nie udało się pobrać listy kanałów.	Couldn't load the channel list.	Senderliste konnte nicht geladen werden.	Не вдалося завантажити список каналів.	Не удалось загрузить список каналов.	No se pudo cargar la lista de canales.	Impossible de charger la liste des chaînes.	Impossibile caricare l'elenco dei canali.	Seznam kanálů se nepodařilo načíst.	Nepavyko įkelti kanalų sąrašo.	Nu s-a putut încărca lista de canale.
+Sprawdź internet i otwórz aplikację ponownie.	Check your internet and open the app again.	Prüfe das Internet und öffne die App erneut.	Перевірте інтернет і відкрийте програму знову.	Проверьте интернет и откройте приложение снова.	Comprueba internet y vuelve a abrir la app.	Vérifiez internet et rouvrez l'app.	Controlla internet e riapri l'app.	Zkontrolujte internet a otevřete aplikaci znovu.	Patikrinkite internetą ir vėl atidarykite programą.	Verifică internetul și redeschide aplicația.
+=Wszystkie	All	Alle	Усі	Все	Todos	Tous	Tutti	Vše	Visi	Toate
+=Dziś	Today	Heute	Сьогодні	Сегодня	Hoy	Aujourd'hui	Oggi	Dnes	Šiandien	Azi
+jako 	as 	als 	у ролі 	в роли 	como 	dans le rôle de 	nel ruolo di 	jako 	vaidmuo: 	în rolul 

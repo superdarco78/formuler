@@ -37,6 +37,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Pilot.wlacz(this)
+        Jezyk.wlacz(this)
         val f = FrameLayout(this).apply { setBackgroundColor(Color.BLACK) }
         widok = PlayerView(this).apply { useController = true; setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS); controllerShowTimeoutMs = 3000 }
         f.addView(widok, FrameLayout.LayoutParams(-1, -1))
@@ -138,7 +139,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
     /** W panelu pod obrazem widac, co leci z archiwum, i jak wrocic na zywo. */
     private fun naArchiwum(w: Wpis) {
         if (panel == null) return
-        val fmt = java.text.SimpleDateFormat("EEE d.MM HH:mm", java.util.Locale("pl"))
+        val fmt = java.text.SimpleDateFormat("EEE d.MM HH:mm", Jezyk.loc)
         terazTv.text = "⏪ Archiwum: " + fmt.format(java.util.Date(w.start * 1000)) + "  " + w.tytul
         potemTv.text = "▶ Dotknij tutaj, aby wrócić na żywo"; pasekTeraz?.visibility = android.view.View.GONE; godzinyTv?.visibility = android.view.View.GONE
     }
@@ -169,7 +170,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         lifecycleScope.launch {
             wpisy = withContext(Dispatchers.IO) { Serwer.przewodnik(this@OdtwarzaczActivity, ch.id) }
             if (!przewodnikOtwarty || biezacy?.id != ch.id) return@launch
-            val dz = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale("pl"))
+            val dz = java.text.SimpleDateFormat("yyyy-MM-dd", Jezyk.loc)
             dzien = dz.format(java.util.Date())
             rysujPrzewodnik()
         }
@@ -185,8 +186,8 @@ class OdtwarzaczActivity : AppCompatActivity() {
         val pr = przewodnik ?: return
         pr.removeAllViews()
         if (wpisy.isEmpty()) { pr.addView(TextView(this).apply { text = "Brak programu dla tego kanału"; setTextColor(0xFF9A9A9A.toInt()); setPadding(32, 24, 32, 24) }); return }
-        val dz = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale("pl"))
-        val nazwaDnia = java.text.SimpleDateFormat("EEE d.MM", java.util.Locale("pl"))
+        val dz = java.text.SimpleDateFormat("yyyy-MM-dd", Jezyk.loc)
+        val nazwaDnia = java.text.SimpleDateFormat("EEE d.MM", Jezyk.loc)
         val dni = wpisy.map { dz.format(java.util.Date(it.start * 1000)) }.distinct()
         val dzis = dz.format(java.util.Date())
         val pasek = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.HORIZONTAL; setPadding(20, 12, 20, 12) }
@@ -205,7 +206,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         val sv = android.widget.ScrollView(this).apply { addView(lista) }
         pr.addView(sv, android.widget.LinearLayout.LayoutParams(-1, 0, 1f))
         val t = System.currentTimeMillis() / 1000
-        val godz = java.text.SimpleDateFormat("HH:mm", java.util.Locale("pl"))
+        val godz = java.text.SimpleDateFormat("HH:mm", Jezyk.loc)
         var terazView: android.view.View? = null
         for (w in wpisy.filter { dz.format(java.util.Date(it.start * 1000)) == dzien }) {
             val teraz = w.start <= t && w.koniec > t
@@ -241,7 +242,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
                     androidx.appcompat.app.AlertDialog.Builder(this@OdtwarzaczActivity).setTitle(w.tytul)
                         .setMessage(godz.format(java.util.Date(w.start * 1000)) + "–" + godz.format(java.util.Date(w.koniec * 1000)) + "\n\n" + w.opis.ifEmpty { "Brak opisu" })
                         .setPositiveButton(if (archiwum) "⏪ Obejrzyj" else if (teraz) "▶ Na żywo" else "OK") { _, _ -> if (archiwum || teraz) performClick() }
-                        .setNegativeButton("Zamknij", null).show(); true
+                        .setNegativeButton("Zamknij", null).show().also { Jezyk.okno(it) }; true
                 }
                 setOnClickListener {
                     when {
@@ -300,7 +301,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val l = withContext(Dispatchers.IO) { Serwer.przewodnik(this@OdtwarzaczActivity, ch.id) }
             val t = System.currentTimeMillis() / 1000
-            val fmt = java.text.SimpleDateFormat("HH:mm", java.util.Locale("pl"))
+            val fmt = java.text.SimpleDateFormat("HH:mm", Jezyk.loc)
             val i = l.indexOfFirst { it.start <= t && it.koniec > t }
             terazWpis = l.getOrNull(i)
             if (biezacy?.id != ch.id) return@launch
@@ -416,7 +417,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
     private var wylacznik: android.os.CountDownTimer? = null
 
     private fun wybor(t: String, o: List<String>, z: Int, a: (Int) -> Unit) {
-        androidx.appcompat.app.AlertDialog.Builder(this).setTitle(t).setSingleChoiceItems(o.toTypedArray(), z) { d, i -> a(i); d.dismiss() }.setNegativeButton("Zamknij", null).show()
+        androidx.appcompat.app.AlertDialog.Builder(this).setTitle(t).setSingleChoiceItems(o.toTypedArray(), z) { d, i -> a(i); d.dismiss() }.setNegativeButton("Zamknij", null).show().also { Jezyk.okno(it) }
     }
 
     /** Opcje jak w MyTvOnline: dzwiek, napisy, format obrazu, predkosc (filmy), wylacznik czasowy. */
@@ -452,7 +453,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         if (typ == androidx.media3.common.C.TRACK_TYPE_TEXT) { nazwy.add("Wyłączone"); wyb.add(-1 to -1) }
         g.forEachIndexed { gi, gr -> for (t in 0 until gr.length) {
             val f = gr.getTrackFormat(t)
-            val jez = f.language?.let { java.util.Locale(it).getDisplayLanguage(java.util.Locale("pl")) } ?: "Ścieżka ${nazwy.size + 1}"
+            val jez = f.language?.let { java.util.Locale(it).getDisplayLanguage(Jezyk.loc) } ?: "Ścieżka ${nazwy.size + 1}"
             if (gr.isTrackSelected(t)) akt = nazwy.size
             nazwy.add(listOfNotNull(jez, f.label, if (f.channelCount > 0) "${f.channelCount} kan." else null).distinct().joinToString(" • ")); wyb.add(gi to t)
         } }
@@ -476,13 +477,13 @@ class OdtwarzaczActivity : AppCompatActivity() {
             if (l.isEmpty()) { pokazNapis("Brak programu dla tego kanału"); return@launch }
             val teraz = System.currentTimeMillis() / 1000
             val wid = l.filter { it.koniec > teraz - 3 * 86400 }.takeLast(80)
-            val fmt = java.text.SimpleDateFormat("EEE HH:mm", java.util.Locale("pl"))
+            val fmt = java.text.SimpleDateFormat("EEE HH:mm", Jezyk.loc)
             val nazwy = wid.map { w -> fmt.format(java.util.Date(w.start * 1000)) + "  " + w.tytul + (if (w.archiwum && w.koniec < teraz) "  ⏪" else if (w.start <= teraz && w.koniec > teraz) "  ● teraz" else "") }
             androidx.appcompat.app.AlertDialog.Builder(this@OdtwarzaczActivity).setTitle(ch.nazwa + " — program (⏪ = archiwum)").setItems(nazwy.toTypedArray()) { _, i ->
                 val w = wid[i]
                 if (w.archiwum && w.start < teraz) { val u = Serwer.adresArchiwum(this@OdtwarzaczActivity, ch.id, w); intent.putExtra("url", u); pokazNapis("Archiwum: " + w.tytul); trybNaZywo(false); graj(u); naArchiwum(w) }
                 else pokazNapis("Ta audycja nie ma archiwum")
-            }.setNegativeButton("Zamknij", null).show()
+            }.setNegativeButton("Zamknij", null).show().also { Jezyk.okno(it) }
         }
     }
 

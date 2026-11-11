@@ -29,6 +29,7 @@ class AktorActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Pilot.wlacz(this)
+        Jezyk.wlacz(this)
         val nazwa = intent.getStringExtra("aktor") ?: ""
         val rola = intent.getStringExtra("rola") ?: ""
         val kol = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), dp(12), dp(16), dp(24)) }

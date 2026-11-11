@@ -45,6 +45,7 @@ class DetaleActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Pilot.wlacz(this)
+        Jezyk.wlacz(this)
         val id = intent.getStringExtra("id") ?: ""
         val nazwa = intent.getStringExtra("nazwa") ?: ""
         val serial = intent.getStringExtra("rodzaj") == "s"
@@ -70,7 +71,7 @@ class DetaleActivity : AppCompatActivity() {
             setOnClickListener {
                 val teraz = Ust.przelaczUlubiony(this@DetaleActivity, rodz, id, nazwa, intent.getStringExtra("okladka"), intent.getStringExtra("ext") ?: "", "")
                 text = if (teraz) "★" else "☆"
-                android.widget.Toast.makeText(this@DetaleActivity, if (teraz) "Dodano do ulubionych" else "Usunięto z ulubionych", android.widget.Toast.LENGTH_SHORT).show()
+                android.widget.Toast.makeText(this@DetaleActivity, Jezyk.t(if (teraz) "Dodano do ulubionych" else "Usunięto z ulubionych").toString(), android.widget.Toast.LENGTH_SHORT).show()
             }
         }
         rzad.addView(gw, LinearLayout.LayoutParams(dp(54), dp(54)).apply { marginStart = dp(10) })
@@ -254,7 +255,7 @@ class DetaleActivity : AppCompatActivity() {
     }
 
     private fun grajKolejny(serialId: String, tytul: String) {
-        if (odcinki.isEmpty()) { android.widget.Toast.makeText(this, "Ładuję odcinki…", android.widget.Toast.LENGTH_SHORT).show(); return }
+        if (odcinki.isEmpty()) { android.widget.Toast.makeText(this, Jezyk.t("Ładuję odcinki…").toString(), android.widget.Toast.LENGTH_SHORT).show(); return }
         val (s, e) = ktoryOdcinek(serialId); grajOdcinek(serialId, tytul, s, e)
     }
 
