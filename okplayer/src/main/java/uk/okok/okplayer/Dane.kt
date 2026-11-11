@@ -209,17 +209,19 @@ object Serwer {
         val u = if (serial) api(c, "get_series_info") + "&series_id=$id&okp=1" else api(c, "get_vod_info") + "&vod_id=$id&okp=1"
         repeat(3) { proba ->
             try {
-                val t = tekst(u); val o = JSONObject(t)
+                val t = szybki.newCall(okhttp3.Request.Builder().url(u).build()).execute().use { it.body?.string() ?: "" }; val o = JSONObject(t)
                 if (o.optJSONObject("info") != null) { try { plikInfo(c, if (serial) "s" else "f", id).writeText(t) } catch (_: Exception) {}; return o }
             } catch (_: Exception) {}
             Thread.sleep(700L * (proba + 1))
         }
         return null
     }
+    /** Krotszy limit czasu dla opisow: 12 s na probe zamiast 45 s - bez dlugiego "Laduje...". */
+    private val szybki by lazy { http.newBuilder().callTimeout(12, TimeUnit.SECONDS).build() }
     fun infoFilmu(c: Context, id: String): JSONObject? = info(c, false, id)
     fun infoSerialu(c: Context, id: String): JSONObject? = info(c, true, id)
     /** Wczesniejsze pobranie opisow (np. pierwszych plakatow na Starcie), zeby otwieraly sie od razu. */
-    fun wczesniej(c: Context, l: List<Vod>) { for (v in l) { val f = plikInfo(c, if (v.rodzaj == "s") "s" else "f", v.id); if (f.exists() && System.currentTimeMillis() - f.lastModified() < 7 * 86_400_000L) continue; info(c, v.rodzaj == "s", v.id) } }
+    fun wczesniej(c: Context, l: List<Vod>) { for (v in l.take(8)) { Thread.sleep(1500); val f = plikInfo(c, if (v.rodzaj == "s") "s" else "f", v.id); if (f.exists() && System.currentTimeMillis() - f.lastModified() < 7 * 86_400_000L) continue; info(c, v.rodzaj == "s", v.id) } }
 }
 
 /** Pamiec list na dysku: Start pokazuje sie od razu, swieze dane dociagaja sie w tle. */
