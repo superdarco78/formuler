@@ -22,6 +22,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.withPermit
 
@@ -333,6 +334,51 @@ class StartActivity : AppCompatActivity() {
         k.addView(rv, LinearLayout.LayoutParams(-1, -2))
     }
 
+    /** Rzad "Mecze i sport na zywo": sprawdza program kanalow sportowych i pokazuje te, ktore nadaja teraz mecz lub transmisje. */
+    private fun rzadSportu(k: LinearLayout) {
+        val katSport = kategorie.filter { it.nazwa.lowercase().let { n -> n.contains("sport") || n.contains("piłk") || n.contains("mecz") } }.map { it.id }.toSet()
+        val sportowe = kanaly.filter { it.kat in katSport }.take(40)
+        if (sportowe.isEmpty()) return
+        val miejsce = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        k.addView(miejsce)
+        val mecz = Regex("(?i)( - | – | vs\\.? | v |mecz|liga|ekstraklasa|puchar|cup|grand prix|gp |f1|mma|ufc|ksw|boks|tenis|siatk|skoki|żużel|zuzel|na żywo|live)")
+        lifecycleScope.launch {
+            val trwa = ArrayList<Pair<Kanal, String>>()
+            kotlinx.coroutines.coroutineScope {
+                sportowe.map { ch -> async { ch to limitEpg.withPermit { withContext(Dispatchers.IO) { Serwer.terazLeci(this@StartActivity, ch.id) } } } }.forEach { d ->
+                    val (ch, t) = d.await(); if (t.isNotEmpty() && mecz.containsMatchIn(t)) trwa.add(ch to t)
+                }
+            }
+            if (trwa.isEmpty() || !miejsce.isAttachedToWindow) return@launch
+            miejsce.addView(naglowek("⚽ Mecze i sport na żywo"))
+            val rv = poziomy()
+            rv.adapter = object : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+                override fun getItemCount() = trwa.size
+                override fun onCreateViewHolder(p: ViewGroup, t: Int) = object : RecyclerView.ViewHolder(LinearLayout(p.context).apply {
+                    orientation = LinearLayout.VERTICAL; isFocusable = true; setPadding(dp(12), dp(10), dp(12), dp(10)); background = tlo(0xFF1C1C1C.toInt(), 12)
+                    layoutParams = RecyclerView.LayoutParams(dp(230), -2).apply { marginEnd = dp(10) }
+                    addView(LinearLayout(p.context).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+                        addView(ImageView(p.context).apply { scaleType = ImageView.ScaleType.FIT_CENTER }, LinearLayout.LayoutParams(dp(54), dp(34)))
+                        addView(tekst("● NA ŻYWO", 12f, AKCENT, gruby = true).apply { setPadding(dp(10), 0, 0, 0) }) })
+                    addView(tekst("", 15f, gruby = true).apply { maxLines = 2; ellipsize = android.text.TextUtils.TruncateAt.END; setPadding(0, dp(8), 0, 0) })
+                    addView(tekst("", 12f, SZARY).apply { maxLines = 1 })
+                    addView(android.widget.ProgressBar(p.context, null, android.R.attr.progressBarStyleHorizontal).apply { max = 100
+                        progressTintList = android.content.res.ColorStateList.valueOf(AKCENT); progressBackgroundTintList = android.content.res.ColorStateList.valueOf(0xFF333333.toInt()) },
+                        LinearLayout.LayoutParams(-1, dp(3)).apply { topMargin = dp(6) })
+                }) {}
+                override fun onBindViewHolder(h: RecyclerView.ViewHolder, i: Int) {
+                    val w = h.itemView as LinearLayout; val (ch, t) = trwa[i]
+                    ((w.getChildAt(0) as LinearLayout).getChildAt(0) as ImageView).apply { setImageDrawable(null); ch.logo?.let { load(it) } }
+                    (w.getChildAt(1) as TextView).text = t
+                    (w.getChildAt(2) as TextView).text = ch.nazwa + "   " + Serwer.godziny(ch.id).substringBefore("  •")
+                    (w.getChildAt(3) as android.widget.ProgressBar).progress = Serwer.postep(ch.id).coerceAtLeast(0)
+                    w.setOnClickListener { graj(ch) }
+                }
+            }
+            miejsce.addView(rv, LinearLayout.LayoutParams(-1, -2))
+        }
+    }
+
     private var wczesniejPobrane = false
     private fun start() {
         val sv = ScrollView(this)
@@ -342,6 +388,11 @@ class StartActivity : AppCompatActivity() {
         val pop = { l: List<Vod> -> l.filter { it.ocena > 0 }.sortedByDescending { it.ocena }.take(20).ifEmpty { l.takeLast(20).reversed() } }
         // Kontynuuj ogladanie: ostatni kanal + filmy przerwane w polowie (z ulubionych i najnowszych)
         rzadKanalow(k, "Ostatnio oglądane kanały", Ust.ostatnie(this).map { o -> kanaly.firstOrNull { it.id == o.id } ?: o })
+        // Sport na zywo: kanaly sportowe, ktore teraz nadaja mecz / transmisje (z programu TV)
+        rzadSportu(k)
+        // Radio: stacje z grup z "radio" w nazwie
+        val katRadio = kategorie.filter { it.nazwa.lowercase().contains("radio") }.map { it.id }.toSet()
+        rzadKanalow(k, "📻 Radio", kanaly.filter { it.kat in katRadio }.take(40))
         val ul = Ust.ulubione(this).filter { it[0] != "k" }.map { Vod(it[1], it[2], it[3].ifEmpty { null }, it[5], 0.0, it[4], it[0]) }
         rzadVod(k, "Ulubione", ul)
         rzadRanking(k, "Popularne filmy", pop(filmy), katF, false)

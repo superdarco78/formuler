@@ -1,2 +1,3 @@
-Włączanie kanału / filmu / archiwum|czarny ekran ze zwykłym kółkiem ładowania|animacja: logo OK Player pulsuje, wokół kręci się kolorowy pierścień (różowy → fioletowy), pod spodem nazwa kanału lub filmu; gdy obraz ruszy, animacja płynnie znika
-Film → Wstecz|film się zamykał|film gra dalej w małym kwadracie, dotknięcie = pełny ekran w tym samym miejscu
+⚽ Mecze i sport na żywo (nowość)|trzeba było szukać po kanałach, gdzie leci mecz|na Starcie rząd kanałów sportowych, które właśnie nadają mecz lub transmisję: logo, „● NA ŻYWO”, co leci, godziny i pasek – dotknij i oglądasz
+📻 Radio (nowość)|stacje radiowe były tylko w grupach na liście TV|na Starcie osobny rząd „Radio” ze wszystkimi stacjami – dotknij i gra
+Włączanie kanału / filmu|czarny ekran|animacja z logo i kolorowym pierścieniem
