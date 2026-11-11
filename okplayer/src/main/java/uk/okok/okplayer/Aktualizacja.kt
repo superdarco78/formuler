@@ -18,7 +18,7 @@ object Aktualizacja {
     suspend fun sprawdz(a: Activity, reczne: Boolean = false) {
         try {
             val o = withContext(Dispatchers.IO) {
-                Serwer.http.newCall(Request.Builder().url(WERSJA).build()).execute().use { JSONObject(it.body?.string() ?: "{}") }
+                Serwer.http.newCall(Request.Builder().url(WERSJA + "?t=" + System.currentTimeMillis()).header("Cache-Control", "no-cache").build()).execute().use { JSONObject(it.body?.string() ?: "{}") }
             }
             val zdalna = o.optLong("versionCode", 0)
             val moja = withContext(Dispatchers.IO) { androidx.core.content.pm.PackageInfoCompat.getLongVersionCode(a.packageManager.getPackageInfo(a.packageName, 0)) }
