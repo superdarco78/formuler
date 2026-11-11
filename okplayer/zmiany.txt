@@ -1,2 +1,2 @@
-Wszystkie filmy aktora|zwykła lista: rok i tytuł|siatka plakatów jak na Twojej liście: okładka (z iTunes), tytuł i rok
-Filmy aktora – dane|„Brak danych o filmach” przy długiej filmografii|dwa źródła naraz (iTunes + Wikidata) – działa przy setkach filmów
+Dane z internetu a język|biografie, opisy filmów, gatunki i tytuły zawsze po polsku|pobierane w języku telefonu lub dekodera (Wikipedia, Wikidata, sklep iTunes danego kraju); gdy czegoś brak – po angielsku. Na polskim telefonie wszystko po polsku jak dotąd
+Wszystkie filmy aktora|zwykła lista|siatka plakatów z okładkami

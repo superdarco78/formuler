@@ -5,6 +5,9 @@ import org.json.JSONObject
 
 /** Dodatkowe dane filmow z publicznych zrodel bez klucza: zdjecia aktorow (IMDb), zwiastun i role (Wikidata). */
 object Dodatki {
+    /** Jezyk i kraj urzadzenia: opisy, biografie i tytuly pobierane w jezyku telefonu / dekodera (zapas: angielski). */
+    private val J: String get() = java.util.Locale.getDefault().language.ifEmpty { "en" }
+    private val KRAJ: String get() = java.util.Locale.getDefault().country.ifEmpty { if (J == "en") "US" else J.uppercase() }
     private val zdjecia = java.util.concurrent.ConcurrentHashMap<String, String>()
     private val imdbId = java.util.concurrent.ConcurrentHashMap<String, String>()
 
@@ -45,7 +48,7 @@ object Dodatki {
         if (id.isEmpty()) return "" to emptyMap()
         val w = "?f wdt:P4947 \"$id\"."
         val yt = sparql("SELECT ?yt WHERE { $w ?f wdt:P1651 ?yt. } LIMIT 1").let { a -> if (a.length() > 0) a.getJSONObject(0).optJSONObject("yt")?.optString("value") ?: "" else "" }
-        val ob = sparql("SELECT ?aL (SAMPLE(?rl) AS ?rL) WHERE { $w ?f p:P161 ?st. ?st ps:P161 ?a. ?a rdfs:label ?aL. FILTER(lang(?aL)=\"en\") OPTIONAL { ?st pq:P453 ?r. ?r rdfs:label ?rl. FILTER(lang(?rl) IN (\"pl\",\"en\")) } OPTIONAL { ?st pq:P4633 ?rn. BIND(STR(?rn) AS ?rl) } } GROUP BY ?aL LIMIT 40")
+        val ob = sparql("SELECT ?aL (SAMPLE(?rl) AS ?rL) WHERE { $w ?f p:P161 ?st. ?st ps:P161 ?a. ?a rdfs:label ?aL. FILTER(lang(?aL)=\"en\") OPTIONAL { ?st pq:P453 ?r. ?r rdfs:label ?rl. FILTER(lang(?rl) IN (\"$J\",\"en\")) } OPTIONAL { ?st pq:P4633 ?rn. BIND(STR(?rn) AS ?rl) } } GROUP BY ?aL LIMIT 40")
         val role = HashMap<String, String>()
         for (i in 0 until ob.length()) { val o = ob.getJSONObject(i); val a = o.optJSONObject("aL")?.optString("value") ?: continue; val r = o.optJSONObject("rL")?.optString("value") ?: ""; if (r.isNotEmpty()) role[a] = r }
         return yt to role
@@ -70,12 +73,12 @@ object Dodatki {
         val out = ArrayList<Triple<String, String, Int>>()
         // 1) iTunes: filmy z tym aktorem (polski sklep -> polskie tytuly)
         try {
-            for (kraj in listOf("PL", "US")) {
+            for (kraj in listOf(KRAJ, "US").distinct()) {
                 val arr = JSONObject(tekst("https://itunes.apple.com/search?term=" + java.net.URLEncoder.encode(n, "UTF-8") + "&media=movie&attribute=actorTerm&limit=200&country=$kraj")).optJSONArray("results")
                 if (arr != null) for (i in 0 until arr.length()) { val o = arr.getJSONObject(i)
                     val t = o.optString("trackName"); if (t.isEmpty()) continue
                     o.optString("artworkUrl100").takeIf { it.isNotEmpty() }?.let { okladki.putIfAbsent(klucz(t), it.replace("100x100bb", "300x450bb")) }
-                    out.add(if (kraj == "PL") Triple(t, "", o.optString("releaseDate").take(4).toIntOrNull() ?: 0) else Triple("", t, o.optString("releaseDate").take(4).toIntOrNull() ?: 0)) }
+                    out.add(if (kraj == KRAJ) Triple(t, "", o.optString("releaseDate").take(4).toIntOrNull() ?: 0) else Triple("", t, o.optString("releaseDate").take(4).toIntOrNull() ?: 0)) }
             }
         } catch (_: Exception) { }
         // 2) Wikidata: najpierw same numery filmow (szybko), potem nazwy po polsku i angielsku
@@ -88,10 +91,10 @@ object Dodatki {
             for (i in 0 until a.length()) { val o = a.getJSONObject(i); val q = o.optJSONObject("f")?.optString("value")?.substringAfterLast("/") ?: continue
                 lata[q] = o.optJSONObject("rok")?.optString("value")?.toIntOrNull() ?: 0 }
             for (paczka in lata.keys.chunked(50)) {
-                val j = JSONObject(tekst("https://www.wikidata.org/w/api.php?action=wbgetentities&format=json&props=labels&languages=pl%7Cen&ids=" + paczka.joinToString("%7C")))
+                val j = JSONObject(tekst("https://www.wikidata.org/w/api.php?action=wbgetentities&format=json&props=labels&languages=$J%7Cen&ids=" + paczka.joinToString("%7C")))
                 val ent = j.optJSONObject("entities") ?: continue
                 for (q in paczka) { val l = ent.optJSONObject(q)?.optJSONObject("labels") ?: continue
-                    val p = l.optJSONObject("pl")?.optString("value") ?: ""; val e = l.optJSONObject("en")?.optString("value") ?: ""
+                    val p = l.optJSONObject(J)?.optString("value") ?: ""; val e = l.optJSONObject("en")?.optString("value") ?: ""
                     if (p.isNotEmpty() || e.isNotEmpty()) out.add(Triple(p, e, lata[q] ?: 0)) }
             }
         } catch (_: Exception) { }
@@ -118,7 +121,7 @@ object Dodatki {
             .replace(Regex("\\b(napisy|lektor|dubbing|pl|4k|hd|fhd|uhd)\\b", RegexOption.IGNORE_CASE), " ").replace(Regex("\\s+"), " ").trim()
         fun n(x: String) = x.lowercase().replace(Regex("[^\\p{L}\\p{N}]"), "")
         val media = if (serial) "&media=tvShow&entity=tvSeason" else "&media=movie&entity=movie"
-        val arr = JSONObject(tekst("https://itunes.apple.com/search?term=" + java.net.URLEncoder.encode(czysty, "UTF-8") + media + "&country=PL&limit=6")).optJSONArray("results")
+        val arr = JSONObject(tekst("https://itunes.apple.com/search?term=" + java.net.URLEncoder.encode(czysty, "UTF-8") + media + "&country=$KRAJ&limit=6")).optJSONArray("results")
         var wynik: JSONObject? = null
         if (arr != null && czysty.length >= 2) for (i in 0 until arr.length()) {
             val o = arr.getJSONObject(i)
@@ -142,8 +145,8 @@ object Dodatki {
             if (!imdbId.containsKey(nazwa)) zdjecieAktora(nazwa)
             val nm = imdbId[nazwa] ?: ""
             val ktos = if (nm.isNotEmpty()) "?a wdt:P345 \"$nm\"." else "?a rdfs:label \"${nazwa.replace("\"", "")}\"@en; wdt:P31 wd:Q5."
-            val a = sparql("SELECT ?ur ?mL ?smL ?plw ?enw WHERE { $ktos OPTIONAL { ?a wdt:P569 ?ur. } OPTIONAL { ?a wdt:P19 ?m. ?m rdfs:label ?mL. FILTER(lang(?mL)=\"pl\") } " +
-                "OPTIONAL { ?a wdt:P570 ?sm. BIND(STR(?sm) AS ?smL) } OPTIONAL { ?plw schema:about ?a; schema:isPartOf <https://pl.wikipedia.org/>. } OPTIONAL { ?enw schema:about ?a; schema:isPartOf <https://en.wikipedia.org/>. } } LIMIT 1")
+            val a = sparql("SELECT ?ur ?mL ?smL ?plw ?enw WHERE { $ktos OPTIONAL { ?a wdt:P569 ?ur. } OPTIONAL { ?a wdt:P19 ?m. ?m rdfs:label ?mL. FILTER(lang(?mL) IN (\"$J\",\"en\")) } " +
+                "OPTIONAL { ?a wdt:P570 ?sm. BIND(STR(?sm) AS ?smL) } OPTIONAL { ?plw schema:about ?a; schema:isPartOf <https://$J.wikipedia.org/>. } OPTIONAL { ?enw schema:about ?a; schema:isPartOf <https://en.wikipedia.org/>. } } LIMIT 1")
             if (a.length() > 0) {
                 val o = a.getJSONObject(0)
                 fun v(k: String) = o.optJSONObject(k)?.optString("value") ?: ""
@@ -177,7 +180,7 @@ object Dodatki {
             // Dodatkowe dane: wzrost, malzonkowie, dzieci, nagrody
             val d = sparql("SELECT ?wz (GROUP_CONCAT(DISTINCT ?mzL; separator=\", \") AS ?mz) (COUNT(DISTINCT ?dz) AS ?ldz) (GROUP_CONCAT(DISTINCT ?ngL; separator=\", \") AS ?ng) WHERE { $ktos " +
                 "OPTIONAL { ?a wdt:P2048 ?wz. } OPTIONAL { ?a wdt:P26 ?m. ?m rdfs:label ?mzL. FILTER(lang(?mzL)=\"en\") } OPTIONAL { ?a wdt:P40 ?dz. } " +
-                "OPTIONAL { ?a wdt:P166 ?n. ?n rdfs:label ?ngL. FILTER(lang(?ngL)=\"pl\") } } GROUP BY ?wz LIMIT 1")
+                "OPTIONAL { ?a wdt:P166 ?n. ?n rdfs:label ?ngL. FILTER(lang(?ngL) IN (\"$J\",\"en\")) } } GROUP BY ?wz LIMIT 1")
             if (d.length() > 0) {
                 val o2 = d.getJSONObject(0)
                 fun w(k: String) = o2.optJSONObject(k)?.optString("value") ?: ""
@@ -203,11 +206,11 @@ object Dodatki {
             val q = f.getJSONObject(0).optJSONObject("f")?.optString("value")?.substringAfterLast("/") ?: ""
             val w = "wd:$q"
             fun lista(zap: String) = sparql(zap).let { a -> (0 until a.length()).mapNotNull { a.getJSONObject(it).optJSONObject("x")?.optString("value") }.distinct() }
-            val rez = lista("SELECT ?x WHERE { $w wdt:P57 ?r. ?r rdfs:label ?x. FILTER(lang(?x) IN (\"pl\",\"en\")) } LIMIT 4")
-            val gat = lista("SELECT ?x WHERE { $w wdt:P136 ?g. ?g rdfs:label ?x. FILTER(lang(?x)=\"pl\") } LIMIT 4")
-            val kraj = lista("SELECT ?x WHERE { $w wdt:P495 ?k. ?k rdfs:label ?x. FILTER(lang(?x)=\"pl\") } LIMIT 3")
-            val ob = sparql("SELECT ?aL (SAMPLE(?rl) AS ?rL) WHERE { $w p:P161 ?st. ?st ps:P161 ?a. ?a rdfs:label ?aL. FILTER(lang(?aL)=\"en\") OPTIONAL { ?st pq:P453 ?r. ?r rdfs:label ?rl. FILTER(lang(?rl) IN (\"pl\",\"en\")) } OPTIONAL { ?st pq:P4633 ?rn. BIND(STR(?rn) AS ?rl) } } GROUP BY ?aL LIMIT 30")
-            val inne = sparql("SELECT ?d ?czas ?yt ?tm ?plw WHERE { OPTIONAL { $w wdt:P577 ?d. } OPTIONAL { $w wdt:P2047 ?czas. } OPTIONAL { $w wdt:P1651 ?yt. } OPTIONAL { $w wdt:P4947 ?tm. } OPTIONAL { $w wdt:P4983 ?tm. } OPTIONAL { ?plw schema:about $w; schema:isPartOf <https://pl.wikipedia.org/>. } } LIMIT 1")
+            val rez = lista("SELECT ?x WHERE { $w wdt:P57 ?r. ?r rdfs:label ?x. FILTER(lang(?x) IN (\"$J\",\"en\")) } LIMIT 4")
+            val gat = lista("SELECT ?x WHERE { $w wdt:P136 ?g. ?g rdfs:label ?x. FILTER(lang(?x) IN (\"$J\",\"en\")) } LIMIT 4")
+            val kraj = lista("SELECT ?x WHERE { $w wdt:P495 ?k. ?k rdfs:label ?x. FILTER(lang(?x) IN (\"$J\",\"en\")) } LIMIT 3")
+            val ob = sparql("SELECT ?aL (SAMPLE(?rl) AS ?rL) WHERE { $w p:P161 ?st. ?st ps:P161 ?a. ?a rdfs:label ?aL. FILTER(lang(?aL)=\"en\") OPTIONAL { ?st pq:P453 ?r. ?r rdfs:label ?rl. FILTER(lang(?rl) IN (\"$J\",\"en\")) } OPTIONAL { ?st pq:P4633 ?rn. BIND(STR(?rn) AS ?rl) } } GROUP BY ?aL LIMIT 30")
+            val inne = sparql("SELECT ?d ?czas ?yt ?tm ?plw WHERE { OPTIONAL { $w wdt:P577 ?d. } OPTIONAL { $w wdt:P2047 ?czas. } OPTIONAL { $w wdt:P1651 ?yt. } OPTIONAL { $w wdt:P4947 ?tm. } OPTIONAL { $w wdt:P4983 ?tm. } OPTIONAL { ?plw schema:about $w; schema:isPartOf <https://$J.wikipedia.org/>. } } LIMIT 1")
             val o = JSONObject()
             if (rez.isNotEmpty()) o.put("director", rez.joinToString(", "))
             if (gat.isNotEmpty()) o.put("genre", gat.joinToString(", "))
