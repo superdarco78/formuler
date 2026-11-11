@@ -16,6 +16,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.async
 import uk.okok.studiokanalow.databinding.ActivityMainBinding
 import uk.okok.studiokanalow.model.Category
 import uk.okok.studiokanalow.model.Channel
@@ -287,11 +288,13 @@ class MainActivity : AppCompatActivity() {
         showBusy()
         lifecycleScope.launch {
             try {
-                val v = vodCache ?: Api.vodStreams(s(), u(), p(), null).also { vodCache = it }
-                val vc = vodCats ?: try { Api.vodCategories(s(), u(), p()).also { vodCats = it } } catch (e: Exception) { emptyList() }
-                val sr = serCache ?: try { Api.seriesList(s(), u(), p()).also { serCache = it } } catch (e: Exception) { emptyList() }
-                val sc = serCats ?: try { Api.seriesCategories(s(), u(), p()).also { serCats = it } } catch (e: Exception) { emptyList() }
-                val kan = liveCache ?: try { Api.liveStreams(s(), u(), p(), null).also { liveCache = it } } catch (e: Exception) { emptyList() }
+                // Wszystko naraz (rownolegle), a nie po kolei - Start laduje sie kilka razy szybciej.
+                val dv = async { vodCache ?: Api.vodStreams(s(), u(), p(), null).also { vodCache = it } }
+                val dvc = async { vodCats ?: try { Api.vodCategories(s(), u(), p()).also { vodCats = it } } catch (e: Exception) { emptyList() } }
+                val dsr = async { serCache ?: try { Api.seriesList(s(), u(), p()).also { serCache = it } } catch (e: Exception) { emptyList() } }
+                val dsc = async { serCats ?: try { Api.seriesCategories(s(), u(), p()).also { serCats = it } } catch (e: Exception) { emptyList() } }
+                val dkan = async { liveCache ?: try { Api.liveStreams(s(), u(), p(), null).also { liveCache = it } } catch (e: Exception) { emptyList() } }
+                val v = dv.await(); val vc = dvc.await(); val sr = dsr.await(); val sc = dsc.await(); val kan = dkan.await()
                 hideBusy()
                 if (wersja != wersjaEkranu) return@launch
                 if (Session.lastLogo(this@MainActivity) == null) kan.firstOrNull { it.name == Session.lastName(this@MainActivity) }?.logo?.let { lg ->
@@ -517,7 +520,7 @@ class MainActivity : AppCompatActivity() {
     /** Animacja startu (lustrzana do zamykania): ikona wkreca sie i rosnie, napis pojawia sie, ekran sie odslania. */
     private fun animacjaStartu() {
         val dekor = window.decorView as android.view.ViewGroup
-        val nakladka = android.widget.FrameLayout(this).apply { setBackgroundColor(0xFF000000.toInt()); isClickable = true }
+        val nakladka = android.widget.FrameLayout(this).apply { setBackgroundColor(0xFF000000.toInt()); isClickable = false }
         val srodek = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = android.view.Gravity.CENTER }
         val ikona = android.widget.ImageView(this).apply { setImageResource(R.mipmap.ic_launcher_round) }
         srodek.addView(ikona, LinearLayout.LayoutParams(dp(110), dp(110)))
@@ -527,10 +530,10 @@ class MainActivity : AppCompatActivity() {
         dekor.addView(nakladka, android.view.ViewGroup.LayoutParams(-1, -1))
         ikona.scaleX = 0.2f; ikona.scaleY = 0.2f; ikona.alpha = 0f; ikona.rotation = -360f
         napis.alpha = 0f; napis.translationY = dp(20).toFloat()
-        ikona.animate().scaleX(1f).scaleY(1f).alpha(1f).rotation(0f).setDuration(650)
+        ikona.animate().scaleX(1f).scaleY(1f).alpha(1f).rotation(0f).setDuration(380)
             .setInterpolator(android.view.animation.OvershootInterpolator(1.1f)).start()
-        napis.animate().alpha(1f).translationY(0f).setStartDelay(350).setDuration(400).start()
-        nakladka.animate().alpha(0f).setStartDelay(1300).setDuration(400).withEndAction { dekor.removeView(nakladka) }.start()
+        napis.animate().alpha(1f).translationY(0f).setStartDelay(150).setDuration(250).start()
+        nakladka.animate().alpha(0f).setStartDelay(500).setDuration(250).withEndAction { dekor.removeView(nakladka) }.start()
     }
 
     /** Okno wyjscia w stylu aplikacji (czarne tlo, jasny przycisk jak "Ogladaj"). */
