@@ -1123,6 +1123,9 @@ class StartActivity : AppCompatActivity() {
             androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Układ Startu").setSingleChoiceItems(o.map { it.second }.toTypedArray(), ter) { d, i -> Ust.prefs(this).edit().putString("uklad", o[i].first).apply(); d.dismiss(); pokaz(4) }
                 .setNegativeButton("Zamknij", null).show().also { Jezyk.okno(it) }
         }
+        wiersz("Blokada zrzutów ekranu", if (Ust.prefs(this).getBoolean("blokada_zrzutow", true)) "Włączona – nie da się zrobić zrzutu ani nagrać ekranu aplikacji (jak w Netflixie)" else "Wyłączona – zrzuty ekranu działają") {
+            Ust.prefs(this).edit().putBoolean("blokada_zrzutow", !Ust.prefs(this).getBoolean("blokada_zrzutow", true)).apply(); Pilot.wlacz(this); pokaz(4)
+        }
         wiersz("Skórka (wygląd)", Skorka.nazwa(this)) {
             val ter = Skorka.lista.indexOfFirst { it.first == Skorka.wybrana(this) }
             androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Skórka").setSingleChoiceItems(Skorka.lista.map { it.second }.toTypedArray(), ter) { d, i ->

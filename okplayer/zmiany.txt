@@ -1,3 +1,4 @@
+Blokada zrzutów ekranu|zrzuty i nagrywanie ekranu działały|zablokowane jak w Netflixie (czarny obraz przy zrzucie/nagrywaniu) – wyłącznik: Ustawienia → Blokada zrzutów ekranu
 Układ jak Netflix|duży baner na całą szerokość, przyciski obok siebie|karta z plakatem w ramce, tytuł i gatunki na środku, pod spodem szeroki biały „▶ Odtwórz film/serial” i szary „+ Moja lista”
 Tło|stałe/grafitowe|kolor z plakatu na banerze (jak w Netflixie) – zmienia się razem z filmem
 Nagłówek|duże logo i wersja|małe logo + tytuł zakładki („Strona główna”, „Filmy”…) + szukaj i ustawienia
