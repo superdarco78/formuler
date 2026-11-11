@@ -646,7 +646,8 @@ class StartActivity : AppCompatActivity() {
             if (WspolnyGracz.graj(this, miniFilm!!)) Ust.pozycja(this, miniFilm!!).takeIf { it > 0 }?.let { miniGracz?.seekTo(it) }
             return
         }
-        WspolnyGracz.graj(this, Serwer.adresKanalu(this, ch.id))
+        // TV: gra dalej dokladnie to, co bylo na duzym ekranie (kanal albo archiwum)
+        WspolnyGracz.graj(this, z.getOrNull(5)?.takeIf { it.isNotEmpty() } ?: Serwer.adresKanalu(this, ch.id))
         lifecycleScope.launch {
             val t = withContext(Dispatchers.IO) { Serwer.terazLeci(this@StartActivity, ch.id) }
             if (miniKanal?.id == ch.id) miniTeraz.text = if (t.isEmpty()) "Na żywo" else "Teraz: $t"
@@ -814,7 +815,7 @@ class StartActivity : AppCompatActivity() {
         val ch = gornyKanal
         gornyWidok.player = null; gora2.visibility = View.GONE; gornyKanal = null
         if (doMini && ch != null) {
-            Ust.prefs(this).edit().putString("mini", listOf(ch.id, ch.nazwa, ch.logo ?: "", ch.kat).joinToString("\u0001")).apply()
+            Ust.prefs(this).edit().putString("mini", listOf(ch.id, ch.nazwa, ch.logo ?: "", ch.kat, "", WspolnyGracz.url ?: "").joinToString("\u0001")).apply()
             WspolnyGracz.wlasciciel = "mini"; pokazMini()
         }
     }

@@ -131,7 +131,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         biezacy = Kanal(intent.getStringExtra("id") ?: "", intent.getStringExtra("nazwa") ?: "", intent.getStringExtra("logo"), intent.getStringExtra("kat") ?: "", 0)
         trybNaZywo(true)
         if (intent.getBooleanExtra("pelny", false)) requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-        if (intent.getBooleanExtra("przewodnik", false)) window.decorView.post { otworzPrzewodnik() }
+        if (intent.getBooleanExtra("przewodnik", false)) { listaTv?.visibility = android.view.View.GONE; przyciskProgram.visibility = android.view.View.GONE; window.decorView.post { otworzPrzewodnik() } }
         ustawPanel()
         uloz(resources.configuration.orientation)
         lifecycleScope.launch {
@@ -253,6 +253,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
 
     private fun zamknijPrzewodnik() {
         przewodnikOtwarty = false; przyciskProgram.text = "☰ Program"
+        if (intent.getBooleanExtra("przewodnik", false)) { przewodnik?.visibility = android.view.View.GONE; listaTv?.visibility = android.view.View.GONE; return }
         przewodnik?.visibility = android.view.View.GONE
         listaTv?.visibility = if (resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) android.view.View.GONE else android.view.View.VISIBLE
     }
@@ -351,7 +352,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         f.layoutParams = android.widget.LinearLayout.LayoutParams(-1, if (poziomo) -1 else resources.displayMetrics.widthPixels * 9 / 16)
         panel?.visibility = if (poziomo) android.view.View.GONE else android.view.View.VISIBLE
         progNaObrazie?.visibility = if (poziomo) android.view.View.VISIBLE else android.view.View.GONE
-        listaTv?.visibility = if (poziomo || przewodnikOtwarty) android.view.View.GONE else android.view.View.VISIBLE
+        listaTv?.visibility = if (poziomo || przewodnikOtwarty || intent.getBooleanExtra("przewodnik", false)) android.view.View.GONE else android.view.View.VISIBLE
         przewodnik?.let { pr ->
             val rodzic = pr.parent as? android.view.ViewGroup
             if (poziomo && rodzic !== f) {
@@ -598,10 +599,10 @@ class OdtwarzaczActivity : AppCompatActivity() {
             gracz?.let { g -> if (g.duration > 0) { Ust.zapiszPozycje(this, u, g.currentPosition); Ust.zapiszDlugosc(this, u, g.duration) } }
             Ust.prefs(this).edit().putString("mini", listOf("vod", intent.getStringExtra("nazwa") ?: "", "", "", u).joinToString("\u0001")).apply()
         } else
-        biezacy?.let { Ust.prefs(this).edit().putString("mini", listOf(it.id, it.nazwa, it.logo ?: "", it.kat).joinToString("\u0001")).apply() }
+        biezacy?.let { Ust.prefs(this).edit().putString("mini", listOf(it.id, it.nazwa, it.logo ?: "", it.kat, "", intent.getStringExtra("url") ?: "").joinToString("\u0001")).apply() }
         WspolnyGracz.wlasciciel = "mini"
         // Mini-okno zyje na ekranie glownym aplikacji - film z opisu tez tam trafia.
-        if (intent.getBooleanExtra("vod", false)) startActivity(Intent(this, StartActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
+        startActivity(Intent(this, StartActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
         finish(); overridePendingTransition(0, android.R.anim.fade_out)
     }
 
@@ -609,16 +610,16 @@ class OdtwarzaczActivity : AppCompatActivity() {
     override fun onNewIntent(i: Intent) { super.onNewIntent(i); setIntent(i); recreate() }
 
     /** Wstecz przy TV: obraz zmniejsza sie do okienka, a pod nim wraca aplikacja (lista kanalow), jak mini-odtwarzacz. */
+    /** Jedna zasada dla TV, archiwum, filmow i odcinkow: Wstecz = male okno (obraz gra dalej). Gdy otwarty program - najpierw go chowa. */
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
-        if (przewodnikOtwarty && panel != null) { zamknijPrzewodnik(); uloz(resources.configuration.orientation); return }
-        // Pelny ekran -> Wstecz: od razu do mini-okna w aplikacji (bez posredniego widoku w pionie).
-        if (resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE && panel != null) {
-            if (!archiwumGra && Ust.prefs(this).getBoolean("okienko", true)) { requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT; doMini(); return }
-            requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT; return
+        // Pelny ekran z programem z boku: pierwsze Wstecz chowa tylko program. W pozostalych przypadkach od razu male okno.
+        if (przewodnikOtwarty && panel != null && resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) { zamknijPrzewodnik(); uloz(resources.configuration.orientation); return }
+        val koniecFilmu = intent.getBooleanExtra("vod", false) && gracz?.let { it.duration > 0 && it.currentPosition >= it.duration - 90_000 } == true
+        if (Ust.prefs(this).getBoolean("okienko", true) && !koniecFilmu) {
+            requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            doMini(); return
         }
-        if (!intent.getBooleanExtra("vod", false) && !archiwumGra && Ust.prefs(this).getBoolean("okienko", true)) { doMini(); return }
-        if (intent.getBooleanExtra("vod", false) && Ust.prefs(this).getBoolean("okienko", true) && gracz?.let { it.duration <= 0 || it.currentPosition < it.duration - 90_000 } == true) { doMini(); return }
         @Suppress("DEPRECATION") super.onBackPressed()
     }
 
