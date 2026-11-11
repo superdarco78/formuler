@@ -1,5 +1,5 @@
-• Dolne menu: były napisy Start, TV, Filmy, Seriale, Ustawienia → teraz same ikonki jak w MyTvOnline: dom, telewizor, klaps filmowy, seriale, gwiazdka
-• Ulubione: były tylko rzędem na Starcie → teraz osobna zakładka (gwiazdka) z ulubionymi kanałami, filmami i serialami
-• Kanał do ulubionych: nie dało się → przytrzymaj kanał palcem na liście TV
-• Ustawienia: z dolnego menu przeniesione pod ⚙ w prawym górnym rogu
-• Mini-okno: ⏸ pauza, ⛶ pełny ekran, ✕ zamyka
+• Przejście duży ekran ↔ mini-okno: było od nowa (czarny ekran i ładowanie kilka sekund) → teraz płynnie, obraz gra bez przerwy
+• Dotknięcie mini-okna: duży ekran od razu, bez ponownego ładowania
+• ⛶ w mini-oknie: od razu pełny ekran poziomo, bez przerwy w obrazie
+• Pływające okienko poza aplikacją → powiększenie = pełny ekran
+• Dolne menu: same ikonki, zakładka Ulubione (gwiazdka), przytrzymaj kanał = ulubiony

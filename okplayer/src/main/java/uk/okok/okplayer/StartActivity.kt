@@ -126,9 +126,9 @@ class StartActivity : AppCompatActivity() {
         mini.addView(tekst("⏸", 22f).apply { gravity = Gravity.CENTER; isFocusable = true
             setOnClickListener { miniGracz?.let { g -> g.playWhenReady = !g.playWhenReady; text = if (g.playWhenReady) "⏸" else "▶" } } }, LinearLayout.LayoutParams(dp(44), dp(84)))
         mini.addView(tekst("⛶", 22f).apply { gravity = Gravity.CENTER; isFocusable = true
-            setOnClickListener { miniKanal?.let { val ch = it; zamknijMini(); graj(ch, pelny = true) } } }, LinearLayout.LayoutParams(dp(44), dp(84)))
+            setOnClickListener { miniKanal?.let { miniNaDuzy(it, true) } } }, LinearLayout.LayoutParams(dp(44), dp(84)))
         mini.addView(tekst("✕", 22f).apply { gravity = Gravity.CENTER; isFocusable = true; setOnClickListener { zamknijMini() } }, LinearLayout.LayoutParams(dp(48), dp(84)))
-        mini.setOnClickListener { miniKanal?.let { val ch = it; zamknijMini(); graj(ch) } }
+        mini.setOnClickListener { miniKanal?.let { miniNaDuzy(it, false) } }
         root.addView(mini, LinearLayout.LayoutParams(-1, -2))
         dol = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setBackgroundColor(0xFF0D0D0D.toInt()) }
         // Dolne menu jak w MyTvOnline: same ikonki (Start, TV, Filmy, Seriale, Ulubione)
@@ -496,19 +496,29 @@ class StartActivity : AppCompatActivity() {
         val ch = Kanal(z[0], z[1], z[2].ifEmpty { null }, z[3], 0)
         miniKanal = ch; miniNazwa.text = ch.nazwa; miniTeraz.text = ""
         mini.visibility = View.VISIBLE
-        if (miniGracz == null) {
-            val http = androidx.media3.datasource.DefaultHttpDataSource.Factory().setUserAgent("VLC/3.0.20 LibVLC/3.0.20").setAllowCrossProtocolRedirects(true)
-            miniGracz = androidx.media3.exoplayer.ExoPlayer.Builder(this).setMediaSourceFactory(androidx.media3.exoplayer.source.DefaultMediaSourceFactory(http)).build()
-            miniWidok.player = miniGracz
-            miniGracz!!.setMediaItem(androidx.media3.common.MediaItem.fromUri(Serwer.adresKanalu(this, ch.id))); miniGracz!!.prepare(); miniGracz!!.playWhenReady = true
-        }
+        WspolnyGracz.wlasciciel = "mini"
+        miniGracz = WspolnyGracz.pobierz(this)
+        miniWidok.player = miniGracz
+        WspolnyGracz.graj(this, Serwer.adresKanalu(this, ch.id))
         lifecycleScope.launch {
             val t = withContext(Dispatchers.IO) { Serwer.terazLeci(this@StartActivity, ch.id) }
             if (miniKanal?.id == ch.id) miniTeraz.text = if (t.isEmpty()) "Na żywo" else "Teraz: $t"
         }
     }
 
-    private fun zatrzymajMini() { miniGracz?.release(); miniGracz = null; if (::miniWidok.isInitialized) miniWidok.player = null }
+    private fun zatrzymajMini() { if (::miniWidok.isInitialized) miniWidok.player = null; miniGracz = null; WspolnyGracz.zwolnij("mini") }
+
+    /** Z mini na duzy ekran plynnie: obraz nie jest zatrzymywany, duzy ekran przejmuje ten sam odtwarzacz. */
+    private fun miniNaDuzy(ch: Kanal, pelny: Boolean) {
+        Ust.prefs(this).edit().remove("mini").apply()
+        if (::miniWidok.isInitialized) miniWidok.player = null
+        miniGracz = null; miniKanal = null; mini.visibility = View.GONE
+        WspolnyGracz.wlasciciel = "duzy"
+        Ust.zapiszOstatni(this, ch)
+        startActivity(Intent(this, OdtwarzaczActivity::class.java)
+            .putExtra("url", Serwer.adresKanalu(this, ch.id)).putExtra("nazwa", ch.nazwa).putExtra("logo", ch.logo).putExtra("id", ch.id).putExtra("kat", ch.kat).putExtra("pelny", pelny))
+        overridePendingTransition(android.R.anim.fade_in, 0)
+    }
 
     private fun zamknijMini() {
         Ust.prefs(this).edit().remove("mini").apply()
@@ -540,14 +550,14 @@ class StartActivity : AppCompatActivity() {
             glowny?.let { (it.parent as? ViewGroup)?.removeView(it); setContentView(it) }
             // Powiekszenie okienka -> TV na caly ekran; zamkniecie (X) -> koniec grania.
             window.decorView.postDelayed({
-                if (lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) miniKanal?.let { val ch = it; zamknijMini(); graj(ch, pelny = true) }
+                if (lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) miniKanal?.let { miniNaDuzy(it, true) }
                 else zamknijMini()
             }, 400)
         }
     }
 
     private fun graj(ch: Kanal, pelny: Boolean = false) {
-        if (miniGracz != null || Ust.prefs(this).contains("mini")) zamknijMini()
+        if (Ust.prefs(this).contains("mini")) { Ust.prefs(this).edit().remove("mini").apply(); if (::miniWidok.isInitialized) miniWidok.player = null; miniGracz = null; miniKanal = null; mini.visibility = View.GONE; WspolnyGracz.wlasciciel = "duzy" }
         Ust.zapiszOstatni(this, ch)
         startActivity(Intent(this, OdtwarzaczActivity::class.java)
             .putExtra("url", Serwer.adresKanalu(this, ch.id)).putExtra("nazwa", ch.nazwa).putExtra("logo", ch.logo).putExtra("id", ch.id).putExtra("kat", ch.kat).putExtra("pelny", pelny))

@@ -26,6 +26,7 @@ import kotlinx.coroutines.withContext
 /** Odtwarzacz kanalow na zywo: pelny ekran, strumien przez serwer tv.ok-ok.uk, gora/dol = nastepny/poprzedni kanal. */
 class OdtwarzaczActivity : AppCompatActivity() {
     private var gracz: ExoPlayer? = null
+    private var sluchacz: Player.Listener? = null
     private lateinit var widok: PlayerView
     private lateinit var napis: TextView
     private var grupa: List<Kanal> = emptyList()
@@ -333,17 +334,19 @@ class OdtwarzaczActivity : AppCompatActivity() {
     private val ukryj = Runnable { napis.visibility = android.view.View.GONE }
 
     private fun graj(url: String) {
-        val p = gracz ?: return
-        p.setMediaItem(MediaItem.fromUri(url)); p.prepare(); p.playWhenReady = true
+        WspolnyGracz.graj(this, url, odNowa = true)
     }
 
     override fun onStart() {
         super.onStart()
         // Serwer przepuszcza strumien przez siebie dla odtwarzaczy przedstawiajacych sie jak VLC (dostawca blokuje telefon).
-        val http = DefaultHttpDataSource.Factory().setUserAgent("VLC/3.0.20 LibVLC/3.0.20").setAllowCrossProtocolRedirects(true)
-        val p = ExoPlayer.Builder(this).setMediaSourceFactory(DefaultMediaSourceFactory(http)).build()
+        val vodTryb = intent.getBooleanExtra("vod", false)
+        if (vodTryb) WspolnyGracz.zwolnij(WspolnyGracz.wlasciciel)
+        WspolnyGracz.wlasciciel = "duzy"
+        val p = WspolnyGracz.pobierz(this)
         widok.player = p; gracz = p
-        p.addListener(object : Player.Listener {
+        sluchacz?.let { p.removeListener(it) }
+        sluchacz = object : Player.Listener {
             override fun onPlayerError(error: PlaybackException) {
                 lifecycleScope.launch(Dispatchers.IO) { Serwer.raport(this@OdtwarzaczActivity, "graj blad " + error.errorCodeName + " " + (biezacy?.nazwa ?: "")) }
                 if (proby < 3) {
@@ -352,9 +355,10 @@ class OdtwarzaczActivity : AppCompatActivity() {
                 } else pokazNapis("Kanał nie działa (" + error.errorCodeName + ")")
             }
             override fun onPlaybackStateChanged(s: Int) { if (s == Player.STATE_READY) proby = 0 }
-        })
+        }
+        p.addListener(sluchacz!!)
         val url = intent.getStringExtra("url") ?: return
-        graj(url)
+        WspolnyGracz.graj(this, url)
         // Filmy i odcinki: wznawianie od miejsca przerwania.
         if (intent.getBooleanExtra("vod", false)) {
             val poz = Ust.pozycja(this, url)
@@ -464,6 +468,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
     /** Mini-odtwarzacz: TV gra dalej w malym pasku na dole aplikacji (nad zakladkami). */
     private fun doMini() {
         biezacy?.let { Ust.prefs(this).edit().putString("mini", listOf(it.id, it.nazwa, it.logo ?: "", it.kat).joinToString("\u0001")).apply() }
+        WspolnyGracz.wlasciciel = "mini"
         finish(); overridePendingTransition(0, android.R.anim.fade_out)
     }
 
@@ -491,7 +496,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         } else uloz(resources.configuration.orientation)
     }
 
-    override fun onDestroy() { wylacznik?.cancel(); super.onDestroy() }
+    override fun onDestroy() { wylacznik?.cancel(); if (isFinishing) WspolnyGracz.zwolnij("duzy"); super.onDestroy() }
 
     override fun onStop() {
         super.onStop()
@@ -503,6 +508,9 @@ class OdtwarzaczActivity : AppCompatActivity() {
                 Ust.zapiszDlugosc(this, intent.getStringExtra("url") ?: "", g.duration)
             }
         }
-        gracz?.release(); gracz = null
+        sluchacz?.let { gracz?.removeListener(it) }; sluchacz = null
+        widok.player = null; gracz = null
+        // Do mini-okna obraz gra dalej (wlasciciel = "mini"); w innym przypadku zatrzymujemy.
+        WspolnyGracz.zwolnij("duzy")
     }
 }
