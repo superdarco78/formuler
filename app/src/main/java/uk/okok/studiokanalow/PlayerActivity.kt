@@ -116,7 +116,13 @@ class PlayerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         b = ActivityPlayerBinding.inflate(layoutInflater)
         setContentView(b.root)
-        if (!intent.getBooleanExtra("demo", false)) ladujNaglowek(intent.getStringExtra("url") ?: "", intent.getStringExtra("name") ?: "")
+        if (intent.getBooleanExtra("archiwum", false)) {
+            b.tvName.text = intent.getStringExtra("name") ?: ""
+            b.tvEpg.text = "Archiwum • " + (intent.getStringExtra("kanal") ?: "")
+            val lg0 = intent.getStringExtra("logo")
+            if (!lg0.isNullOrEmpty()) b.ivLogo.load(lg0) else b.ivLogo.setImageResource(R.drawable.ic_movie)
+            b.pbEpg.visibility = android.view.View.GONE; b.btnPrzewodnik.visibility = android.view.View.GONE
+        } else if (!intent.getBooleanExtra("demo", false)) ladujNaglowek(intent.getStringExtra("url") ?: "", intent.getStringExtra("name") ?: "")
         else b.tvName.text = intent.getStringExtra("name") ?: ""
         run {
             val u0 = intent.getStringExtra("url") ?: ""
@@ -199,6 +205,8 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private var biezacyId = ""
+    private var biezacaNazwa = ""
+    private var biezaceLogo: String? = null
     private var wpisy: List<Api.Wpis> = emptyList()
     private var wybranyDzien = ""
     private var przewodnikOtwarty = false
@@ -207,8 +215,9 @@ class PlayerActivity : AppCompatActivity() {
     private fun ladujNaglowek(url: String, nazwa: String, idPodane: String = "", logo: String? = null) {
         b.tvName.text = nazwa
         val id = if (idPodane.isNotEmpty()) idPodane else (Regex("/live/[^/]+/[^/]+/(\\d+)").find(url)?.groupValues?.get(1) ?: "")
-        biezacyId = id; wpisy = emptyList()
+        biezacyId = id; wpisy = emptyList(); biezacaNazwa = nazwa
         val lg = logo ?: Kontekst.kanaly.firstOrNull { it.streamId == id }?.logo
+        biezaceLogo = lg
         if (!lg.isNullOrEmpty()) b.ivLogo.load(lg) else b.ivLogo.setImageResource(R.drawable.ic_movie)
         b.pbEpg.visibility = android.view.View.GONE
         if (id.isEmpty() || intent.getBooleanExtra("demo", false)) { b.tvEpg.text = ""; b.btnPrzewodnik.visibility = android.view.View.GONE; return }
@@ -308,7 +317,7 @@ class PlayerActivity : AppCompatActivity() {
                 if (trwa) setTypeface(typeface, android.graphics.Typeface.BOLD)
                 if (przeszla && w.archiwum) setOnClickListener {
                     val i2 = Intent(this@PlayerActivity, PlayerActivity::class.java)
-                    i2.putExtra("url", Api.archiwumUrl(srv, usr, pw, biezacyId, w)); i2.putExtra("name", w.tytul); i2.putExtra("demo", false)
+                    i2.putExtra("url", Api.archiwumUrl(srv, usr, pw, biezacyId, w)); i2.putExtra("name", w.tytul); i2.putExtra("demo", false); i2.putExtra("archiwum", true); i2.putExtra("kanal", biezacaNazwa); i2.putExtra("logo", biezaceLogo)
                     startActivity(i2)
                 }
             }
