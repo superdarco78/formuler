@@ -1,2 +1,1 @@
-Sprawdzanie aktualizacji|tylko przy uruchomieniu aplikacji, po „Później” okno już nie wracało|sprawdza też po powrocie do aplikacji, okno wraca po „Później”
-Błąd instalacji|brak informacji, gdy Android odrzucił instalację|pokazuje komunikat z powodem i zgłasza go do raportów
+Komunikat błędu odtwarzania|„Kanał nie działa” i sam kod, także przy filmach|przy filmie „Film nie działa” z powodem (np. HTTP 403), ten sam powód idzie do raportów

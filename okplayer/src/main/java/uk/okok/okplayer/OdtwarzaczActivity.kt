@@ -568,12 +568,14 @@ class OdtwarzaczActivity : AppCompatActivity() {
         sluchacz?.let { p.removeListener(it) }
         sluchacz = object : Player.Listener {
             override fun onPlayerError(error: PlaybackException) {
-                lifecycleScope.launch(Dispatchers.IO) { Serwer.raport(this@OdtwarzaczActivity, "graj blad " + error.errorCodeName + " " + (biezacy?.nazwa ?: "")) }
+                val c0 = error.cause
+                val powod = (c0 as? androidx.media3.datasource.HttpDataSource.InvalidResponseCodeException)?.responseCode?.let { "HTTP $it" } ?: (c0?.javaClass?.simpleName ?: "")
+                lifecycleScope.launch(Dispatchers.IO) { Serwer.raport(this@OdtwarzaczActivity, "graj blad " + error.errorCodeName + " " + powod + " " + (biezacy?.nazwa ?: intent.getStringExtra("nazwa") ?: "")) }
                 if (archiwumGra && nastepnyWariant()) return
                 if (proby < 3) {
                     proby++; pokazNapis("Ponawiam… ($proby/3)")
                     lifecycleScope.launch { delay(1500); graj(intent.getStringExtra("url") ?: return@launch) }
-                } else pokazNapis("Kanał nie działa (" + error.errorCodeName + ")")
+                } else pokazNapis((if (vodTryb) "Film nie działa (" else "Kanał nie działa (") + error.errorCodeName + (if (powod.isNotEmpty()) ", " + powod else "") + ")")
             }
             override fun onPlaybackStateChanged(s: Int) { if (s == Player.STATE_READY) { proby = 0; ukryjLadowanie() } }
         }
