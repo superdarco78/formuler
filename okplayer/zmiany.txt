@@ -1,1 +1,1 @@
-Koniec z popcornem|przy starcie dalej leciał film z popcornem z Canvy, który ucinał napisy na dole|film z Canvy wyłączony – startuje nowa animacja „Strojenie TV” na cały ekran, nic się nie ucina
+Aktualizacja bez blokady|aplikacja instalowała aktualizacje po cichu, a Play Protect blokował to jako szkodliwe|aktualizacja zawsze przez zwykłe okno systemu „Zaktualizować?” – bez cichej instalacji i bez uprawnienia, które Google uznaje za podejrzane

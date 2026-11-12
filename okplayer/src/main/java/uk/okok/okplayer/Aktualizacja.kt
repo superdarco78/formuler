@@ -39,7 +39,7 @@ object Aktualizacja {
                 val pi = app.packageManager.packageInstaller
                 val par = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL)
                 par.setAppPackageName(app.packageName)
-                if (android.os.Build.VERSION.SDK_INT >= 31) par.setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_NOT_REQUIRED)
+                // 2.46: bez cichej instalacji - zwykle okno systemu "Zaktualizowac?" (cicha samoaktualizacja to wzorzec, ktory Play Protect bierze za szkodliwy)
                 val id = pi.createSession(par)
                 pi.openSession(id).use { s ->
                     Serwer.http.newCall(Request.Builder().url(url).build()).execute().use { r ->
