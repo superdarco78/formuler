@@ -348,6 +348,7 @@ class DetaleActivity : AppCompatActivity() {
     private var zajawkaWidok: androidx.media3.ui.PlayerView? = null
     private var zajawka: androidx.media3.exoplayer.ExoPlayer? = null
     private var zajawkaBylo = false
+    private var probyZajawki = 0
     private fun startZajawki(url: String) {
         if (zajawkaBylo || isFinishing || (Ust.panelB(this, "ef_detale_zajawka") ?: true).not()) return
         zajawkaBylo = true
@@ -360,7 +361,11 @@ class DetaleActivity : AppCompatActivity() {
                 override fun onPlaybackStateChanged(st: Int) { if (st == androidx.media3.common.Player.STATE_READY && !gotowe) { gotowe = true
                     if (duration > 120_000) seekTo((duration * (0.15 + Math.random() * 0.55)).toLong()); playWhenReady = true } }
                 override fun onIsPlayingChanged(gra: Boolean) { if (gra && pv.alpha == 0f) pv.animate().alpha(1f).setStartDelay(250).setDuration(900).start() }
-                override fun onPlayerError(e: androidx.media3.common.PlaybackException) { Zajawki.zglos(this@DetaleActivity, "film", e); stopZajawki() } })
+                override fun onPlayerError(e: androidx.media3.common.PlaybackException) {
+                    stopZajawki()
+                    // 2.30: limit polaczen - poprzednie polaczenie (baner) jeszcze trzyma serwer; ponow za 6 s, do 4 razy
+                    if (Zajawki.limit(e) && probyZajawki < 4 && !isFinishing) { probyZajawki++; zajawkaBylo = false; zajawkaWidok?.postDelayed({ if (!isFinishing && zajawka == null) startZajawki(url) }, 6000) }
+                    else Zajawki.zglos(this@DetaleActivity, "film", e) } })
         }
         pv.player = zajawka
     }

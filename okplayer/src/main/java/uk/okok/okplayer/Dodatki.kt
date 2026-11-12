@@ -282,6 +282,8 @@ object Zajawki {
         while (c != null) { if (c is androidx.media3.datasource.HttpDataSource.InvalidResponseCodeException) { kod = "HTTP " + c.responseCode; break }; c = c.cause }
         return e.errorCodeName.removePrefix("ERROR_CODE_") + (if (kod.isNotEmpty()) " ($kod)" else "")
     }
+    /** Serwer dostawcy odpowiada 413/429/509, gdy poprzednie polaczenie jeszcze sie nie zamknelo (limit polaczen) - wtedy ponawiamy. */
+    fun limit(e: androidx.media3.common.PlaybackException) = opis(e).let { it.contains("HTTP 413") || it.contains("HTTP 429") || it.contains("HTTP 509") || it.contains("HTTP 458") }
     fun zglos(c: android.content.Context, gdzie: String, e: androidx.media3.common.PlaybackException) {
         val t = opis(e)
         kotlin.concurrent.thread { Serwer.raport(c, "zajawka $gdzie: $t") }

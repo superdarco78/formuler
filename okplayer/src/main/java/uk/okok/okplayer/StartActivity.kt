@@ -351,7 +351,7 @@ class StartActivity : AppCompatActivity() {
                             podgladH.postDelayed({ pv.animate().alpha(0f).setDuration(700).withEndAction { stopPodglad() }.start() }, czasZajawki("czas_plakat", 30) * 1000L) }
                     }
                     override fun onIsPlayingChanged(gra: Boolean) { if (gra && pv.alpha == 0f) pv.animate().alpha(1f).setStartDelay(250).setDuration(700).start() }
-                    override fun onPlayerError(e: androidx.media3.common.PlaybackException) { Zajawki.zglos(this@StartActivity, "plakat", e); stopPodglad() } })
+                    override fun onPlayerError(e: androidx.media3.common.PlaybackException) { if (!Zajawki.limit(e)) Zajawki.zglos(this@StartActivity, "plakat", e); stopPodglad() } })
             }
             pv.player = podgladGracz
         } }, 1500)
@@ -681,7 +681,7 @@ class StartActivity : AppCompatActivity() {
                             }
                         }
                         override fun onIsPlayingChanged(gra: Boolean) { if (gra && przewiniete && zwiastunWidok.alpha == 0f) zwiastunWidok.animate().alpha(1f).setStartDelay(300).setDuration(900).start() }
-                        override fun onPlayerError(e: androidx.media3.common.PlaybackException) { Zajawki.zglos(this@StartActivity, "baner", e); stopZwiastun() } })
+                        override fun onPlayerError(e: androidx.media3.common.PlaybackException) { if (!Zajawki.limit(e)) Zajawki.zglos(this@StartActivity, "baner", e); stopZwiastun() } })
                 }
                 zwiastunWidok.player = zwiastun
                 val tenGracz = zwiastun
