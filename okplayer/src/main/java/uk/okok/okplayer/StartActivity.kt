@@ -1391,8 +1391,10 @@ class StartActivity : AppCompatActivity() {
 
     private fun animacjaStartu() {
         // 2.44: realistyczna animacja startu z panelu (animacja_startu: strojenie/odliczanie/projektor/losowo/grafiki); film intro z panelu ma pierwszenstwo
-        val maFilm = Ust.panelS(this, "intro_url")?.startsWith("http") == true || Ust.panelS(this, "intro_pion_url")?.startsWith("http") == true
+        // 2.45: film intro z panelu tylko gdy w panelu wybrano animacja_startu = "film" (popcorn z Canvy ucinal napisy)
         var war = Ust.panelS(this, "animacja_startu") ?: "strojenie"
+        val maFilm = war == "film" && (Ust.panelS(this, "intro_url")?.startsWith("http") == true || Ust.panelS(this, "intro_pion_url")?.startsWith("http") == true)
+        if (war == "film" && !maFilm) war = "strojenie"
         if (war == "losowo") war = listOf("strojenie", "odliczanie", "projektor").random()
         if (!maFilm && war != "grafiki") {
             val dekor = window.decorView as ViewGroup
@@ -1457,7 +1459,7 @@ class StartActivity : AppCompatActivity() {
         val introPion = Ust.panelS(this, "intro_pion_url")?.takeIf { it.startsWith("http") }
         val introPoziom = Ust.panelS(this, "intro_url")?.takeIf { it.startsWith("http") }
         val pasuje = if (pion) introPion != null else introPoziom != null
-        (if (pion) introPion ?: introPoziom else introPoziom ?: introPion)?.let { u ->
+        (if (!maFilm) null else if (pion) introPion ?: introPoziom else introPoziom ?: introPion)?.let { u ->
             val pv = (layoutInflater.inflate(R.layout.mini_gracz, null) as androidx.media3.ui.PlayerView).apply { useController = false; setShutterBackgroundColor(Color.BLACK); setBackgroundColor(Color.BLACK)
                 // pasujace do obrotu - na caly ekran (lekkie przyciecie brzegow); niepasujace - w calosci z pasami (2.42)
                 resizeMode = if (pasuje) androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_ZOOM else androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIT }
