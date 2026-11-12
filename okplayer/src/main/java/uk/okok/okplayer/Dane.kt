@@ -29,6 +29,8 @@ object Ust {
     fun okienko(c: Context) = panelB(c, "okienko") ?: prefs(c).getBoolean("okienko", true)
     fun uklad(c: Context) = panelS(c, "uklad") ?: (prefs(c).getString("uklad", "kinowy") ?: "kinowy")
     fun widoczne(c: Context, k: String) = panelB(c, k) ?: true
+    // 2.41: marka aplikacji z panelu (kazdy sprzedawca moze ustawic swoja)
+    fun nazwaApki(c: Context) = panelS(c, "nazwa_aplikacji") ?: "OK Player"
     fun klucz(c: Context): String = prefs(c).getString("klucz", "") ?: ""
     fun zalogowany(c: Context) = klucz(c).isNotEmpty()
     fun zapiszKlucz(c: Context, k: String) = prefs(c).edit().putString("klucz", k).apply()

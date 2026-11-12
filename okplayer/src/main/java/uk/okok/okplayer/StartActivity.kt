@@ -86,7 +86,7 @@ class StartActivity : AppCompatActivity() {
     private fun ekranLogowania() {
         val k = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER; setBackgroundColor(CZARNY); setPadding(dp(24), dp(24), dp(24), dp(24)) }
         k.addView(ImageView(this).apply { setImageResource(R.mipmap.ic_launcher) }, LinearLayout.LayoutParams(dp(110), dp(110)))
-        k.addView(tekst("OK Player", 30f, gruby = true).apply { setPadding(0, dp(14), 0, 0) })
+        k.addView(tekst(Ust.nazwaApki(this), 30f, gruby = true).apply { setPadding(0, dp(14), 0, 0) })
         k.addView(tekst("Wersja $wersja", 13f, SZARY))
         k.addView(tekst("Wpisz ten kod w edytorze:\nklient → Ustawienia → „Dodaj urządzenie”", 16f, SZARY).apply { gravity = Gravity.CENTER; setPadding(0, dp(30), 0, dp(10)) })
         val kod = tekst("······", 46f, Color.WHITE, true).apply { letterSpacing = 0.15f }
@@ -1373,7 +1373,7 @@ class StartActivity : AppCompatActivity() {
             addView(tekst(t, 17f)); addView(tekst(opis, 14f, SZARY))
             setOnClickListener { akcja() }
         }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
-        wiersz("Informacje", "OK Player, nowa wersja $wersja") {}
+        wiersz("Informacje", Ust.nazwaApki(this) + ", wersja $wersja") {}
         wiersz("Sprawdź aktualizację", "Pobiera i instaluje nową wersję w tle") { lifecycleScope.launch { Aktualizacja.sprawdz(this@StartActivity, true) } }
         if (Ust.panelB(this, "okienko") == null) wiersz("Okienko TV (obraz w obrazie)", if (Ust.prefs(this).getBoolean("okienko", true)) "Włączone – po wyjściu do ekranu telefonu TV gra w okienku" else "Wyłączone") {
             Ust.prefs(this).edit().putBoolean("okienko", !Ust.prefs(this).getBoolean("okienko", true)).apply(); pokaz(4)
@@ -1415,7 +1415,8 @@ class StartActivity : AppCompatActivity() {
         val pelny = android.graphics.drawable.ClipDrawable(getDrawable(Skorka.id(this@StartActivity, R.drawable.ok_gr_pasek_pelny)), Gravity.START, android.graphics.drawable.ClipDrawable.HORIZONTAL).apply { level = 0 }
         tor.addView(View(this).apply { background = pelny }, FrameLayout.LayoutParams(-1, -1))
         sr.addView(tor, LinearLayout.LayoutParams(dp(260), dp(14)).apply { topMargin = dp(18) })
-        val napis = tekst("Ładowanie kanałów…", 15f, 0xFFE6E6F0.toInt()).apply { gravity = Gravity.CENTER; setPadding(0, dp(14), 0, 0); alpha = 0f; letterSpacing = 0.05f }
+        Ust.panelS(this, "logo_url")?.takeIf { it.startsWith("http") }?.let { u -> logo.load(u) }
+        val napis = tekst(Ust.panelS(this, "napis_ladowania") ?: "Ładowanie kanałów…", 15f, 0xFFE6E6F0.toInt()).apply { gravity = Gravity.CENTER; setPadding(0, dp(14), 0, 0); alpha = 0f; letterSpacing = 0.05f }
         sr.addView(napis)
         n.addView(sr, FrameLayout.LayoutParams(-1, -1))
         dekor.addView(n, ViewGroup.LayoutParams(-1, -1))
@@ -1437,8 +1438,17 @@ class StartActivity : AppCompatActivity() {
         android.animation.ValueAnimator.ofInt(0, 10000).apply { startDelay = 1500; duration = 2100; interpolator = android.view.animation.AccelerateDecelerateInterpolator()
             addUpdateListener { pelny.level = it.animatedValue as Int } }.start()
         napis.postDelayed({ napis.text = "Gotowe ✓" }, 3600)
+        // 2.41: wlasne intro (film z Canvy) z panelu - gra na wierzchu, z dzwiekiem, potem wejscie do aplikacji
+        val czas = (Ust.panelS(this, "czas_intro")?.toIntOrNull() ?: 4).coerceIn(2, 20) * 1000L
+        Ust.panelS(this, "intro_url")?.takeIf { it.startsWith("http") }?.let { u ->
+            val pv = (layoutInflater.inflate(R.layout.mini_gracz, null) as androidx.media3.ui.PlayerView).apply { useController = false; setShutterBackgroundColor(Color.BLACK); setBackgroundColor(Color.BLACK)
+                resizeMode = androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_ZOOM }
+            val g = androidx.media3.exoplayer.ExoPlayer.Builder(this).build().apply { setMediaItem(androidx.media3.common.MediaItem.fromUri(u)); prepare(); playWhenReady = true }
+            pv.player = g; n.addView(pv, FrameLayout.LayoutParams(-1, -1))
+            n.postDelayed({ g.release() }, czas + 900)
+        }
         // 4. wyjscie: kamera wlatuje w logo, wszystko gasnie
-        n.animate().alpha(0f).scaleX(1.15f).scaleY(1.15f).setStartDelay(3800).setDuration(500).withEndAction { dekor.removeView(n) }.start()
+        n.animate().alpha(0f).scaleX(1.15f).scaleY(1.15f).setStartDelay(czas - 200).setDuration(500).withEndAction { dekor.removeView(n) }.start()
     }
 
     private fun oknoWyjscia() {
@@ -1446,7 +1456,7 @@ class StartActivity : AppCompatActivity() {
         val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL; setPadding(dp(24), dp(24), dp(24), dp(20)); tloCanvy(Skorka.id(this@StartActivity, R.drawable.ok_gr_okno)) }
         val ik = ImageView(this).apply { setImageResource(R.mipmap.ic_launcher) }
         box.addView(ik, LinearLayout.LayoutParams(dp(72), dp(72)).apply { bottomMargin = dp(14) })
-        box.addView(tekst("Zamknąć OK Player?", 21f, gruby = true).apply { gravity = Gravity.CENTER })
+        box.addView(tekst("Zamknąć " + Ust.nazwaApki(this) + "?", 21f, gruby = true).apply { gravity = Gravity.CENTER })
         box.addView(tekst("Czy na pewno chcesz wyjść z aplikacji?", 16f, SZARY).apply { gravity = Gravity.CENTER; setPadding(0, dp(10), 0, dp(22)) })
         fun przycisk(t: String, kolTla: Int, kolTekstu: Int, akcja: () -> Unit) = tekst(t, 17f, kolTekstu, gruby = kolTla == 0).apply {
             gravity = Gravity.CENTER; setPadding(0, dp(14), 0, dp(14)); background = if (kolTla == 0) android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(Skorka.akcent(this@StartActivity), Skorka.akcent(this@StartActivity))).apply { cornerRadius = dp(28).toFloat() } else tlo(kolTla, 28).apply { setStroke(dp(1), 0xFF555555.toInt()) }; isFocusable = true; setOnClickListener { akcja() }
