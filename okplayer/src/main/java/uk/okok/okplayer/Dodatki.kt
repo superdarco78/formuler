@@ -55,6 +55,7 @@ object Dodatki {
     }
 
     /** Zwiastun z YouTube po tytule (gdy Wikidata nie ma). */
+    fun tekstYt(u: String) = tekst(u, "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36")
     fun szukajZwiastuna(tytul: String): String = try {
         val html = tekst("https://www.youtube.com/results?search_query=" + java.net.URLEncoder.encode("$tytul zwiastun", "UTF-8"),
             "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36")
@@ -277,14 +278,30 @@ object Dodatki {
 /** 2.26: wspolny odtwarzacz zajawek (jak glowny: VLC user-agent, przekierowania http<->https). */
 object Zajawki {
     /** 2.34: zwiastun z YouTube (wiekszosc filmow ma polski zwiastun) - grany bez dzwieku w przezroczystym oknie WWW nad plakatem. */
+    /** 2.40: zwiastun w jezyku systemu urzadzenia; dla polskiego wersja z panelu: lektor / napisy / losowo / dowolny. */
+    @Volatile var ctx: android.content.Context? = null
+    fun zapytanie(t: String): String {
+        val jez = java.util.Locale.getDefault().language
+        val wersja = ctx?.let { Ust.panelS(it, "zwiastun_wersja") } ?: "losowo"
+        return when (jez) {
+            "pl" -> "$t zwiastun " + when (wersja) { "lektor" -> "lektor pl"; "napisy" -> "napisy pl"; "dowolny" -> "pl"; else -> listOf("lektor pl", "napisy pl", "pl").random() }
+            "de" -> "$t trailer deutsch"; "fr" -> "$t bande annonce vf"; "es" -> "$t tráiler español"; "it" -> "$t trailer italiano"
+            "uk" -> "$t трейлер українською"; "ru" -> "$t трейлер"; "cs" -> "$t trailer cz"; "sk" -> "$t trailer sk"
+            else -> "$t official trailer"
+        }
+    }
     fun szukaj(tytul: String): String {
         val t = tytul.replace(Regex("\\s*\\(\\d{4}\\).*$"), "").replace(Regex("^[A-Z]{2,3}\\s*[-|:]\\s*"), "").trim()
         val rok = Regex("\\((\\d{4})\\)").find(tytul)?.groupValues?.get(1) ?: ""
-        // najpierw polski zwiastun z YouTube, potem iTunes
-        return Dodatki.szukajZwiastuna("$t $rok".trim()).let { if (it.isNotEmpty()) "yt:$it" else "" }.ifEmpty { try { Dodatki.zwiastunItunes(tytul) } catch (e: Exception) { "" } }
+        val id = try {
+            val html = Dodatki.tekstYt("https://www.youtube.com/results?search_query=" + java.net.URLEncoder.encode(zapytanie("$t $rok".trim()), "UTF-8"))
+            Regex("\"videoId\":\"([A-Za-z0-9_-]{11})\"").find(html)?.groupValues?.get(1) ?: ""
+        } catch (e: Exception) { "" }
+        return (if (id.isNotEmpty()) "yt:$id" else "").ifEmpty { Dodatki.szukajZwiastuna("$t $rok".trim()).let { if (it.isNotEmpty()) "yt:$it" else "" } }
+            .ifEmpty { try { Dodatki.zwiastunItunes(tytul) } catch (e: Exception) { "" } }
     }
     @android.annotation.SuppressLint("SetJavaScriptEnabled")
-    fun okno(c: android.content.Context) = android.webkit.WebView(c).apply {
+    fun okno(c: android.content.Context) = android.webkit.WebView(c.also { ctx = it.applicationContext }).apply {
         setBackgroundColor(android.graphics.Color.TRANSPARENT); alpha = 0f; isFocusable = false; isClickable = false
         setOnTouchListener { _, _ -> true }
         settings.javaScriptEnabled = true; settings.mediaPlaybackRequiresUserGesture = false; settings.domStorageEnabled = true
@@ -322,7 +339,7 @@ object Zajawki {
         // 2.33: bez komunikatow na ekranie - tylko raport na serwer
     }
     /** 2.39: linia z limitem 1 polaczenia - dostawca chwile trzyma poprzednie polaczenie, wiec kazde zapytanie ponawiamy cierpliwie (12 razy co 1,5 s) zamiast sie poddac. */
-    fun gracz(c: android.content.Context) = androidx.media3.exoplayer.ExoPlayer.Builder(c)
+    fun gracz(c: android.content.Context) = androidx.media3.exoplayer.ExoPlayer.Builder(c.also { ctx = it.applicationContext })
         .setMediaSourceFactory(androidx.media3.exoplayer.source.DefaultMediaSourceFactory(
             androidx.media3.datasource.DefaultHttpDataSource.Factory().setUserAgent("VLC/3.0.20 LibVLC/3.0.20").setAllowCrossProtocolRedirects(true)
                 .setConnectTimeoutMs(8000).setReadTimeoutMs(12000))
