@@ -364,10 +364,80 @@ class StartActivity : AppCompatActivity() {
                         if (lim && kont.isAttachedToWindow && proba < 3) kont.postDelayed({ if (kont.isAttachedToWindow && podgladGracz == null) podglad(kont, lp, v, proba + 1) }, 6000) } })
             }
             pv.player = podgladGracz
-        } }, 1500)
+        } }, czasZajawki("czas_start_plakatu", 3) * 1000L)
     }
     /** 2.22: odtwarzacz zajawek jak glowny (VLC user-agent, przekierowania http<->https) - bez tego serwer nie oddawal filmu. */
     private fun graczZajawki() = Zajawki.gracz(this)
+    /** 2.21: adres zajawki - film wprost, serial: pierwszy odcinek pierwszego sezonu (z opisu serialu). */
+    private val adresyZajawek = HashMap<String, String>()
+    private suspend fun adresZajawki(v: Vod): String? {
+        adresyZajawek[v.id]?.let { return it }
+        if (Zajawki.zwiastunNajpierw(this)) {
+            val z = withContext(Dispatchers.IO) { try { Zajawki.szukaj(v.nazwa) } catch (e: Exception) { "" } }
+            if (z.isNotEmpty()) { adresyZajawek[v.id] = z; return z }
+        }
+        if (v.rodzaj == "f") return Serwer.adresFilmu(this, v.id, v.ext)
+        val o = withContext(Dispatchers.IO) { Serwer.infoZPamieci(this@StartActivity, true, v.id) ?: Serwer.infoSerialu(this@StartActivity, v.id) } ?: return null
+        val ep = o.optJSONObject("episodes") ?: return null
+        val sez = ep.keys().asSequence().toList().minByOrNull { it.toIntOrNull() ?: 999 } ?: return null
+        val odc = ep.optJSONArray(sez)?.optJSONObject(0) ?: return null
+        val id = odc.optString("id").ifEmpty { return null }
+        return Serwer.adresOdcinka(this, id, odc.optString("container_extension").ifEmpty { "mp4" }).also { adresyZajawek[v.id] = it }
+    }
+    /** 2.21: karuzela 3D - plakaty po bokach rzedu lekko obrocone i mniejsze, srodkowy prosto. */
+    private fun karuzela3D(rv: RecyclerView) {
+        if (!ef("ef_karuzela")) return
+        fun ustaw(r: RecyclerView) { val sr = r.width / 2f; if (sr <= 0) return
+            for (x in 0 until r.childCount) { val c = r.getChildAt(x); val d = ((c.left + c.width / 2f) - sr) / sr
+                c.rotationY = (-d * 18f).coerceIn(-22f, 22f); val sk = 1f - (kotlin.math.abs(d) * 0.08f).coerceAtMost(0.12f); c.scaleX = sk; c.scaleY = sk
+                c.cameraDistance = c.width * 12f } }
+        rv.addOnScrollListener(object : RecyclerView.OnScrollListener() { override fun onScrolled(r: RecyclerView, dx: Int, dy: Int) { ustaw(r) } })
+        rv.addOnLayoutChangeListener { v, _, _, _, _, _, _, _, _ -> ustaw(v as RecyclerView) }
+    }
+    /** Telefon: gdy rzad sie zatrzyma, zajawka rusza na pierwszym w calosci widocznym plakacie. TV: na zaznaczonym. */
+    private fun zajawkiWRzedzie(rv: RecyclerView) {
+        rv.setTag(R.id.cyfra_anim, "zajawki")
+        if (Pilot.czyTv(this)) return
+        rv.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrollStateChanged(r: RecyclerView, st: Int) {
+                if (st == RecyclerView.SCROLL_STATE_DRAGGING) { if (!sekwencjaPrzewija) { sekwencja = null; stopPodglad() } }
+                if (st != RecyclerView.SCROLL_STATE_IDLE || sekwencjaPrzewija) return
+                val lm = r.layoutManager as? LinearLayoutManager ?: return
+                val p = lm.findFirstCompletelyVisibleItemPosition().takeIf { it >= 0 } ?: return
+                startSekwencji(r, p)
+            } })
+    }
+    /** 2.39: sekwencja w rzedzie - plakat (czas startu) -> zajawka (czas plakatu) -> rzad sam przesuwa sie do nastepnego plakatu -> jego zajawka... */
+    private var sekwencja: RecyclerView? = null
+    private var sekwencjaPrzewija = false
+    private fun startSekwencji(rv: RecyclerView, poz: Int) {
+        val lm = rv.layoutManager as? LinearLayoutManager ?: return
+        val v = lm.findViewByPosition(poz) ?: return
+        if (v.tag !is Runnable) return
+        sekwencja = rv
+        (v.tag as Runnable).run()
+        if (!ef("ef_sekwencja")) return
+        val krok = (czasZajawki("czas_start_plakatu", 3) + czasZajawki("czas_plakat", 30) + 4) * 1000L
+        rv.postDelayed({
+            if (sekwencja !== rv || !rv.isAttachedToWindow || isFinishing) return@postDelayed
+            val nast = if (poz + 1 < (rv.adapter?.itemCount ?: 0)) poz + 1 else 0
+            sekwencjaPrzewija = true; stopPodglad()
+            if (rv.layoutManager is androidx.recyclerview.widget.GridLayoutManager) rv.smoothScrollToPosition(nast) else lm.scrollToPositionWithOffset(nast, dp(12))
+            rv.postDelayed({ sekwencjaPrzewija = false; if (sekwencja === rv) startSekwencji(rv, nast) }, 700)
+        }, krok)
+    }
+    /** Po zatrzymaniu przewijania strony: sekwencja rusza w pierwszym w calosci widocznym rzedzie z plakatami. */
+    private fun sekwencjaNaStronie(k: ViewGroup) {
+        if (Pilot.czyTv(this) || !ef("ef_sekwencja") || sekwencja?.isAttachedToWindow == true && podgladWidok != null) return
+        val ekran = android.graphics.Rect(); k.getWindowVisibleDisplayFrame(ekran)
+        for (x in 0 until k.childCount) { val c = k.getChildAt(x) as? RecyclerView ?: continue
+            if (c.getTag(R.id.cyfra_anim) != "zajawki") continue
+            val r = android.graphics.Rect(); if (!c.getGlobalVisibleRect(r) || r.height() < c.height * 0.9) continue
+            val lm = c.layoutManager as? LinearLayoutManager ?: continue
+            val p = lm.findFirstCompletelyVisibleItemPosition().takeIf { it >= 0 } ?: continue
+            if (sekwencja !== c) startSekwencji(c, p); return }
+    }
+
 
     private fun rzadVod(k: LinearLayout, tytul: String, l: List<Vod>, nowosc: Boolean = false) {
         if (l.isEmpty()) return
@@ -773,7 +843,7 @@ class StartActivity : AppCompatActivity() {
     // 2.16: efektami rzadzi tylko panel edytora (globalnie lub dla danego klienta)
     private fun ef(k: String) = efPanel(k)
     /** 2.24: czasy zajawek z panelu (sekundy). */
-    private fun czasZajawki(k: String, dom: Int) = (Ust.panelS(this, k)?.toIntOrNull() ?: dom).coerceIn(5, 600)
+    private fun czasZajawki(k: String, dom: Int) = (Ust.panelS(this, k)?.toIntOrNull() ?: dom).coerceIn(1, 600)
     override fun onPause() { stopBaner?.invoke(); stopPodglad(); super.onPause() }
     private fun start() {
         val sv = ScrollView(this)
@@ -781,7 +851,9 @@ class StartActivity : AppCompatActivity() {
         sv.addView(k); tresc.addView(sv)
         // 2.11: paralaksa - plakat w banerze przesuwa sie wolniej niz reszta przy przewijaniu
         banerObrazy = null
-        sv.setOnScrollChangeListener { _, _, y, _, _ -> if (ef("ef_paralaksa")) banerObrazy?.forEach { it.translationY = y * 0.35f } }
+        val poPrzewinieciu = Runnable { sekwencjaNaStronie(k) }
+        sv.setOnScrollChangeListener { _, _, y, _, _ -> if (ef("ef_paralaksa")) banerObrazy?.forEach { it.translationY = y * 0.35f }
+            sv.removeCallbacks(poPrzewinieciu); sv.postDelayed(poPrzewinieciu, 900) }
         if (filmy.isEmpty() && kanaly.isEmpty()) { k.addView(tekst("Ładuję listę…", 15f, SZARY).apply { setPadding(dp(16), dp(16), 0, 0) }); return }
         val pop = { l: List<Vod> -> l.filter { it.ocena > 0 }.sortedByDescending { it.ocena }.take(20).ifEmpty { l.takeLast(20).reversed() } }
         // Uklad Startu (Ustawienia -> Uklad Startu): kinowy (domyslny), ikony (jak IBO) albo klasyczny.

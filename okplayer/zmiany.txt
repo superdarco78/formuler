@@ -1,3 +1,4 @@
+Sekwencja zajawek w rzędach|zajawka tylko na jednym plakacie po przesunięciu rzędu|plakat 3 s → zajawka → rząd sam przechodzi do następnego plakatu → jego zajawka…; rusza też sama po zatrzymaniu przewijania strony; czasy w panelu
 Zajawki z linii dostawcy|fragmenty z filmu odrzucane przy limicie 1 połączenia (timeout)|fragment z filmu z lektorem ponawia każde połączenie cierpliwie (do 12 razy), aż dostawca zwolni linię; gdy się nie uda w 30 s – zwiastun YouTube
 Zajawki naprawione (YouTube)|fragmenty filmu dostawca odrzucał (limit połączeń), zwiastun YouTube nie chciał się wyświetlić|zajawka to zwiastun z YouTube przez naszą stronę (pewny, nie zajmuje połączenia, z dźwiękiem), pokazuje się dopiero gdy naprawdę gra
 Start filmu po zajawce|film po kliknięciu „Oglądaj” kręcił kółkiem bez końca (dostawca trzymał jeszcze połączenie zajawki)|odtwarzacz czeka cierpliwie na wolne połączenie (do ok. 45 s) z napisem „Czekam na wolne połączenie…” i sam startuje film
