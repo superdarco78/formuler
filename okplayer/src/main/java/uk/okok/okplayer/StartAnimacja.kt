@@ -15,7 +15,7 @@ import kotlin.random.Random
  * Kazdy konczy sie logo + paskiem ladowania z etapami. Dzwiek syntezowany (bez plikow).
  */
 class StartAnimacja(c: Context, val wariant: String, val nazwa: String, val dzwiek: Boolean, val napisKoniec: String) : View(c) {
-    val dlugosc = if (wariant == "projektor") 7.5f else 7f
+    val dlugosc = when (wariant) { "projektor" -> 7.5f; "elegancka" -> 4.8f; else -> 7f }
     private var t0 = 0L
     private val p = Paint(Paint.ANTI_ALIAS_FLAG)
     private val rnd = Random(System.nanoTime())
@@ -31,7 +31,7 @@ class StartAnimacja(c: Context, val wariant: String, val nazwa: String, val dzwi
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow(); t0 = System.nanoTime()
-        when (wariant) { "odliczanie", "projektor" -> startTerkot(); "strojenie" -> szum(2.6f, .22f) }
+        when (wariant) { "odliczanie", "projektor" -> startTerkot(); "strojenie" -> szum(2.6f, .22f); else -> postDelayed({ cichy() }, 350) }
     }
     override fun onDetachedFromWindow() { super.onDetachedFromWindow(); terkocze = false }
 
@@ -86,7 +86,7 @@ class StartAnimacja(c: Context, val wariant: String, val nazwa: String, val dzwi
 
     override fun onDraw(cv: Canvas) {
         val t = (System.nanoTime() - t0) / 1e9f
-        when (wariant) { "odliczanie" -> odliczanie(cv, t); "projektor" -> projektor(cv, t); else -> strojenie(cv, t) }
+        when (wariant) { "odliczanie" -> odliczanie(cv, t); "projektor" -> projektor(cv, t); "strojenie" -> strojenie(cv, t); else -> elegancka(cv, t) }
         if (t > dlugosc - 1.2f) terkocze = false
         if (t < dlugosc + .5f) postInvalidateOnAnimation()
     }
@@ -164,5 +164,32 @@ class StartAnimacja(c: Context, val wariant: String, val nazwa: String, val dzwi
             p.color = Color.rgb(28, 31, 37); cv.drawRoundRect(w / 2 - pw / 2, y, w / 2 + pw / 2, y + ph, ph, ph, p)
             p.color = Color.rgb(245, 166, 35); cv.drawRoundRect(w / 2 - pw / 2, y, w / 2 - pw / 2 + pw * el((u - .3f) / 3f), y + ph, ph, ph, p)
             p.typeface = Typeface.DEFAULT; p.textSize = s * .032f; p.textAlign = Paint.Align.CENTER; p.color = Color.rgb(216, 219, 226); cv.drawText(etap(u * .9f), w / 2, y + s * .07f, p) }
+    }
+
+    // 2.47: elegancka (jak Netflix) - czern, cieple swiatlo, logo wylania sie z blasku, smuga swiatla, cienka linia ladowania, na koniec wlot w logo
+    private fun cichy() { val n = 22050 * 3; var f1 = 0.0; var f2 = 0.0
+        graj(ShortArray(n) { i -> val x = i.toFloat() / n; f1 += 2 * PI * 55 / 22050; f2 += 2 * PI * 220 / 22050
+            ((sin(f1) * .55 + sin(f2) * .12 + sin(f2 * 1.5) * .06) * min(1f, x * 8) * exp(-x * 2.2) * 32767).toInt().toShort() }) }
+    private fun elegancka(cv: Canvas, t: Float) {
+        val w = width.toFloat(); val h = height.toFloat(); val s = min(w, h)
+        cv.drawColor(Color.rgb(4, 4, 6))
+        val swiat = el(t / 1.2f) * el((4.2f - t) / .8f)
+        p.shader = RadialGradient(w / 2, h * .46f, s * .75f, intArrayOf(Color.argb((110 * swiat).toInt(), 245, 150, 35), Color.argb((40 * swiat).toInt(), 120, 50, 10), 0), floatArrayOf(0f, .45f, 1f), Shader.TileMode.CLAMP)
+        cv.drawRect(0f, 0f, w, h, p); p.shader = null
+        val zoom = if (t > 3.9f) 1f + (t - 3.9f).pow(2) * 9f else 1f + .06f * el(t / 3.9f)
+        val a = el((t - .35f) / .9f) * el((4.6f - t) / .35f)
+        cv.save(); cv.scale(zoom, zoom, w / 2, h * .46f)
+        logo(cv, a, .92f + .08f * el((t - .35f) / 1.2f), .4f + .6f * swiat, -1f, "")
+        // smuga swiatla przez logo
+        val sx = -s * .6f + (t - 1.3f) / 1.1f * (w + s * 1.2f)
+        if (t in 1.3f..2.4f) { p.shader = LinearGradient(sx - s * .12f, 0f, sx + s * .12f, 0f, intArrayOf(0, Color.argb(120, 255, 245, 225), 0), null, Shader.TileMode.CLAMP)
+            p.xfermode = PorterDuffXfermode(PorterDuff.Mode.ADD); cv.drawRect(0f, h * .3f, w, h * .62f, p); p.xfermode = null; p.shader = null }
+        cv.restore()
+        val la = el((t - 1.4f) / .5f) * el((3.9f - t) / .3f)
+        if (la > 0) { val lw = min(w * .42f, s * .5f); val y = h * .72f
+            p.color = Color.argb((60 * la).toInt(), 255, 255, 255); cv.drawRect(w / 2 - lw / 2, y, w / 2 + lw / 2, y + 2f, p)
+            p.color = Color.argb((255 * la).toInt(), 245, 166, 35); cv.drawRect(w / 2 - lw / 2, y, w / 2 - lw / 2 + lw * el((t - 1.4f) / 2.2f), y + 2f, p)
+            p.typeface = Typeface.DEFAULT; p.textSize = s * .026f; p.textAlign = Paint.Align.CENTER; p.letterSpacing = .15f
+            p.color = Color.argb((170 * la).toInt(), 230, 230, 235); cv.drawText(etap((t - 1.4f) * 1.3f).uppercase(), w / 2, y + s * .06f, p); p.letterSpacing = 0f }
     }
 }

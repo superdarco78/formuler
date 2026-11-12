@@ -1392,10 +1392,10 @@ class StartActivity : AppCompatActivity() {
     private fun animacjaStartu() {
         // 2.44: realistyczna animacja startu z panelu (animacja_startu: strojenie/odliczanie/projektor/losowo/grafiki); film intro z panelu ma pierwszenstwo
         // 2.45: film intro z panelu tylko gdy w panelu wybrano animacja_startu = "film" (popcorn z Canvy ucinal napisy)
-        var war = Ust.panelS(this, "animacja_startu") ?: "strojenie"
+        var war = Ust.panelS(this, "animacja_startu") ?: "elegancka"
         val maFilm = war == "film" && (Ust.panelS(this, "intro_url")?.startsWith("http") == true || Ust.panelS(this, "intro_pion_url")?.startsWith("http") == true)
-        if (war == "film" && !maFilm) war = "strojenie"
-        if (war == "losowo") war = listOf("strojenie", "odliczanie", "projektor").random()
+        if (war == "film" && !maFilm) war = "elegancka"
+        if (war == "losowo") war = listOf("elegancka", "strojenie", "odliczanie", "projektor").random()
         if (!maFilm && war != "grafiki") {
             val dekor = window.decorView as ViewGroup
             val dz = Ust.panelS(this, "dzwiek_startu") != "0"

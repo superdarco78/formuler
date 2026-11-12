@@ -1,1 +1,1 @@
-Aktualizacja bez blokady|aplikacja instalowała aktualizacje po cichu, a Play Protect blokował to jako szkodliwe|aktualizacja zawsze przez zwykłe okno systemu „Zaktualizować?” – bez cichej instalacji i bez uprawnienia, które Google uznaje za podejrzane
+Elegancka animacja startu|start ze szumem TV wyglądał tandetnie|elegancki start jak w Netflixie: czerń, ciepłe światło, logo wyłania się z blasku, smuga światła, cienka linia ładowania i płynne wejście w aplikację
