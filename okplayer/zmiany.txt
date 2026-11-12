@@ -1,3 +1,4 @@
+Dźwięk w zajawkach|zajawki bez dźwięku|zajawki grają z dźwiękiem (domyślnie włączone, wyłączysz w panelu)
 Zajawka 1:1 z filmu|zajawka najpierw szukała zwiastunu|zajawka to fragment z samego filmu (z lektorem, jeśli film ma lektora); gdy dostawca odmówi – zwiastun z YouTube; dźwięk zajawek włączasz w panelu
 Zajawki z YouTube|zwiastuny tylko z iTunes – większości filmów tam nie ma, więc zajawki nie było|zajawka to polski zwiastun z YouTube (bez dźwięku), gdy go brak – iTunes; działa na banerze, plakatach i w ekranie filmu
 Bez komunikatów o błędach|na ekranie wyskakiwały napisy „Zajawka (…)”|żadnych napisów – gdy zajawka nie ruszy, baner po cichu idzie do następnego filmu; zajawka gra 40 s

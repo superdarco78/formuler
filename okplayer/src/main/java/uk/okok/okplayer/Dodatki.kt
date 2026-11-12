@@ -303,8 +303,8 @@ object Zajawki {
     /** 2.32: zrodlo zajawki z panelu: "zwiastun" (domyslnie - oficjalny zwiastun, nie zajmuje polaczenia u dostawcy) albo "fragment" (kawalek filmu). */
     // 2.35: domyslnie fragment z samego filmu (z lektorem jak film), zwiastun YouTube jako zapas
     fun zwiastunNajpierw(c: android.content.Context) = (Ust.panelS(c, "zrodlo_zajawki") ?: "fragment") == "zwiastun"
-    /** Dzwiek zajawek z panelu (domyslnie wylaczony). */
-    fun zDzwiekiem(c: android.content.Context) = Ust.panelB(c, "dzwiek_zajawek") == true
+    /** Dzwiek zajawek z panelu (domyslnie wlaczony). */
+    fun zDzwiekiem(c: android.content.Context) = Ust.panelB(c, "dzwiek_zajawek") ?: true
     fun glosnosc(c: android.content.Context) = if (zDzwiekiem(c)) 0.7f else 0f
     /** 2.27: opis bledu zajawki (do napisu na ekranie i raportu na serwer). */
     fun opis(e: androidx.media3.common.PlaybackException): String {
