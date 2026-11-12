@@ -1,1 +1,1 @@
-Intro dopasowane do ekranu|intro poziome na telefonie w pionie było małe, z czarnymi pasami|aplikacja sama dobiera intro: w pionie pionowe, w poziomie poziome – zawsze na cały ekran (oba ustawiane w panelu)
+Realistyczna animacja startu|przy starcie leciał film z popcornem z Canvy, który nie mówił, że aplikacja się ładuje|realistyczne animacje: strojenie TV, odliczanie kinowe, projektor w sali – z dźwiękiem i paskiem ładowania, wybór w panelu (też losowo)

@@ -1390,6 +1390,18 @@ class StartActivity : AppCompatActivity() {
     }
 
     private fun animacjaStartu() {
+        // 2.44: realistyczna animacja startu z panelu (animacja_startu: strojenie/odliczanie/projektor/losowo/grafiki); film intro z panelu ma pierwszenstwo
+        val maFilm = Ust.panelS(this, "intro_url")?.startsWith("http") == true || Ust.panelS(this, "intro_pion_url")?.startsWith("http") == true
+        var war = Ust.panelS(this, "animacja_startu") ?: "strojenie"
+        if (war == "losowo") war = listOf("strojenie", "odliczanie", "projektor").random()
+        if (!maFilm && war != "grafiki") {
+            val dekor = window.decorView as ViewGroup
+            val dz = Ust.panelS(this, "dzwiek_startu") != "0"
+            val a = StartAnimacja(this, war, Ust.nazwaApki(this), dz, "Gotowe ✓").apply { isClickable = true; setBackgroundColor(Color.BLACK) }
+            dekor.addView(a, ViewGroup.LayoutParams(-1, -1))
+            a.animate().alpha(0f).setStartDelay(((a.dlugosc - .5f) * 1000).toLong()).setDuration(500).withEndAction { dekor.removeView(a) }.start()
+            return
+        }
         // 2.01: animacja startu w calosci z grafik Canvy (ok. 4 s): kino z plakatami wjezdza z bokow, logo OK PLAYER wylania sie i swieci,
         // neonowy pasek z Canvy laduje sie do konca, napis "Ladowanie kanalow...", na koniec plynne wejscie do aplikacji. Nie blokuje ladowania.
         val dekor = window.decorView as ViewGroup
