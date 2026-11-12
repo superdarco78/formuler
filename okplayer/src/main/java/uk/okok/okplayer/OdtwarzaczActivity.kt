@@ -56,6 +56,7 @@ class OdtwarzaczActivity : AppCompatActivity() {
         }.start()
     }
     private var sluchacz: Player.Listener? = null
+    private var probyLimit = 0
     private var kurtyna: List<android.view.View> = emptyList()
     private fun odslonKurtyne() {
         val k = kurtyna; if (k.isEmpty()) return; kurtyna = emptyList()
@@ -602,12 +603,18 @@ class OdtwarzaczActivity : AppCompatActivity() {
                 val powod = (c0 as? androidx.media3.datasource.HttpDataSource.InvalidResponseCodeException)?.responseCode?.let { "HTTP $it" } ?: (c0?.javaClass?.simpleName ?: "")
                 lifecycleScope.launch(Dispatchers.IO) { Serwer.raport(this@OdtwarzaczActivity, "graj blad " + error.errorCodeName + " " + powod + " " + (biezacy?.nazwa ?: intent.getStringExtra("nazwa") ?: "")) }
                 if (archiwumGra && nastepnyWariant()) return
+                // 2.37: dostawca jeszcze trzyma poprzednie polaczenie (zajawka, inne urzadzenie) - czekamy cierpliwie do ok. 45 s
+                if (Zajawki.limit(error) && probyLimit < 15) {
+                    probyLimit++; pokazNapis("Czekam na wolne połączenie… ($probyLimit/15)")
+                    lifecycleScope.launch { delay(3000); graj(intent.getStringExtra("url") ?: return@launch) }
+                    return
+                }
                 if (proby < 3) {
                     proby++; pokazNapis("Ponawiam… ($proby/3)")
                     lifecycleScope.launch { delay(1500); graj(intent.getStringExtra("url") ?: return@launch) }
                 } else pokazNapis((if (vodTryb) "Film nie działa (" else "Kanał nie działa (") + error.errorCodeName + (if (powod.isNotEmpty()) ", " + powod else "") + ")")
             }
-            override fun onPlaybackStateChanged(s: Int) { if (s == Player.STATE_READY) { proby = 0; ukryjLadowanie() } }
+            override fun onPlaybackStateChanged(s: Int) { if (s == Player.STATE_READY) { proby = 0; probyLimit = 0; ukryjLadowanie() } }
         }
         p.addListener(sluchacz!!)
         val url = intent.getStringExtra("url") ?: return
