@@ -1440,10 +1440,15 @@ class StartActivity : AppCompatActivity() {
         napis.postDelayed({ napis.text = "Gotowe ✓" }, 3600)
         // 2.41: wlasne intro (film z Canvy) z panelu - gra na wierzchu, z dzwiekiem, potem wejscie do aplikacji
         val czas = (Ust.panelS(this, "czas_intro")?.toIntOrNull() ?: 4).coerceIn(2, 20) * 1000L
-        Ust.panelS(this, "intro_url")?.takeIf { it.startsWith("http") }?.let { u ->
+        // 2.43: aplikacja sama dobiera intro do obrotu ekranu - w pionie intro pionowe, w poziomie poziome; pasujace wypelnia caly ekran
+        val pion = wys > szer
+        val introPion = Ust.panelS(this, "intro_pion_url")?.takeIf { it.startsWith("http") }
+        val introPoziom = Ust.panelS(this, "intro_url")?.takeIf { it.startsWith("http") }
+        val pasuje = if (pion) introPion != null else introPoziom != null
+        (if (pion) introPion ?: introPoziom else introPoziom ?: introPion)?.let { u ->
             val pv = (layoutInflater.inflate(R.layout.mini_gracz, null) as androidx.media3.ui.PlayerView).apply { useController = false; setShutterBackgroundColor(Color.BLACK); setBackgroundColor(Color.BLACK)
-                // 2.42: intro zawsze w calosci (na telefonie w pionie bylo uciete) - czarne pasy, bo tlo intra jest czarne
-                resizeMode = androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIT }
+                // pasujace do obrotu - na caly ekran (lekkie przyciecie brzegow); niepasujace - w calosci z pasami (2.42)
+                resizeMode = if (pasuje) androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_ZOOM else androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIT }
             val g = androidx.media3.exoplayer.ExoPlayer.Builder(this).build().apply { setMediaItem(androidx.media3.common.MediaItem.fromUri(u)); prepare(); playWhenReady = true }
             pv.player = g; n.addView(pv, FrameLayout.LayoutParams(-1, -1))
             n.postDelayed({ g.release() }, czas + 900)
