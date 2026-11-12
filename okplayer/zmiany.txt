@@ -1,3 +1,4 @@
+Zajawki naprawione (YouTube)|fragmenty filmu dostawca odrzucał (limit połączeń), zwiastun YouTube nie chciał się wyświetlić|zajawka to zwiastun z YouTube przez naszą stronę (pewny, nie zajmuje połączenia, z dźwiękiem), pokazuje się dopiero gdy naprawdę gra
 Start filmu po zajawce|film po kliknięciu „Oglądaj” kręcił kółkiem bez końca (dostawca trzymał jeszcze połączenie zajawki)|odtwarzacz czeka cierpliwie na wolne połączenie (do ok. 45 s) z napisem „Czekam na wolne połączenie…” i sam startuje film
 Dźwięk w zajawkach|zajawki bez dźwięku|zajawki grają z dźwiękiem (domyślnie włączone, wyłączysz w panelu)
 Zajawka 1:1 z filmu|zajawka najpierw szukała zwiastunu|zajawka to fragment z samego filmu (z lektorem, jeśli film ma lektora); gdy dostawca odmówi – zwiastun z YouTube; dźwięk zajawek włączasz w panelu
