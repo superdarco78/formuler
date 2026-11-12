@@ -289,7 +289,7 @@ object Zajawki {
     fun zglos(c: android.content.Context, gdzie: String, e: androidx.media3.common.PlaybackException) {
         val t = opis(e)
         kotlin.concurrent.thread { Serwer.raport(c, "zajawka $gdzie: $t") }
-        android.os.Handler(android.os.Looper.getMainLooper()).post { android.widget.Toast.makeText(c, "Zajawka ($gdzie): $t", android.widget.Toast.LENGTH_LONG).show() }
+        // 2.33: bez komunikatow na ekranie - tylko raport na serwer
     }
     fun gracz(c: android.content.Context) = androidx.media3.exoplayer.ExoPlayer.Builder(c)
         .setMediaSourceFactory(androidx.media3.exoplayer.source.DefaultMediaSourceFactory(

@@ -683,7 +683,7 @@ class StartActivity : AppCompatActivity() {
                                 val d = duration
                                 if (d > 600_000) seekTo((d * (0.15 + Math.random() * 0.55)).toLong())
                                 playWhenReady = true
-                                karta.postDelayed({ if (i == n && zwiastun != null) zwiastunWidok.animate().alpha(0f).setDuration(900).withEndAction { stopZwiastun() }.start() }, czasZajawki("czas_baner", 30) * 1000L)
+                                karta.postDelayed({ if (i == n && zwiastun != null) zwiastunWidok.animate().alpha(0f).setDuration(900).withEndAction { stopZwiastun() }.start() }, czasZajawki("czas_baner", 40) * 1000L)
                             }
                         }
                         override fun onIsPlayingChanged(gra: Boolean) { if (gra && przewiniete && zwiastunWidok.alpha == 0f) zwiastunWidok.animate().alpha(1f).setStartDelay(300).setDuration(900).start() }
@@ -692,7 +692,6 @@ class StartActivity : AppCompatActivity() {
                 zwiastunWidok.player = zwiastun
                 val tenGracz = zwiastun
                 karta.postDelayed({ if (zwiastun === tenGracz && zwiastunWidok.alpha == 0f) {
-                    android.widget.Toast.makeText(this@StartActivity, "Zajawka (baner): film nie ruszył w 15 s", android.widget.Toast.LENGTH_LONG).show()
                     kotlin.concurrent.thread { Serwer.raport(this@StartActivity, "zajawka baner: timeout 15s") }; stopZwiastun() } }, 15_000)
                 }
             }, 3000)
