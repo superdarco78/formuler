@@ -347,7 +347,7 @@ class StartActivity : AppCompatActivity() {
                 addListener(object : androidx.media3.common.Player.Listener {
                     override fun onPlaybackStateChanged(st: Int) {
                         if (st == androidx.media3.common.Player.STATE_READY && !gotowe) { gotowe = true
-                            if (duration > 120_000) seekTo((duration * (0.15 + Math.random() * 0.55)).toLong()); playWhenReady = true
+                            if (duration > 600_000) seekTo((duration * (0.15 + Math.random() * 0.55)).toLong()); playWhenReady = true
                             podgladH.postDelayed({ pv.animate().alpha(0f).setDuration(700).withEndAction { stopPodglad() }.start() }, czasZajawki("czas_plakat", 30) * 1000L) }
                     }
                     override fun onIsPlayingChanged(gra: Boolean) { if (gra && pv.alpha == 0f) pv.animate().alpha(1f).setStartDelay(250).setDuration(700).start() }
@@ -366,8 +366,12 @@ class StartActivity : AppCompatActivity() {
     /** 2.21: adres zajawki - film wprost, serial: pierwszy odcinek pierwszego sezonu (z opisu serialu). */
     private val adresyZajawek = HashMap<String, String>()
     private suspend fun adresZajawki(v: Vod): String? {
-        if (v.rodzaj == "f") return Serwer.adresFilmu(this, v.id, v.ext)
         adresyZajawek[v.id]?.let { return it }
+        if (v.rodzaj == "f" && Zajawki.zwiastunNajpierw(this)) {
+            val z = withContext(Dispatchers.IO) { try { Dodatki.zwiastunItunes(v.nazwa) } catch (e: Exception) { "" } }
+            if (z.isNotEmpty()) { adresyZajawek[v.id] = z; return z }
+        }
+        if (v.rodzaj == "f") return Serwer.adresFilmu(this, v.id, v.ext)
         val o = withContext(Dispatchers.IO) { Serwer.infoZPamieci(this@StartActivity, true, v.id) ?: Serwer.infoSerialu(this@StartActivity, v.id) } ?: return null
         val ep = o.optJSONObject("episodes") ?: return null
         val sez = ep.keys().asSequence().toList().minByOrNull { it.toIntOrNull() ?: 999 } ?: return null
@@ -677,7 +681,7 @@ class StartActivity : AppCompatActivity() {
                             if (st == androidx.media3.common.Player.STATE_READY && !przewiniete) {
                                 przewiniete = true
                                 val d = duration
-                                if (d > 120_000) seekTo((d * (0.15 + Math.random() * 0.55)).toLong())
+                                if (d > 600_000) seekTo((d * (0.15 + Math.random() * 0.55)).toLong())
                                 playWhenReady = true
                                 karta.postDelayed({ if (i == n && zwiastun != null) zwiastunWidok.animate().alpha(0f).setDuration(900).withEndAction { stopZwiastun() }.start() }, czasZajawki("czas_baner", 30) * 1000L)
                             }
@@ -688,8 +692,8 @@ class StartActivity : AppCompatActivity() {
                 zwiastunWidok.player = zwiastun
                 val tenGracz = zwiastun
                 karta.postDelayed({ if (zwiastun === tenGracz && zwiastunWidok.alpha == 0f) {
-                    android.widget.Toast.makeText(this@StartActivity, "Zajawka (baner): film nie ruszył w 25 s", android.widget.Toast.LENGTH_LONG).show()
-                    kotlin.concurrent.thread { Serwer.raport(this@StartActivity, "zajawka baner: timeout 25s") }; stopZwiastun() } }, 25_000)
+                    android.widget.Toast.makeText(this@StartActivity, "Zajawka (baner): film nie ruszył w 15 s", android.widget.Toast.LENGTH_LONG).show()
+                    kotlin.concurrent.thread { Serwer.raport(this@StartActivity, "zajawka baner: timeout 15s") }; stopZwiastun() } }, 15_000)
                 }
             }, 3000)
             nowy.alpha = 0f; nowy.scaleX = 1f; nowy.scaleY = 1f; nowy.translationX = 0f

@@ -71,7 +71,9 @@ class DetaleActivity : AppCompatActivity() {
         ramaPlakatu.addView(zajawkaWidok, FrameLayout.LayoutParams(-1, -1))
         ramaPlakatu.addView(android.view.View(this).apply { background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(0x00000000, 0x00000000, 0xAA000000.toInt())) }, FrameLayout.LayoutParams(-1, -1))
         kol.addView(ramaPlakatu, LinearLayout.LayoutParams(-1, dp(420)))
-        if (!serial) ramaPlakatu.postDelayed({ startZajawki(Serwer.adresFilmu(this, intent.getStringExtra("id") ?: "", intent.getStringExtra("ext") ?: "mp4")) }, 2500)
+        if (!serial) ramaPlakatu.postDelayed({ lifecycleScope.launch {
+            val z = if (Zajawki.zwiastunNajpierw(this@DetaleActivity)) withContext(Dispatchers.IO) { try { Dodatki.zwiastunItunes(nazwa) } catch (e: Exception) { "" } } else ""
+            startZajawki(z.ifEmpty { Serwer.adresFilmu(this@DetaleActivity, intent.getStringExtra("id") ?: "", intent.getStringExtra("ext") ?: "mp4") }) } }, 2500)
         kol.addView(tekst(nazwa, 24f, g = true).apply { gravity = Gravity.CENTER; setPadding(dp(16), dp(14), dp(16), dp(6)) })
         val meta = tekst("", 16f, 0xFFE6E6E6.toInt()).apply { gravity = Gravity.CENTER }
         kol.addView(meta)
@@ -359,7 +361,7 @@ class DetaleActivity : AppCompatActivity() {
             setMediaItem(androidx.media3.common.MediaItem.fromUri(url)); prepare()
             addListener(object : androidx.media3.common.Player.Listener {
                 override fun onPlaybackStateChanged(st: Int) { if (st == androidx.media3.common.Player.STATE_READY && !gotowe) { gotowe = true
-                    if (duration > 120_000) seekTo((duration * (0.15 + Math.random() * 0.55)).toLong()); playWhenReady = true } }
+                    if (duration > 600_000) seekTo((duration * (0.15 + Math.random() * 0.55)).toLong()); playWhenReady = true } }
                 override fun onIsPlayingChanged(gra: Boolean) { if (gra && pv.alpha == 0f) pv.animate().alpha(1f).setStartDelay(250).setDuration(900).start() }
                 override fun onPlayerError(e: androidx.media3.common.PlaybackException) {
                     stopZajawki()

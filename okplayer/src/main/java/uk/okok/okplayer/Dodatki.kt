@@ -276,6 +276,8 @@ object Dodatki {
 
 /** 2.26: wspolny odtwarzacz zajawek (jak glowny: VLC user-agent, przekierowania http<->https). */
 object Zajawki {
+    /** 2.32: zrodlo zajawki z panelu: "zwiastun" (domyslnie - oficjalny zwiastun, nie zajmuje polaczenia u dostawcy) albo "fragment" (kawalek filmu). */
+    fun zwiastunNajpierw(c: android.content.Context) = (Ust.panelS(c, "zrodlo_zajawki") ?: "zwiastun") != "fragment"
     /** 2.27: opis bledu zajawki (do napisu na ekranie i raportu na serwer). */
     fun opis(e: androidx.media3.common.PlaybackException): String {
         var c: Throwable? = e.cause; var kod = ""
