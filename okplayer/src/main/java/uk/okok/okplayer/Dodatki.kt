@@ -290,7 +290,8 @@ object Zajawki {
         settings.javaScriptEnabled = true; settings.mediaPlaybackRequiresUserGesture = false; settings.domStorageEnabled = true
     }
     fun grajYoutube(w: android.webkit.WebView, id: String) {
-        val u = "https://www.youtube.com/embed/$id?autoplay=1&mute=1&controls=0&loop=1&playlist=$id&playsinline=1&modestbranding=1&rel=0&iv_load_policy=3&disablekb=1&fs=0&start=4"
+        val wycisz = if (zDzwiekiem(w.context)) 0 else 1
+        val u = "https://www.youtube.com/embed/$id?autoplay=1&mute=$wycisz&controls=0&loop=1&playlist=$id&playsinline=1&modestbranding=1&rel=0&iv_load_policy=3&disablekb=1&fs=0&start=4"
         val html = "<html><head><meta name='viewport' content='width=device-width,initial-scale=1'><style>html,body{margin:0;height:100%;overflow:hidden;background:transparent}" +
             "iframe{position:absolute;top:50%;left:50%;width:177.78vh;height:56.25vw;min-width:100vw;min-height:100vh;transform:translate(-50%,-50%) scale(1.15);border:0;pointer-events:none}</style></head>" +
             "<body><iframe src='$u' allow='autoplay; encrypted-media' referrerpolicy='strict-origin-when-cross-origin'></iframe></body></html>"
@@ -300,7 +301,11 @@ object Zajawki {
     }
     fun zatrzymaj(w: android.webkit.WebView?) { w ?: return; w.animate().cancel(); w.alpha = 0f; w.loadUrl("about:blank") }
     /** 2.32: zrodlo zajawki z panelu: "zwiastun" (domyslnie - oficjalny zwiastun, nie zajmuje polaczenia u dostawcy) albo "fragment" (kawalek filmu). */
-    fun zwiastunNajpierw(c: android.content.Context) = (Ust.panelS(c, "zrodlo_zajawki") ?: "zwiastun") != "fragment"
+    // 2.35: domyslnie fragment z samego filmu (z lektorem jak film), zwiastun YouTube jako zapas
+    fun zwiastunNajpierw(c: android.content.Context) = (Ust.panelS(c, "zrodlo_zajawki") ?: "fragment") == "zwiastun"
+    /** Dzwiek zajawek z panelu (domyslnie wylaczony). */
+    fun zDzwiekiem(c: android.content.Context) = Ust.panelB(c, "dzwiek_zajawek") == true
+    fun glosnosc(c: android.content.Context) = if (zDzwiekiem(c)) 0.7f else 0f
     /** 2.27: opis bledu zajawki (do napisu na ekranie i raportu na serwer). */
     fun opis(e: androidx.media3.common.PlaybackException): String {
         var c: Throwable? = e.cause; var kod = ""

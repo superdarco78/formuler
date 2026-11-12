@@ -362,7 +362,7 @@ class DetaleActivity : AppCompatActivity() {
         val pv = zajawkaWidok ?: return
         var gotowe = false
         zajawka = Zajawki.gracz(this).apply {
-            volume = 0f; repeatMode = androidx.media3.common.Player.REPEAT_MODE_ONE
+            volume = Zajawki.glosnosc(this@DetaleActivity); repeatMode = androidx.media3.common.Player.REPEAT_MODE_ONE
             setMediaItem(androidx.media3.common.MediaItem.fromUri(url)); prepare()
             addListener(object : androidx.media3.common.Player.Listener {
                 override fun onPlaybackStateChanged(st: Int) { if (st == androidx.media3.common.Player.STATE_READY && !gotowe) { gotowe = true
@@ -371,10 +371,16 @@ class DetaleActivity : AppCompatActivity() {
                 override fun onPlayerError(e: androidx.media3.common.PlaybackException) {
                     stopZajawki()
                     // 2.30: limit polaczen - poprzednie polaczenie (baner) jeszcze trzyma serwer; ponow za 6 s, do 4 razy
-                    if (Zajawki.limit(e) && probyZajawki < 6 && !isFinishing) { probyZajawki++; zajawkaBylo = false; zajawkaWidok?.postDelayed({ if (!isFinishing && zajawka == null) startZajawki(url) }, 5000) }
-                    else Zajawki.zglos(this@DetaleActivity, "film", e) } })
+                    Zajawki.zglos(this@DetaleActivity, "film", e)
+                    // 2.35: fragment filmu nie ruszyl - od razu zwiastun z YouTube
+                    if (!isFinishing) lifecycleScope.launch { val z = withContext(Dispatchers.IO) { try { Zajawki.szukaj(intent.getStringExtra("nazwa") ?: "") } catch (x: Exception) { "" } }
+                        if (z.startsWith("yt:") && !isFinishing) { zajawkaBylo = false; startZajawki(z) } } } })
         }
         pv.player = zajawka
+        val ten = zajawka
+        pv.postDelayed({ if (zajawka === ten && pv.alpha == 0f && !isFinishing) { stopZajawki()
+            lifecycleScope.launch { val z = withContext(Dispatchers.IO) { try { Zajawki.szukaj(intent.getStringExtra("nazwa") ?: "") } catch (x: Exception) { "" } }
+                if (z.startsWith("yt:") && !isFinishing) { zajawkaBylo = false; startZajawki(z) } } } }, 12_000)
     }
     private fun stopZajawki() { Zajawki.zatrzymaj(ytOkno); zajawkaWidok?.animate()?.cancel(); zajawkaWidok?.alpha = 0f; zajawkaWidok?.player = null; zajawka?.release(); zajawka = null }
     override fun onPause() { stopZajawki(); zajawkaBylo = false; super.onPause() }

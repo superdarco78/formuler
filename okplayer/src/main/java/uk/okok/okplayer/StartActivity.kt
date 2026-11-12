@@ -349,7 +349,7 @@ class StartActivity : AppCompatActivity() {
             podgladWidok = pv
             var gotowe = false
             podgladGracz = graczZajawki().apply {
-                volume = 0f; setMediaItem(androidx.media3.common.MediaItem.fromUri(adr)); prepare()
+                volume = Zajawki.glosnosc(this@StartActivity); setMediaItem(androidx.media3.common.MediaItem.fromUri(adr)); prepare()
                 addListener(object : androidx.media3.common.Player.Listener {
                     override fun onPlaybackStateChanged(st: Int) {
                         if (st == androidx.media3.common.Player.STATE_READY && !gotowe) { gotowe = true
@@ -357,7 +357,9 @@ class StartActivity : AppCompatActivity() {
                             podgladH.postDelayed({ pv.animate().alpha(0f).setDuration(700).withEndAction { stopPodglad() }.start() }, czasZajawki("czas_plakat", 30) * 1000L) }
                     }
                     override fun onIsPlayingChanged(gra: Boolean) { if (gra && pv.alpha == 0f) pv.animate().alpha(1f).setStartDelay(250).setDuration(700).start() }
-                    override fun onPlayerError(e: androidx.media3.common.PlaybackException) { val lim = Zajawki.limit(e); if (!lim) Zajawki.zglos(this@StartActivity, "plakat", e); stopPodglad()
+                    override fun onPlayerError(e: androidx.media3.common.PlaybackException) { val lim = Zajawki.limit(e); Zajawki.zglos(this@StartActivity, "plakat", e); stopPodglad()
+                        if (!adr.startsWith("yt:")) { lifecycleScope.launch { val z = withContext(Dispatchers.IO) { try { Zajawki.szukaj(v.nazwa) } catch (x: Exception) { "" } }
+                            if (z.startsWith("yt:") && kont.isAttachedToWindow && podgladGracz == null && podgladWidok == null) { adresyZajawek[v.id] = z; podglad(kont, lp, v, 9) } }; return }
                         // 2.31: limit polaczen - jeszcze raz za 6 s, jesli plakat dalej na ekranie
                         if (lim && kont.isAttachedToWindow && proba < 3) kont.postDelayed({ if (kont.isAttachedToWindow && podgladGracz == null) podglad(kont, lp, v, proba + 1) }, 6000) } })
             }
@@ -679,12 +681,16 @@ class StartActivity : AppCompatActivity() {
                 lifecycleScope.launch {
                 val adr = adresZajawki(v) ?: return@launch
                 if (i != n || !karta.isAttachedToWindow || podgladGracz != null) return@launch
-                if (adr.startsWith("yt:")) { ytAktywny = true; Zajawki.grajYoutube(ytOkno, adr.removePrefix("yt:"))
-                    karta.postDelayed({ if (i == n && ytAktywny) ytOkno.animate().alpha(0f).setDuration(900).withEndAction { stopZwiastun() }.start() }, czasZajawki("czas_baner", 40) * 1000L + 3500L)
-                    return@launch }
+                fun grajYt(id: String) { ytAktywny = true; Zajawki.grajYoutube(ytOkno, id)
+                    karta.postDelayed({ if (i == n && ytAktywny) ytOkno.animate().alpha(0f).setDuration(900).withEndAction { stopZwiastun() }.start() }, czasZajawki("czas_baner", 40) * 1000L + 3500L) }
+                // 2.35: gdy fragment filmu nie ruszy (limit polaczen) - od razu zwiastun z YouTube
+                fun zapas() { if (i != n || !karta.isAttachedToWindow || ytAktywny) return; czekajDo = System.currentTimeMillis() + 8000
+                    lifecycleScope.launch { val z = withContext(Dispatchers.IO) { try { Zajawki.szukaj(v.nazwa) } catch (x: Exception) { "" } }
+                        if (i == n && karta.isAttachedToWindow && zwiastun == null && !ytAktywny && z.startsWith("yt:")) grajYt(z.removePrefix("yt:")) } }
+                if (adr.startsWith("yt:")) { grajYt(adr.removePrefix("yt:")); return@launch }
                 var przewiniete = false
                 zwiastun = graczZajawki().apply {
-                    volume = 0f
+                    volume = Zajawki.glosnosc(this@StartActivity)
                     setMediaItem(androidx.media3.common.MediaItem.fromUri(adr)); prepare(); playWhenReady = false
                     addListener(object : androidx.media3.common.Player.Listener {
                         override fun onPlaybackStateChanged(st: Int) {
@@ -697,12 +703,12 @@ class StartActivity : AppCompatActivity() {
                             }
                         }
                         override fun onIsPlayingChanged(gra: Boolean) { if (gra && przewiniete && zwiastunWidok.alpha == 0f) zwiastunWidok.animate().alpha(1f).setStartDelay(300).setDuration(900).start() }
-                        override fun onPlayerError(e: androidx.media3.common.PlaybackException) { if (!Zajawki.limit(e)) Zajawki.zglos(this@StartActivity, "baner", e); stopZwiastun() } })
+                        override fun onPlayerError(e: androidx.media3.common.PlaybackException) { Zajawki.zglos(this@StartActivity, "baner", e); stopZwiastun(); zapas() } })
                 }
                 zwiastunWidok.player = zwiastun
                 val tenGracz = zwiastun
                 karta.postDelayed({ if (zwiastun === tenGracz && zwiastunWidok.alpha == 0f) {
-                    kotlin.concurrent.thread { Serwer.raport(this@StartActivity, "zajawka baner: timeout 15s") }; stopZwiastun() } }, 15_000)
+                    kotlin.concurrent.thread { Serwer.raport(this@StartActivity, "zajawka baner: timeout 12s") }; stopZwiastun(); zapas() } }, 12_000)
                 }
             }, 3000)
             nowy.alpha = 0f; nowy.scaleX = 1f; nowy.scaleY = 1f; nowy.translationX = 0f
