@@ -324,7 +324,7 @@ class StartActivity : AppCompatActivity() {
     private val podgladH = android.os.Handler(android.os.Looper.getMainLooper())
     private fun stopPodglad() {
         podgladH.removeCallbacksAndMessages(null)
-        podgladWidok?.let { (it.parent as? ViewGroup)?.removeView(it) }; podgladWidok = null
+        podgladWidok?.let { (it as? android.webkit.WebView)?.let { w -> Zajawki.zatrzymaj(w); w.destroy() }; (it.parent as? ViewGroup)?.removeView(it) }; podgladWidok = null
         podgladGracz?.release(); podgladGracz = null
     }
     private fun podglad(kont: FrameLayout, lp: FrameLayout.LayoutParams, v: Vod, proba: Int = 0) {
@@ -333,6 +333,12 @@ class StartActivity : AppCompatActivity() {
         podgladH.postDelayed({ lifecycleScope.launch {
             val adr = adresZajawki(v) ?: return@launch
             if (!kont.isAttachedToWindow) return@launch
+            if (adr.startsWith("yt:")) { stopBaner?.invoke()
+                val w = Zajawki.okno(this@StartActivity).apply { clipToOutline = true; outlineProvider = object : android.view.ViewOutlineProvider() {
+                    override fun getOutline(x: View, o: android.graphics.Outline) { o.setRoundRect(0, 0, x.width, x.height, dp(8).toFloat()) } } }
+                kont.addView(w, FrameLayout.LayoutParams(lp)); podgladWidok = w; Zajawki.grajYoutube(w, adr.removePrefix("yt:"))
+                podgladH.postDelayed({ w.animate().alpha(0f).setDuration(700).withEndAction { stopPodglad() }.start() }, czasZajawki("czas_plakat", 30) * 1000L + 3500L)
+                return@launch }
             stopBaner?.invoke()
             val pv = (layoutInflater.inflate(R.layout.mini_gracz, null) as androidx.media3.ui.PlayerView).apply {
                 useController = false; resizeMode = androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_ZOOM; alpha = 0f
@@ -367,8 +373,8 @@ class StartActivity : AppCompatActivity() {
     private val adresyZajawek = HashMap<String, String>()
     private suspend fun adresZajawki(v: Vod): String? {
         adresyZajawek[v.id]?.let { return it }
-        if (v.rodzaj == "f" && Zajawki.zwiastunNajpierw(this)) {
-            val z = withContext(Dispatchers.IO) { try { Dodatki.zwiastunItunes(v.nazwa) } catch (e: Exception) { "" } }
+        if (Zajawki.zwiastunNajpierw(this)) {
+            val z = withContext(Dispatchers.IO) { try { Zajawki.szukaj(v.nazwa) } catch (e: Exception) { "" } }
             if (z.isNotEmpty()) { adresyZajawek[v.id] = z; return z }
         }
         if (v.rodzaj == "f") return Serwer.adresFilmu(this, v.id, v.ext)
@@ -643,8 +649,9 @@ class StartActivity : AppCompatActivity() {
         val zwiastunWidok = (layoutInflater.inflate(R.layout.mini_gracz, null) as androidx.media3.ui.PlayerView).apply {
             useController = false; resizeMode = androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_ZOOM; alpha = 0f; setShutterBackgroundColor(Color.TRANSPARENT) }
         karta.addView(zwiastunWidok, FrameLayout.LayoutParams(-1, -1))
+        val ytOkno = Zajawki.okno(this); karta.addView(ytOkno, FrameLayout.LayoutParams(-1, -1)); var ytAktywny = false
         var zwiastun: androidx.media3.exoplayer.ExoPlayer? = null
-        fun stopZwiastun() { zwiastunWidok.animate().cancel(); zwiastunWidok.alpha = 0f; zwiastunWidok.player = null; zwiastun?.release(); zwiastun = null }
+        fun stopZwiastun() { zwiastunWidok.animate().cancel(); zwiastunWidok.alpha = 0f; zwiastunWidok.player = null; zwiastun?.release(); zwiastun = null; if (ytAktywny) Zajawki.zatrzymaj(ytOkno); ytAktywny = false }
         stopBaner = { stopZwiastun() }
         karta.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
             override fun onViewAttachedToWindow(v: View) {}
@@ -672,6 +679,9 @@ class StartActivity : AppCompatActivity() {
                 lifecycleScope.launch {
                 val adr = adresZajawki(v) ?: return@launch
                 if (i != n || !karta.isAttachedToWindow || podgladGracz != null) return@launch
+                if (adr.startsWith("yt:")) { ytAktywny = true; Zajawki.grajYoutube(ytOkno, adr.removePrefix("yt:"))
+                    karta.postDelayed({ if (i == n && ytAktywny) ytOkno.animate().alpha(0f).setDuration(900).withEndAction { stopZwiastun() }.start() }, czasZajawki("czas_baner", 40) * 1000L + 3500L)
+                    return@launch }
                 var przewiniete = false
                 zwiastun = graczZajawki().apply {
                     volume = 0f
@@ -726,7 +736,7 @@ class StartActivity : AppCompatActivity() {
         pokazNr(0, false)
         // 2.28: baner nie przeskakuje, dopoki laduje sie albo gra zajawka (wczesniej przeskakiwal po 7-9 s, zanim zajawka zdazyla ruszyc)
         val zmiana = object : Runnable { override fun run() { if (!karta.isAttachedToWindow) return
-            if (zwiastun != null || System.currentTimeMillis() < czekajDo) { karta.postDelayed(this, 1000); return }
+            if (zwiastun != null || ytAktywny || System.currentTimeMillis() < czekajDo) { karta.postDelayed(this, 1000); return }
             i = (i + 1) % l.size; pokazNr(i, true); karta.postDelayed(this, czasZajawki("czas_plakatu_banera", 9) * 1000L) } }
         karta.postDelayed(zmiana, czasZajawki("czas_plakatu_banera", 9) * 1000L)
         karta.setOnClickListener { otworz(l[i], karta) }

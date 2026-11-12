@@ -276,6 +276,29 @@ object Dodatki {
 
 /** 2.26: wspolny odtwarzacz zajawek (jak glowny: VLC user-agent, przekierowania http<->https). */
 object Zajawki {
+    /** 2.34: zwiastun z YouTube (wiekszosc filmow ma polski zwiastun) - grany bez dzwieku w przezroczystym oknie WWW nad plakatem. */
+    fun szukaj(tytul: String): String {
+        val t = tytul.replace(Regex("\\s*\\(\\d{4}\\).*$"), "").replace(Regex("^[A-Z]{2,3}\\s*[-|:]\\s*"), "").trim()
+        val rok = Regex("\\((\\d{4})\\)").find(tytul)?.groupValues?.get(1) ?: ""
+        // najpierw polski zwiastun z YouTube, potem iTunes
+        return Dodatki.szukajZwiastuna("$t $rok".trim()).let { if (it.isNotEmpty()) "yt:$it" else "" }.ifEmpty { try { Dodatki.zwiastunItunes(tytul) } catch (e: Exception) { "" } }
+    }
+    @android.annotation.SuppressLint("SetJavaScriptEnabled")
+    fun okno(c: android.content.Context) = android.webkit.WebView(c).apply {
+        setBackgroundColor(android.graphics.Color.TRANSPARENT); alpha = 0f; isFocusable = false; isClickable = false
+        setOnTouchListener { _, _ -> true }
+        settings.javaScriptEnabled = true; settings.mediaPlaybackRequiresUserGesture = false; settings.domStorageEnabled = true
+    }
+    fun grajYoutube(w: android.webkit.WebView, id: String) {
+        val u = "https://www.youtube.com/embed/$id?autoplay=1&mute=1&controls=0&loop=1&playlist=$id&playsinline=1&modestbranding=1&rel=0&iv_load_policy=3&disablekb=1&fs=0&start=4"
+        val html = "<html><head><meta name='viewport' content='width=device-width,initial-scale=1'><style>html,body{margin:0;height:100%;overflow:hidden;background:transparent}" +
+            "iframe{position:absolute;top:50%;left:50%;width:177.78vh;height:56.25vw;min-width:100vw;min-height:100vh;transform:translate(-50%,-50%) scale(1.15);border:0;pointer-events:none}</style></head>" +
+            "<body><iframe src='$u' allow='autoplay; encrypted-media' referrerpolicy='strict-origin-when-cross-origin'></iframe></body></html>"
+        w.loadDataWithBaseURL("https://ok-ok.uk/", html, "text/html", "utf-8", null)
+        w.animate().cancel(); w.alpha = 0f
+        w.animate().alpha(1f).setStartDelay(3500).setDuration(900).start()
+    }
+    fun zatrzymaj(w: android.webkit.WebView?) { w ?: return; w.animate().cancel(); w.alpha = 0f; w.loadUrl("about:blank") }
     /** 2.32: zrodlo zajawki z panelu: "zwiastun" (domyslnie - oficjalny zwiastun, nie zajmuje polaczenia u dostawcy) albo "fragment" (kawalek filmu). */
     fun zwiastunNajpierw(c: android.content.Context) = (Ust.panelS(c, "zrodlo_zajawki") ?: "zwiastun") != "fragment"
     /** 2.27: opis bledu zajawki (do napisu na ekranie i raportu na serwer). */

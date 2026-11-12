@@ -69,10 +69,11 @@ class DetaleActivity : AppCompatActivity() {
         zajawkaWidok = (layoutInflater.inflate(R.layout.mini_gracz, null) as androidx.media3.ui.PlayerView).apply {
             useController = false; resizeMode = androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_ZOOM; alpha = 0f; setShutterBackgroundColor(Color.TRANSPARENT); isClickable = false }
         ramaPlakatu.addView(zajawkaWidok, FrameLayout.LayoutParams(-1, -1))
+        ytOkno = Zajawki.okno(this); ramaPlakatu.addView(ytOkno, FrameLayout.LayoutParams(-1, -1))
         ramaPlakatu.addView(android.view.View(this).apply { background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(0x00000000, 0x00000000, 0xAA000000.toInt())) }, FrameLayout.LayoutParams(-1, -1))
         kol.addView(ramaPlakatu, LinearLayout.LayoutParams(-1, dp(420)))
         if (!serial) ramaPlakatu.postDelayed({ lifecycleScope.launch {
-            val z = if (Zajawki.zwiastunNajpierw(this@DetaleActivity)) withContext(Dispatchers.IO) { try { Dodatki.zwiastunItunes(nazwa) } catch (e: Exception) { "" } } else ""
+            val z = if (Zajawki.zwiastunNajpierw(this@DetaleActivity)) withContext(Dispatchers.IO) { try { Zajawki.szukaj(nazwa) } catch (e: Exception) { "" } } else ""
             startZajawki(z.ifEmpty { Serwer.adresFilmu(this@DetaleActivity, intent.getStringExtra("id") ?: "", intent.getStringExtra("ext") ?: "mp4") }) } }, 2500)
         kol.addView(tekst(nazwa, 24f, g = true).apply { gravity = Gravity.CENTER; setPadding(dp(16), dp(14), dp(16), dp(6)) })
         val meta = tekst("", 16f, 0xFFE6E6E6.toInt()).apply { gravity = Gravity.CENTER }
@@ -183,7 +184,9 @@ class DetaleActivity : AppCompatActivity() {
                 val ost = Ust.ostatniOdcinek(this@DetaleActivity, id).split("|")
                 sezon = odcinki.indexOfFirst { it.first == ost.getOrNull(0) }.coerceAtLeast(0)
                 odcinki.firstOrNull()?.second?.firstOrNull()?.let { e -> e.optString("id").takeIf { it.isNotEmpty() }?.let { eid ->
-                    kol.postDelayed({ startZajawki(Serwer.adresOdcinka(this@DetaleActivity, eid, e.optString("container_extension").ifEmpty { "mp4" })) }, 1500) } }
+                    kol.postDelayed({ lifecycleScope.launch {
+                        val z = if (Zajawki.zwiastunNajpierw(this@DetaleActivity)) withContext(Dispatchers.IO) { try { Zajawki.szukaj(nazwa + " serial") } catch (x: Exception) { "" } } else ""
+                        startZajawki(z.ifEmpty { Serwer.adresOdcinka(this@DetaleActivity, eid, e.optString("container_extension").ifEmpty { "mp4" }) }) } }, 1500) } }
                 pokazSezon(id, nazwa); ustawPrzycisk(id)
             }
             fun t(k: String) = i.optString(k).takeIf { it.isNotEmpty() && it != "null" } ?: ""
@@ -351,9 +354,11 @@ class DetaleActivity : AppCompatActivity() {
     private var zajawka: androidx.media3.exoplayer.ExoPlayer? = null
     private var zajawkaBylo = false
     private var probyZajawki = 0
+    private var ytOkno: android.webkit.WebView? = null
     private fun startZajawki(url: String) {
         if (zajawkaBylo || isFinishing || (Ust.panelB(this, "ef_detale_zajawka") ?: true).not()) return
         zajawkaBylo = true
+        if (url.startsWith("yt:")) { ytOkno?.let { Zajawki.grajYoutube(it, url.removePrefix("yt:")) }; return }
         val pv = zajawkaWidok ?: return
         var gotowe = false
         zajawka = Zajawki.gracz(this).apply {
@@ -371,7 +376,7 @@ class DetaleActivity : AppCompatActivity() {
         }
         pv.player = zajawka
     }
-    private fun stopZajawki() { zajawkaWidok?.animate()?.cancel(); zajawkaWidok?.alpha = 0f; zajawkaWidok?.player = null; zajawka?.release(); zajawka = null }
+    private fun stopZajawki() { Zajawki.zatrzymaj(ytOkno); zajawkaWidok?.animate()?.cancel(); zajawkaWidok?.alpha = 0f; zajawkaWidok?.player = null; zajawka?.release(); zajawka = null }
     override fun onPause() { stopZajawki(); zajawkaBylo = false; super.onPause() }
 
     private fun ustawPrzycisk(serialId: String) {

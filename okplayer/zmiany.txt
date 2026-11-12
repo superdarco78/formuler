@@ -1,3 +1,4 @@
+Zajawki z YouTube|zwiastuny tylko z iTunes – większości filmów tam nie ma, więc zajawki nie było|zajawka to polski zwiastun z YouTube (bez dźwięku), gdy go brak – iTunes; działa na banerze, plakatach i w ekranie filmu
 Bez komunikatów o błędach|na ekranie wyskakiwały napisy „Zajawka (…)”|żadnych napisów – gdy zajawka nie ruszy, baner po cichu idzie do następnego filmu; zajawka gra 40 s
 Zajawki ze zwiastunów|zajawka brała fragment filmu i blokował ją limit połączeń dostawcy (HTTP 413)|zajawka to oficjalny zwiastun filmu – nie zajmuje połączenia, rusza od razu; gdy zwiastunu nie ma – fragment filmu (wybór w panelu)
 Ponawianie zajawek|zajawka na plakacie przy limicie połączeń znikała|zajawki na plakatach i w ekranie filmu same ponawiają próbę, aż serwer zwolni połączenie
