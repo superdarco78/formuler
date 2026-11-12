@@ -327,7 +327,7 @@ class StartActivity : AppCompatActivity() {
         podgladWidok?.let { (it.parent as? ViewGroup)?.removeView(it) }; podgladWidok = null
         podgladGracz?.release(); podgladGracz = null
     }
-    private fun podglad(kont: FrameLayout, lp: FrameLayout.LayoutParams, v: Vod) {
+    private fun podglad(kont: FrameLayout, lp: FrameLayout.LayoutParams, v: Vod, proba: Int = 0) {
         if (!ef("ef_rzad_zajawka")) return
         stopPodglad()
         podgladH.postDelayed({ lifecycleScope.launch {
@@ -351,7 +351,9 @@ class StartActivity : AppCompatActivity() {
                             podgladH.postDelayed({ pv.animate().alpha(0f).setDuration(700).withEndAction { stopPodglad() }.start() }, czasZajawki("czas_plakat", 30) * 1000L) }
                     }
                     override fun onIsPlayingChanged(gra: Boolean) { if (gra && pv.alpha == 0f) pv.animate().alpha(1f).setStartDelay(250).setDuration(700).start() }
-                    override fun onPlayerError(e: androidx.media3.common.PlaybackException) { if (!Zajawki.limit(e)) Zajawki.zglos(this@StartActivity, "plakat", e); stopPodglad() } })
+                    override fun onPlayerError(e: androidx.media3.common.PlaybackException) { val lim = Zajawki.limit(e); if (!lim) Zajawki.zglos(this@StartActivity, "plakat", e); stopPodglad()
+                        // 2.31: limit polaczen - jeszcze raz za 6 s, jesli plakat dalej na ekranie
+                        if (lim && kont.isAttachedToWindow && proba < 3) kont.postDelayed({ if (kont.isAttachedToWindow && podgladGracz == null) podglad(kont, lp, v, proba + 1) }, 6000) } })
             }
             pv.player = podgladGracz
         } }, 1500)

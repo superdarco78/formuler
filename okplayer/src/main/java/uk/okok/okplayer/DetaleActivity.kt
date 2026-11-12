@@ -364,7 +364,7 @@ class DetaleActivity : AppCompatActivity() {
                 override fun onPlayerError(e: androidx.media3.common.PlaybackException) {
                     stopZajawki()
                     // 2.30: limit polaczen - poprzednie polaczenie (baner) jeszcze trzyma serwer; ponow za 6 s, do 4 razy
-                    if (Zajawki.limit(e) && probyZajawki < 4 && !isFinishing) { probyZajawki++; zajawkaBylo = false; zajawkaWidok?.postDelayed({ if (!isFinishing && zajawka == null) startZajawki(url) }, 6000) }
+                    if (Zajawki.limit(e) && probyZajawki < 6 && !isFinishing) { probyZajawki++; zajawkaBylo = false; zajawkaWidok?.postDelayed({ if (!isFinishing && zajawka == null) startZajawki(url) }, 5000) }
                     else Zajawki.zglos(this@DetaleActivity, "film", e) } })
         }
         pv.player = zajawka
