@@ -303,7 +303,8 @@ object Zajawki {
     /** 2.32: zrodlo zajawki z panelu: "zwiastun" (domyslnie - oficjalny zwiastun, nie zajmuje polaczenia u dostawcy) albo "fragment" (kawalek filmu). */
     // 2.35: domyslnie fragment z samego filmu (z lektorem jak film), zwiastun YouTube jako zapas
     // 2.38: domyslnie zwiastun (fragmenty z filmu dostawca odrzuca - limit polaczen); fragment do wlaczenia w panelu
-    fun zwiastunNajpierw(c: android.content.Context) = (Ust.panelS(c, "zrodlo_zajawki") ?: "zwiastun") != "fragment"
+    // 2.39: domyslnie fragment z linii dostawcy (z lektorem), zapas: zwiastun YouTube
+    fun zwiastunNajpierw(c: android.content.Context) = (Ust.panelS(c, "zrodlo_zajawki") ?: "fragment") == "zwiastun"
     /** Dzwiek zajawek z panelu (domyslnie wlaczony). */
     fun zDzwiekiem(c: android.content.Context) = Ust.panelB(c, "dzwiek_zajawek") ?: true
     fun glosnosc(c: android.content.Context) = if (zDzwiekiem(c)) 0.7f else 0f
@@ -320,8 +321,12 @@ object Zajawki {
         kotlin.concurrent.thread { Serwer.raport(c, "zajawka $gdzie: $t") }
         // 2.33: bez komunikatow na ekranie - tylko raport na serwer
     }
+    /** 2.39: linia z limitem 1 polaczenia - dostawca chwile trzyma poprzednie polaczenie, wiec kazde zapytanie ponawiamy cierpliwie (12 razy co 1,5 s) zamiast sie poddac. */
     fun gracz(c: android.content.Context) = androidx.media3.exoplayer.ExoPlayer.Builder(c)
         .setMediaSourceFactory(androidx.media3.exoplayer.source.DefaultMediaSourceFactory(
             androidx.media3.datasource.DefaultHttpDataSource.Factory().setUserAgent("VLC/3.0.20 LibVLC/3.0.20").setAllowCrossProtocolRedirects(true)
-                .setConnectTimeoutMs(8000).setReadTimeoutMs(12000))).build()
+                .setConnectTimeoutMs(8000).setReadTimeoutMs(12000))
+            .setLoadErrorHandlingPolicy(object : androidx.media3.exoplayer.upstream.DefaultLoadErrorHandlingPolicy(12) {
+                override fun getRetryDelayMsFor(info: androidx.media3.exoplayer.upstream.LoadErrorHandlingPolicy.LoadErrorInfo) = 1500L }))
+        .setLoadControl(androidx.media3.exoplayer.DefaultLoadControl.Builder().setBufferDurationsMs(4000, 15000, 1500, 2000).build()).build()
 }

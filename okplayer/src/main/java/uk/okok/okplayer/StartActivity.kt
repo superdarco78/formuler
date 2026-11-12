@@ -367,48 +367,7 @@ class StartActivity : AppCompatActivity() {
         } }, 1500)
     }
     /** 2.22: odtwarzacz zajawek jak glowny (VLC user-agent, przekierowania http<->https) - bez tego serwer nie oddawal filmu. */
-    private fun graczZajawki() = androidx.media3.exoplayer.ExoPlayer.Builder(this)
-        .setMediaSourceFactory(androidx.media3.exoplayer.source.DefaultMediaSourceFactory(
-            androidx.media3.datasource.DefaultHttpDataSource.Factory().setUserAgent("VLC/3.0.20 LibVLC/3.0.20").setAllowCrossProtocolRedirects(true)
-                .setConnectTimeoutMs(8000).setReadTimeoutMs(12000))).build()
-    /** 2.21: adres zajawki - film wprost, serial: pierwszy odcinek pierwszego sezonu (z opisu serialu). */
-    private val adresyZajawek = HashMap<String, String>()
-    private suspend fun adresZajawki(v: Vod): String? {
-        adresyZajawek[v.id]?.let { return it }
-        if (Zajawki.zwiastunNajpierw(this)) {
-            val z = withContext(Dispatchers.IO) { try { Zajawki.szukaj(v.nazwa) } catch (e: Exception) { "" } }
-            if (z.isNotEmpty()) { adresyZajawek[v.id] = z; return z }
-        }
-        if (v.rodzaj == "f") return Serwer.adresFilmu(this, v.id, v.ext)
-        val o = withContext(Dispatchers.IO) { Serwer.infoZPamieci(this@StartActivity, true, v.id) ?: Serwer.infoSerialu(this@StartActivity, v.id) } ?: return null
-        val ep = o.optJSONObject("episodes") ?: return null
-        val sez = ep.keys().asSequence().toList().minByOrNull { it.toIntOrNull() ?: 999 } ?: return null
-        val odc = ep.optJSONArray(sez)?.optJSONObject(0) ?: return null
-        val id = odc.optString("id").ifEmpty { return null }
-        return Serwer.adresOdcinka(this, id, odc.optString("container_extension").ifEmpty { "mp4" }).also { adresyZajawek[v.id] = it }
-    }
-    /** 2.21: karuzela 3D - plakaty po bokach rzedu lekko obrocone i mniejsze, srodkowy prosto. */
-    private fun karuzela3D(rv: RecyclerView) {
-        if (!ef("ef_karuzela")) return
-        fun ustaw(r: RecyclerView) { val sr = r.width / 2f; if (sr <= 0) return
-            for (x in 0 until r.childCount) { val c = r.getChildAt(x); val d = ((c.left + c.width / 2f) - sr) / sr
-                c.rotationY = (-d * 18f).coerceIn(-22f, 22f); val sk = 1f - (kotlin.math.abs(d) * 0.08f).coerceAtMost(0.12f); c.scaleX = sk; c.scaleY = sk
-                c.cameraDistance = c.width * 12f } }
-        rv.addOnScrollListener(object : RecyclerView.OnScrollListener() { override fun onScrolled(r: RecyclerView, dx: Int, dy: Int) { ustaw(r) } })
-        rv.addOnLayoutChangeListener { v, _, _, _, _, _, _, _, _ -> ustaw(v as RecyclerView) }
-    }
-    /** Telefon: gdy rzad sie zatrzyma, zajawka rusza na pierwszym w calosci widocznym plakacie. TV: na zaznaczonym. */
-    private fun zajawkiWRzedzie(rv: RecyclerView) {
-        if (Pilot.czyTv(this)) return
-        rv.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-            override fun onScrollStateChanged(r: RecyclerView, st: Int) {
-                if (st == RecyclerView.SCROLL_STATE_DRAGGING) stopPodglad()
-                if (st != RecyclerView.SCROLL_STATE_IDLE) return
-                val lm = r.layoutManager as? LinearLayoutManager ?: return
-                val p = lm.findFirstCompletelyVisibleItemPosition().takeIf { it >= 0 } ?: return
-                (lm.findViewByPosition(p)?.tag as? Runnable)?.run()
-            } })
-    }
+    private fun graczZajawki() = Zajawki.gracz(this)
 
     private fun rzadVod(k: LinearLayout, tytul: String, l: List<Vod>, nowosc: Boolean = false) {
         if (l.isEmpty()) return
@@ -708,7 +667,7 @@ class StartActivity : AppCompatActivity() {
                 zwiastunWidok.player = zwiastun
                 val tenGracz = zwiastun
                 karta.postDelayed({ if (zwiastun === tenGracz && zwiastunWidok.alpha == 0f) {
-                    kotlin.concurrent.thread { Serwer.raport(this@StartActivity, "zajawka baner: timeout 12s") }; stopZwiastun(); zapas() } }, 12_000)
+                    kotlin.concurrent.thread { Serwer.raport(this@StartActivity, "zajawka baner: timeout 30s") }; stopZwiastun(); zapas() } }, 30_000)
                 }
             }, 3000)
             nowy.alpha = 0f; nowy.scaleX = 1f; nowy.scaleY = 1f; nowy.translationX = 0f

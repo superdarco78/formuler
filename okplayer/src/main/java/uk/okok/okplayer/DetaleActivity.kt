@@ -380,7 +380,7 @@ class DetaleActivity : AppCompatActivity() {
         val ten = zajawka
         pv.postDelayed({ if (zajawka === ten && pv.alpha == 0f && !isFinishing) { stopZajawki()
             lifecycleScope.launch { val z = withContext(Dispatchers.IO) { try { Zajawki.szukaj(intent.getStringExtra("nazwa") ?: "") } catch (x: Exception) { "" } }
-                if (z.startsWith("yt:") && !isFinishing) { zajawkaBylo = false; startZajawki(z) } } } }, 12_000)
+                if (z.startsWith("yt:") && !isFinishing) { zajawkaBylo = false; startZajawki(z) } } } }, 30_000)
     }
     private fun stopZajawki() { Zajawki.zatrzymaj(ytOkno); zajawkaWidok?.animate()?.cancel(); zajawkaWidok?.alpha = 0f; zajawkaWidok?.player = null; zajawka?.release(); zajawka = null }
     override fun onPause() { stopZajawki(); zajawkaBylo = false; super.onPause() }
