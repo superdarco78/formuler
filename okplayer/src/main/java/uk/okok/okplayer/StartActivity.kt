@@ -1442,7 +1442,8 @@ class StartActivity : AppCompatActivity() {
         val czas = (Ust.panelS(this, "czas_intro")?.toIntOrNull() ?: 4).coerceIn(2, 20) * 1000L
         Ust.panelS(this, "intro_url")?.takeIf { it.startsWith("http") }?.let { u ->
             val pv = (layoutInflater.inflate(R.layout.mini_gracz, null) as androidx.media3.ui.PlayerView).apply { useController = false; setShutterBackgroundColor(Color.BLACK); setBackgroundColor(Color.BLACK)
-                resizeMode = androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_ZOOM }
+                // 2.42: intro zawsze w calosci (na telefonie w pionie bylo uciete) - czarne pasy, bo tlo intra jest czarne
+                resizeMode = androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIT }
             val g = androidx.media3.exoplayer.ExoPlayer.Builder(this).build().apply { setMediaItem(androidx.media3.common.MediaItem.fromUri(u)); prepare(); playWhenReady = true }
             pv.player = g; n.addView(pv, FrameLayout.LayoutParams(-1, -1))
             n.postDelayed({ g.release() }, czas + 900)

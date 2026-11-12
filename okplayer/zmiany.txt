@@ -1,3 +1,4 @@
+Intro w całości|intro z panelu na telefonie w pionie było ucięte (widać było pół logo)|intro z panelu zawsze mieści się całe na ekranie
 Marka aplikacji z panelu|nazwa „OK Player” i logo na sztywno w aplikacji|nazwa, logo, intro (film z Canvy), czas i napis ładowania ustawiane w panelu – domyślnie OK Player
 Język zwiastunów|zwiastuny szukane zawsze po polsku|zwiastun w języku systemu urządzenia (PL, DE, EN…); dla polskiego w panelu: lektor, napisy, losowo albo dowolny
 Sekwencja zajawek w rzędach|zajawka tylko na jednym plakacie po przesunięciu rzędu|plakat 3 s → zajawka → rząd sam przechodzi do następnego plakatu → jego zajawka…; rusza też sama po zatrzymaniu przewijania strony; czasy w panelu
