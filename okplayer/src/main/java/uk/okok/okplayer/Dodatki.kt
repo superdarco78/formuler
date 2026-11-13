@@ -54,12 +54,26 @@ object Dodatki {
         return yt to role
     }
 
+    /** 2.49: z wynikow YouTube bierze tylko filmik, ktory naprawde jest zwiastunem TEGO filmu
+     *  (w tytule slowa z nazwy filmu + zwiastun/trailer) - koniec z grillem czy lodowka zamiast zwiastuna. */
+    private fun norm(x: String) = java.text.Normalizer.normalize(x.lowercase(), java.text.Normalizer.Form.NFD).replace(Regex("\\p{M}+"), "").replace("ł", "l")
+    fun pasujacy(html: String, tytul: String): String {
+        val slowa = norm(tytul).split(Regex("[^\\p{L}\\p{N}]+")).filter { it.length >= 3 && it !in setOf("the", "and", "zwiastun", "trailer") && !it.matches(Regex("\\d{4}")) }
+        val zw = Regex("zwiastun|trailer|teaser|zapowiedz|bande|trailer|tráiler|трейлер|official", RegexOption.IGNORE_CASE)
+        Regex("\"videoRenderer\":\\{\"videoId\":\"([A-Za-z0-9_-]{11})\".{0,1500}?\"title\":\\{\"runs\":\\[\\{\"text\":\"((?:[^\"\\\\]|\\\\.)*)\"")
+            .findAll(html).take(8).forEach { m ->
+                val tyt = norm(m.groupValues[2])
+                val traf = if (slowa.isEmpty()) true else slowa.count { tyt.contains(it) } * 2 >= slowa.size.coerceAtLeast(1) && slowa.any { tyt.contains(it) }
+                if (traf && zw.containsMatchIn(tyt)) return m.groupValues[1]
+            }
+        return ""
+    }
     /** Zwiastun z YouTube po tytule (gdy Wikidata nie ma). */
     fun tekstYt(u: String) = tekst(u, "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36")
     fun szukajZwiastuna(tytul: String): String = try {
         val html = tekst("https://www.youtube.com/results?search_query=" + java.net.URLEncoder.encode("$tytul zwiastun", "UTF-8"),
             "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36")
-        Regex("\"videoId\":\"([A-Za-z0-9_-]{11})\"").find(html)?.groupValues?.get(1) ?: ""
+        pasujacy(html, tytul)
     } catch (e: Exception) { "" }
     /** Filmografia aktora z Wikidata: (tytul pl, tytul en, rok), najnowsze pierwsze. */
     /** Okladki filmow z iTunes (po kluczu tytulu) - do siatki filmow aktora. */
@@ -295,7 +309,7 @@ object Zajawki {
         val rok = Regex("\\((\\d{4})\\)").find(tytul)?.groupValues?.get(1) ?: ""
         val id = try {
             val html = Dodatki.tekstYt("https://www.youtube.com/results?search_query=" + java.net.URLEncoder.encode(zapytanie("$t $rok".trim()), "UTF-8"))
-            Regex("\"videoId\":\"([A-Za-z0-9_-]{11})\"").find(html)?.groupValues?.get(1) ?: ""
+            Dodatki.pasujacy(html, t)
         } catch (e: Exception) { "" }
         return (if (id.isNotEmpty()) "yt:$id" else "").ifEmpty { Dodatki.szukajZwiastuna("$t $rok".trim()).let { if (it.isNotEmpty()) "yt:$it" else "" } }
             .ifEmpty { try { Dodatki.zwiastunItunes(tytul) } catch (e: Exception) { "" } }

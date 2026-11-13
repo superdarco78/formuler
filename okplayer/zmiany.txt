@@ -1,1 +1,1 @@
-Animacja startu jak wczoraj|nowe animacje startu (popcorn, szum TV, elegancka)|przywrócona wczorajsza animacja startu z grafik Canvy (kino z plakatami, logo, neonowy pasek)
+Właściwe zwiastuny|przy mało znanych filmach zajawka pokazywała przypadkowy filmik z YouTube (np. grill zamiast zwiastuna)|zajawka gra tylko wtedy, gdy filmik naprawdę jest zwiastunem tego filmu (zgadza się tytuł i słowo zwiastun/trailer) – inaczej zostaje plakat
