@@ -1,1 +1,1 @@
-Właściwe zwiastuny|przy mało znanych filmach zajawka pokazywała przypadkowy filmik z YouTube (np. grill zamiast zwiastuna)|zajawka gra tylko wtedy, gdy filmik naprawdę jest zwiastunem tego filmu (zgadza się tytuł i słowo zwiastun/trailer) – inaczej zostaje plakat
+Aktualizacje z własnego serwera|aktualizacje pobierane z publicznego GitHuba, gdzie każdy widział kod aplikacji|kod jest teraz prywatny, a nowe wersje przychodzą z Twojego serwera tv.ok-ok.uk (tylko prawdziwe wydania z Twojego repozytorium)

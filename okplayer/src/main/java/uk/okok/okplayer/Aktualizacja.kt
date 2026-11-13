@@ -12,7 +12,7 @@ import org.json.JSONObject
 
 /** Aktualizacje nowej aplikacji: okno "Nowa wersja" -> po "Zainstaluj" pobiera i instaluje sie sama w tle. */
 object Aktualizacja {
-    private const val WERSJA = "https://github.com/superdarco78/formuler/releases/download/okplayer-latest/wersja.json"
+    private const val WERSJA = "https://tv.ok-ok.uk/apk/wersja.json"
     private var pokazane = false
 
     suspend fun sprawdz(a: Activity, reczne: Boolean = false) {
